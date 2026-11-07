@@ -1,0 +1,46 @@
+{
+ "task_id": "M3",
+ "round": 1,
+ "verdict": "pass",
+ "total": 8,
+ "note": "An earlier reviewer run stopped on an expired login with no report; this is the first completed review.",
+ "dimensions": {
+  "problem_fit": 1,
+  "scope_discipline": 2,
+  "assumptions": 2,
+  "verification_quality": 1,
+  "handoff_readiness": 2
+ },
+ "weakest_check": {
+  "command": "pnpm exec vitest run test/cli/setup.test.ts",
+  "mutation": "make dry run create ~/.parley-fake/, or read options.dry instead of options.dryRun in buildProgram",
+  "expected": "should fail; test calls runSetup directly and only checks config.json is absent"
+ },
+ "findings": [
+  {
+   "severity": "medium",
+   "detail": "Fake adapter uninstall rmSync's the whole parent dir recursively; would delete pre-existing files. Real adapters (M4, ~/.claude) must not copy this: record whether install created the dir and remove it only then, only if empty.",
+   "citation": "src/adapters/fake/index.ts:70-71"
+  },
+  {
+   "severity": "medium",
+   "detail": "Commander program never exercised by a test; --dry-run/--harness/--format/--agent wiring unverified. Test via buildProgram().parseAsync and assert temp HOME untouched.",
+   "citation": "src/cli/index.ts:122-134"
+  },
+  {
+   "severity": "low",
+   "detail": "serve close path tested only for stdin end; transport.onclose path and isClosed() after transport.close() untested.",
+   "citation": "test/mcp/serve.test.ts:160-161"
+  },
+  {
+   "severity": "low",
+   "detail": "Unknown --format values silently fall back instead of erroring.",
+   "citation": "src/cli/index.ts:56-62"
+  },
+  {
+   "severity": "low",
+   "detail": "Adapter interface deviates from PLAN 6 (env, dryRun, 'fake') unrecorded; overlap.ts lacks trailing newline; DoctorReport lacks 'hooks trusted?'.",
+   "citation": "src/adapters/types.ts:44-49"
+  }
+ ]
+}
