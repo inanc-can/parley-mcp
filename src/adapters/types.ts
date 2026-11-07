@@ -19,6 +19,12 @@ export interface InstallReport {
   changes: FileChange[];
   /** True for a dry run: nothing was written. */
   dryRun: boolean;
+  /**
+   * Non-fatal problems the human should see — e.g. a `claude plugin …` command
+   * exited non-zero. Empty on a clean run. setup/uninstall print these so a
+   * failed external step is never silently reported as success (review finding).
+   */
+  notes?: string[];
 }
 
 export interface DoctorReport {

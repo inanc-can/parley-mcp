@@ -35,11 +35,14 @@ export async function runSetup(deps: SetupDeps): Promise<void> {
     totalChanges += report.changes.length;
     if (report.changes.length === 0) {
       deps.write(`- ${adapter.harness}: already set up, nothing to change.`);
-      continue;
+    } else {
+      for (const change of report.changes) {
+        const verb = dryRun ? "would" : "did";
+        deps.write(`- ${adapter.harness}: ${verb} ${change.action} ${change.path}`);
+      }
     }
-    for (const change of report.changes) {
-      const verb = dryRun ? "would" : "did";
-      deps.write(`- ${adapter.harness}: ${verb} ${change.action} ${change.path}`);
+    for (const note of report.notes ?? []) {
+      deps.write(`  ! ${adapter.harness}: ${note}`);
     }
   }
   if (totalChanges === 0) {

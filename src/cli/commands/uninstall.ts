@@ -18,11 +18,14 @@ export async function runUninstall(deps: UninstallDeps): Promise<void> {
     totalChanges += report.changes.length;
     if (report.changes.length === 0) {
       deps.write(`- ${adapter.harness}: nothing to remove.`);
-      continue;
+    } else {
+      for (const change of report.changes) {
+        const verb = change.action === "create" ? "removed" : "unmerged";
+        deps.write(`- ${adapter.harness}: ${verb} ${change.path}`);
+      }
     }
-    for (const change of report.changes) {
-      const verb = change.action === "create" ? "removed" : "unmerged";
-      deps.write(`- ${adapter.harness}: ${verb} ${change.path}`);
+    for (const note of report.notes ?? []) {
+      deps.write(`  ! ${adapter.harness}: ${note}`);
     }
   }
   deps.write(totalChanges === 0 ? "Nothing to remove." : "Parley removed.");
