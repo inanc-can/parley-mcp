@@ -2,11 +2,12 @@
   "schema_version": 1,
   "task_id": "M1",
   "passed": true,
-  "created_at": "2026-11-07T13:52:00+00:00",
-  "head": "5c976fb926d29f4378759e498bf186f3a1a55308",
+  "created_at": "2026-11-07T13:58:05+00:00",
+  "head": "36704619395a621c486d4c84e2bb4849ce0fec58",
   "base_rev": "43514c918619b9cb7c6cf170505da69b376bd842",
   "changed_files": [
     "docs/PROGRESS.md",
+    "opencode.json",
     "package.json",
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
@@ -57,50 +58,50 @@
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm check` exit=0 in 11732ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:51:32+00:00"
+      "detail": "`pnpm check` exit=0 in 12198ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:57:36+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/store/messages.test.ts` exit=0 in 2772ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:51:43+00:00"
+      "detail": "`pnpm exec vitest run test/store/messages.test.ts` exit=0 in 2525ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:57:48+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/core/fanout-and-cap.test.ts` exit=0 in 2448ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:51:46+00:00"
+      "detail": "`pnpm exec vitest run test/core/fanout-and-cap.test.ts` exit=0 in 2818ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:57:51+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/core/guards.test.ts` exit=0 in 2267ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:51:49+00:00"
+      "detail": "`pnpm exec vitest run test/core/guards.test.ts` exit=0 in 2588ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:57:53+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/core/claims.test.ts test/store/claims.test.ts` exit=0 in 3185ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:51:51+00:00"
+      "detail": "`pnpm exec vitest run test/core/claims.test.ts test/store/claims.test.ts` exit=0 in 2923ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:57:56+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/core/overlap.test.ts` exit=0 in 2423ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:51:54+00:00"
+      "detail": "`pnpm exec vitest run test/core/overlap.test.ts` exit=0 in 2745ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:57:59+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/store/retention.test.ts` exit=0 in 3056ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:51:57+00:00"
+      "detail": "`pnpm exec vitest run test/store/retention.test.ts` exit=0 in 3301ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:58:02+00:00"
     },
     {
       "code": "scope_forbidden",

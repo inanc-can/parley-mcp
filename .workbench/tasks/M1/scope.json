@@ -11,7 +11,8 @@
     "package.json",
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
-    ".workbench/**"
+    ".workbench/**",
+    "opencode.json"
   ],
   "forbidden_files": [
     "src/mcp/**",
@@ -29,6 +30,16 @@
     "pnpm exec vitest run test/core/overlap.test.ts",
     "pnpm exec vitest run test/store/retention.test.ts"
   ],
-  "approvals": ["new-dependency"],
-  "rollback_plan": "Revert the M1 commits on the local branch (git revert or reset by the human) and remove added store/core files and dependency entries; no external services, published packages, or production data are affected."
+  "approvals": [
+    "new-dependency"
+  ],
+  "rollback_plan": "Revert the M1 commits on the local branch (git revert or reset by the human) and remove added store/core files and dependency entries; no external services, published packages, or production data are affected.",
+  "human_approved_exceptions": [
+    {
+      "path": "opencode.json",
+      "by": "user",
+      "date": "2026-11-07",
+      "reason": "Claude switched OpenCode's default model to opencode/glm-5.3-flash-free at the user's request; not part of M1's build work."
+    }
+  ]
 }

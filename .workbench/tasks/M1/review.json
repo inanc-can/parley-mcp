@@ -1,0 +1,10 @@
+{"task_id": "M1", "round": 1, "verdict": "soft_fail", "total": 5,
+ "dimensions": {"problem_fit": 1, "scope_discipline": 1, "assumptions": 1, "verification_quality": 1, "handoff_readiness": 1},
+ "weakest_check": {"command": "pnpm exec vitest run test/core/fanout-and-cap.test.ts", "mutation": "make shouldPauseAfterCount return false, or set DEFAULT_MESSAGE_CAP to 200", "expected": "should fail; today it passes because the test pauses the thread itself"},
+ "findings": [
+  {"severity": "high", "detail": "applyRetention fails with a FOREIGN KEY error when a message sent before the cutoff has a newer event (e.g. its expiry); the whole retention transaction rolls back. Delete events of old messages too, or use ON DELETE CASCADE; add a test with an old message and a recent event.", "citation": "src/store/retention.ts:16-21"},
+  {"severity": "medium", "detail": "cap->paused test is circular: the test sets paused itself; no production function composes count, cap and pause.", "citation": "test/core/fanout-and-cap.test.ts:113-115"},
+  {"severity": "medium", "detail": "state.json and handoff stale/contradictory; scope/state/verification edits uncommitted.", "citation": ".workbench/state.json:4"},
+  {"severity": "medium", "detail": "opencode.json change folded into M1 by widening allowed_files; approval recorded by an agent.", "citation": ".workbench/tasks/M1/scope.json:36-43"},
+  {"severity": "low", "detail": "delivered->replied rejected though reply implies read (PLAN 4.3); stop-all has no logic or test; agreements untested; builder choices (secret thresholds, fan-out keys, glob semantics, busy_timeout) not recorded as assumptions; pnpm-workspace.yaml allowBuilds removal unexplained.", "citation": "src/store/repos/messages-repo.ts:95-101"}
+ ]}

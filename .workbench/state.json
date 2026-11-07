@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "active_task_id": "M1",
-  "summary": "M1 (store and core) complete: SQLite store/migrations/repos with Zod parsing plus pure core (identity, message state machine/guards, threads cap, agreements, claims, overlap, retention, cost, secret scan). All M1 acceptance tests added; pnpm check and wb verify pass.",
+  "summary": "M1 built by OpenCode: all 7 acceptance commands and pnpm check pass (39 tests). wb verify FAILs only on scope_outside_allowed: opencode.json was changed (by Claude, to switch the default model to opencode/glm-5.3-flash-free at the user's request), which is outside M1's allowed files.",
   "assumptions": [],
   "blockers": [],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "Start M2 (MCP server: serve with talk/inbox/agree over stdio) in a new session after framing; build M3b first if/when the work harness is named (per PLAN).",
+  "next_action": "Waiting on the user: approve recording opencode.json as a human-approved out-of-scope change for M1 (then re-run wb verify), or leave M1 failing. Then run the independent reviewer on M1 and start M2.",
   "updated_at": "2026-11-07T14:55:00Z",
   "last_mode": "checkpoints",
   "last_mode_notes": "M1 only: store and core. Stopped at end of milestone with passing verification."
