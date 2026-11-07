@@ -1,5 +1,5 @@
 import { homedir } from "node:os";
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import type { AdapterEnv } from "../adapters/index.js";
 import { openHubDb, resolveRepoRoot } from "./context.js";
 import type { Db } from "../store/index.js";
@@ -13,6 +13,20 @@ import {
   type DrainFormat,
 } from "./commands/inbox.js";
 import { runHookEdit } from "./commands/hook.js";
+import {
+  runHookSessionStart,
+  runHookUserPrompt,
+  runHookStop,
+  runHookPostTool,
+  runHookSessionEnd,
+} from "./commands/hook-events.js";
+import {
+  sessionStartPayloadSchema,
+  userPromptPayloadSchema,
+  stopPayloadSchema,
+  postToolPayloadSchema,
+  sessionEndPayloadSchema,
+} from "./commands/hook-payloads.js";
 import { runSetup } from "./commands/setup.js";
 import { runUninstall } from "./commands/uninstall.js";
 import { runDoctor } from "./commands/doctor.js";
@@ -27,6 +41,8 @@ export interface CliDeps {
   write: (line: string) => void;
   env: NodeJS.ProcessEnv;
   cwd: string;
+  /** Stdin source for hook payloads (overridable in tests). */
+  stdin?: AsyncIterable<Buffer | string>;
 }
 
 function defaultDeps(): CliDeps {
@@ -97,7 +113,9 @@ export function buildProgram(deps: CliDeps = defaultDeps()): Command {
   program
     .command("export")
     .description("Export this repo's conversations and decisions.")
-    .requiredOption("--format <format>", "md or jsonl")
+    .addOption(
+      new Option("--format <format>", "md or jsonl").choices(["md", "jsonl"]).makeOptionMandatory(),
+    )
     .action((options: { format: string }) => {
       withDb(deps, (db, repoRoot) => {
         runExport({ db, repoRoot, write: deps.write, format: parseExportFormat(options.format) });
@@ -152,7 +170,9 @@ function registerAdapterCommands(program: Command, deps: CliDeps): void {
   inbox
     .command("drain")
     .requiredOption("--agent <id>", "the agent whose inbox to drain")
-    .option("--format <format>", "monitor or json", "monitor")
+    .addOption(
+      new Option("--format <format>", "monitor or json").choices(["monitor", "json"]).default("monitor"),
+    )
     .option("--session <native>", "the delivering native session id")
     .action((options: { agent: string; format: string; session?: string }) => {
       withDb(deps, (db, repoRoot) => {
@@ -168,7 +188,9 @@ function registerAdapterCommands(program: Command, deps: CliDeps): void {
   inbox
     .command("watch")
     .requiredOption("--agent <id>", "the agent whose inbox to watch")
-    .option("--format <format>", "monitor or json", "monitor")
+    .addOption(
+      new Option("--format <format>", "monitor or json").choices(["monitor", "json"]).default("monitor"),
+    )
     .option("--session <native>", "the delivering native session id")
     .option("--once", "print one message then exit")
     .action(
@@ -202,6 +224,79 @@ function registerAdapterCommands(program: Command, deps: CliDeps): void {
         runHookEdit({ db, repoRoot, write: deps.write }, options.agent, options.path);
       });
     });
+
+  registerClaudeHookCommands(hook, deps);
+}
+
+/**
+ * The Claude Code hook events (PLAN section 6). Each reads its JSON payload from
+ * stdin, Zod-parses it at the boundary, ignores subagent payloads, and runs the
+ * matching handler. The plugin's tiny scripts pipe their stdin here.
+ */
+function registerClaudeHookCommands(hook: Command, deps: CliDeps): void {
+  hook
+    .command("session-start")
+    .description("Claude Code SessionStart: register the agent.")
+    .action(async () => {
+      const payload = sessionStartPayloadSchema.parse(await readStdinJson(deps));
+      withDb(deps, (db, repoRoot) => {
+        runHookSessionStart({ db, repoRoot, write: deps.write }, payload);
+      });
+    });
+
+  hook
+    .command("user-prompt")
+    .description("Claude Code UserPromptSubmit: read-evidence + heartbeat.")
+    .action(async () => {
+      const payload = userPromptPayloadSchema.parse(await readStdinJson(deps));
+      withDb(deps, (db, repoRoot) => {
+        runHookUserPrompt({ db, repoRoot, write: deps.write }, payload);
+      });
+    });
+
+  hook
+    .command("stop")
+    .description("Claude Code Stop: drain at turn end + read-evidence.")
+    .action(async () => {
+      const payload = stopPayloadSchema.parse(await readStdinJson(deps));
+      withDb(deps, (db, repoRoot) => {
+        runHookStop({ db, repoRoot, write: deps.write }, payload);
+      });
+    });
+
+  hook
+    .command("post-tool")
+    .description("Claude Code PostToolUse: drain at a safe point + record edits.")
+    .action(async () => {
+      const payload = postToolPayloadSchema.parse(await readStdinJson(deps));
+      withDb(deps, (db, repoRoot) => {
+        runHookPostTool({ db, repoRoot, write: deps.write }, payload);
+      });
+    });
+
+  hook
+    .command("session-end")
+    .description("Claude Code SessionEnd: requeue unread delivered messages.")
+    .action(async () => {
+      const payload = sessionEndPayloadSchema.parse(await readStdinJson(deps));
+      withDb(deps, (db, repoRoot) => {
+        runHookSessionEnd({ db, repoRoot, write: deps.write }, payload);
+      });
+    });
+}
+
+/** Read all of stdin and parse it as JSON (the hook payload). */
+async function readStdinJson(deps: CliDeps): Promise<unknown> {
+  const stream = deps.stdin ?? process.stdin;
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
+  }
+  const text = Buffer.concat(chunks).toString("utf8").trim();
+  if (text.length === 0) {
+    throw new Error("hook payload: empty stdin");
+  }
+  return JSON.parse(text);
 }
 
 interface WatchOptions {
