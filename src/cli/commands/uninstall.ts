@@ -1,8 +1,10 @@
-import { ADAPTERS, type AdapterEnv } from "../../adapters/index.js";
+import { ADAPTERS, type Adapter, type AdapterEnv } from "../../adapters/index.js";
 
 export interface UninstallDeps {
   env: AdapterEnv;
   write: (line: string) => void;
+  /** The adapters to iterate (defaults to the production list; tests inject). */
+  adapters?: readonly Adapter[] | undefined;
 }
 
 /**
@@ -11,7 +13,7 @@ export interface UninstallDeps {
  */
 export async function runUninstall(deps: UninstallDeps): Promise<void> {
   let totalChanges = 0;
-  for (const adapter of ADAPTERS) {
+  for (const adapter of deps.adapters ?? ADAPTERS) {
     const report = await adapter.uninstall(deps.env);
     totalChanges += report.changes.length;
     if (report.changes.length === 0) {

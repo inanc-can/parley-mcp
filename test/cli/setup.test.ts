@@ -4,11 +4,14 @@ import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { AdapterEnv } from "../../src/adapters/index.js";
+import { fakeAdapter } from "../../src/adapters/fake/index.js";
 import { runSetup } from "../../src/cli/commands/setup.js";
 import { runUninstall } from "../../src/cli/commands/uninstall.js";
 import { runDoctor } from "../../src/cli/commands/doctor.js";
 
 const CONFIG_REL = join(".parley-fake", "config.json");
+
+const FAKES = [fakeAdapter];
 
 let home = "";
 
@@ -36,7 +39,7 @@ afterEach(() => {
 describe("setup --dry-run", () => {
   it("lists the changes and writes nothing", async () => {
     const out = collector();
-    await runSetup({ env: env(), write: out.write, dryRun: true });
+    await runSetup({ env: env(), write: out.write, dryRun: true, adapters: FAKES });
     const text = out.lines.join("\n");
     expect(text).toContain("Dry run");
     expect(text).toContain("would create");
@@ -49,13 +52,13 @@ describe("setup --dry-run", () => {
 describe("setup idempotency", () => {
   it("creates the config on the first run and changes nothing on the second", async () => {
     const first = collector();
-    await runSetup({ env: env(), write: first.write });
+    await runSetup({ env: env(), write: first.write, adapters: FAKES });
     expect(existsSync(configFile())).toBe(true);
     const afterFirst = readFileSync(configFile(), "utf8");
     expect(first.lines.join("\n")).toContain("did create");
 
     const second = collector();
-    await runSetup({ env: env(), write: second.write });
+    await runSetup({ env: env(), write: second.write, adapters: FAKES });
     const afterSecond = readFileSync(configFile(), "utf8");
     // Byte-for-byte identical after the second run.
     expect(afterSecond).toBe(afterFirst);
@@ -67,11 +70,11 @@ describe("uninstall", () => {
   it("restores a created file byte for byte (removes it entirely)", async () => {
     // Before: no file exists.
     expect(existsSync(configFile())).toBe(false);
-    await runSetup({ env: env(), write: () => undefined });
+    await runSetup({ env: env(), write: () => undefined, adapters: FAKES });
     expect(existsSync(configFile())).toBe(true);
 
     const out = collector();
-    await runUninstall({ env: env(), write: out.write });
+    await runUninstall({ env: env(), write: out.write, adapters: FAKES });
     // After uninstall the tree is exactly as before: the file is gone.
     expect(existsSync(configFile())).toBe(false);
     expect(out.lines.join("\n")).toContain("removed");
@@ -83,12 +86,12 @@ describe("uninstall", () => {
     mkdirSync(dirname(configFile()), { recursive: true });
     writeFileSync(configFile(), original, "utf8");
 
-    await runSetup({ env: env(), write: () => undefined });
+    await runSetup({ env: env(), write: () => undefined, adapters: FAKES });
     const merged = readFileSync(configFile(), "utf8");
     expect(merged).toContain("parley");
     expect(merged).toContain("editor");
 
-    await runUninstall({ env: env(), write: () => undefined });
+    await runUninstall({ env: env(), write: () => undefined, adapters: FAKES });
     const restored = readFileSync(configFile(), "utf8");
     // The unrelated keys are preserved exactly; only our key is removed.
     expect(restored).toBe(original);
@@ -102,10 +105,10 @@ describe("uninstall", () => {
     mkdirSync(dirname(configFile()), { recursive: true });
     writeFileSync(sibling, "user data", "utf8");
 
-    await runSetup({ env: env(), write: () => undefined });
+    await runSetup({ env: env(), write: () => undefined, adapters: FAKES });
     expect(existsSync(configFile())).toBe(true);
 
-    await runUninstall({ env: env(), write: () => undefined });
+    await runUninstall({ env: env(), write: () => undefined, adapters: FAKES });
     // Our config is gone, but the sibling file and its directory survive.
     expect(existsSync(configFile())).toBe(false);
     expect(existsSync(sibling)).toBe(true);
@@ -116,12 +119,12 @@ describe("uninstall", () => {
 describe("doctor", () => {
   it("reports readiness before and after setup", async () => {
     const before = collector();
-    await runDoctor({ env: env(), write: before.write });
+    await runDoctor({ env: env(), write: before.write, adapters: FAKES });
     expect(before.lines.join("\n")).toContain("cannot wake idle");
 
-    await runSetup({ env: env(), write: () => undefined });
+    await runSetup({ env: env(), write: () => undefined, adapters: FAKES });
     const after = collector();
-    await runDoctor({ env: env(), write: after.write });
+    await runDoctor({ env: env(), write: after.write, adapters: FAKES });
     expect(after.lines.join("\n")).toContain("can wake idle");
   });
 });

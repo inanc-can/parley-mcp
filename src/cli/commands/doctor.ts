@@ -1,8 +1,10 @@
-import { ADAPTERS, type AdapterEnv } from "../../adapters/index.js";
+import { ADAPTERS, type Adapter, type AdapterEnv } from "../../adapters/index.js";
 
 export interface DoctorDeps {
   env: AdapterEnv;
   write: (line: string) => void;
+  /** The adapters to iterate (defaults to the production list; tests inject). */
+  adapters?: readonly Adapter[] | undefined;
 }
 
 /**
@@ -11,7 +13,7 @@ export interface DoctorDeps {
  */
 export async function runDoctor(deps: DoctorDeps): Promise<void> {
   deps.write("Parley doctor:");
-  for (const adapter of ADAPTERS) {
+  for (const adapter of deps.adapters ?? ADAPTERS) {
     const report = await adapter.doctor(deps.env);
     const wake = report.canWakeIdle ? "can wake idle" : "cannot wake idle";
     const trust =

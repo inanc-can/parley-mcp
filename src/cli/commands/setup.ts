@@ -5,6 +5,8 @@ export interface SetupDeps {
   write: (line: string) => void;
   harness?: string | undefined;
   dryRun?: boolean | undefined;
+  /** The adapters to iterate (defaults to the production list; tests inject). */
+  adapters?: readonly Adapter[] | undefined;
 }
 
 /**
@@ -15,7 +17,8 @@ export interface SetupDeps {
  */
 export async function runSetup(deps: SetupDeps): Promise<void> {
   const dryRun = deps.dryRun ?? false;
-  const adapters = selectAdapters(deps.harness);
+  const all = deps.adapters ?? ADAPTERS;
+  const adapters = selectAdapters(all, deps.harness);
   if (adapters.length === 0) {
     deps.write(`No adapter for harness '${deps.harness ?? ""}'.`);
     return;
@@ -43,13 +46,13 @@ export async function runSetup(deps: SetupDeps): Promise<void> {
     deps.write("Nothing to change.");
   }
   if (!dryRun && totalChanges > 0) {
-    deps.write('Try typing to one of your agents, e.g. "say hi to fake@<folder>".');
+    deps.write('Try typing to one of your agents, e.g. "say hi to claude@<folder>".');
   }
 }
 
-function selectAdapters(harness: string | undefined): readonly Adapter[] {
+function selectAdapters(all: readonly Adapter[], harness: string | undefined): readonly Adapter[] {
   if (harness === undefined) {
-    return ADAPTERS;
+    return all;
   }
-  return ADAPTERS.filter((adapter) => adapter.harness === harness);
+  return all.filter((adapter) => adapter.harness === harness);
 }
