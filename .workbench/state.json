@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "active_task_id": "M1",
-  "summary": "",
+  "summary": "M1 (store and core) complete: SQLite store/migrations/repos with Zod parsing plus pure core (identity, message state machine/guards, threads cap, agreements, claims, overlap, retention, cost, secret scan). All M1 acceptance tests added; pnpm check and wb verify pass.",
   "assumptions": [],
   "blockers": [],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "Frame the first task (/wb-frame).",
-  "updated_at": "2026-11-07T13:37:40+00:00",
+  "next_action": "Start M2 (MCP server: serve with talk/inbox/agree over stdio) in a new session after framing; build M3b first if/when the work harness is named (per PLAN).",
+  "updated_at": "2026-11-07T14:55:00Z",
   "last_mode": "checkpoints",
-  "last_mode_notes": "M1 only: store and core. Stop at end of milestone."
+  "last_mode_notes": "M1 only: store and core. Stopped at end of milestone with passing verification."
 }

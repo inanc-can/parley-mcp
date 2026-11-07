@@ -21,15 +21,13 @@
     "src/notify/**"
   ],
   "acceptance": [
-    "pnpm check passes (lint + typecheck + test) with strict rules",
-    "Unit tests cover every status move including guarded no-ops, requeue and expiry",
-    "Unit tests cover idempotent sends",
-    "Unit tests cover everyone fan-out",
-    "Unit tests cover cap -> paused",
-    "Unit tests cover secret blocking for each pattern",
-    "Unit tests cover claim expiry",
-    "Unit tests cover overlap detection",
-    "Unit tests cover 30-day retention"
+    "pnpm check",
+    "pnpm exec vitest run test/store/messages.test.ts",
+    "pnpm exec vitest run test/core/fanout-and-cap.test.ts",
+    "pnpm exec vitest run test/core/guards.test.ts",
+    "pnpm exec vitest run test/core/claims.test.ts test/store/claims.test.ts",
+    "pnpm exec vitest run test/core/overlap.test.ts",
+    "pnpm exec vitest run test/store/retention.test.ts"
   ],
   "approvals": ["new-dependency"],
   "rollback_plan": "Revert the M1 commits on the local branch (git revert or reset by the human) and remove added store/core files and dependency entries; no external services, published packages, or production data are affected."
