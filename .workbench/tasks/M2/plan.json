@@ -1,0 +1,68 @@
+{
+  "task_id": "M2",
+  "items": [
+    {
+      "id": "deps",
+      "change": "Add the PLAN-approved runtime dependency @modelcontextprotocol/sdk (official SDK, stdio + in-memory transport); keep the lockfile in sync.",
+      "proof": "pnpm check passes after install with the dependency present in package.json.",
+      "evidence": ["docs/PLAN.md:139 (allowed runtime deps)", "package.json", "pnpm-lock.yaml"],
+      "depends_on": []
+    },
+    {
+      "id": "followup-a-layering",
+      "change": "Move the cap->pause composition (enforceMessageCap) and the stop-all composition (checkStopAllActive) out of src/store into src/mcp/guards.ts so no src/store file imports src/core; update the existing stop-all and cap tests to import the compositions from src/mcp.",
+      "proof": "grep finds no src/core imports under src/store; existing cap and stop-all tests pass with the new import source; pnpm check passes.",
+      "evidence": ["src/mcp/guards.ts", "src/store/repos/threads-repo.ts", "src/store/repos/settings-repo.ts", "test/mcp/guards.test.ts", "test/core/fanout-and-cap.test.ts"],
+      "depends_on": []
+    },
+    {
+      "id": "followup-b-agreement-guard",
+      "change": "Guard agreementsRepo.updateAgreementStatus so only an 'offered' agreement can be answered and only by its recipient (responder is not the offerer and is a participant of the agreement's thread); the function returns whether the update happened.",
+      "proof": "test/store/agreements.test.ts attempts the forbidden update directly (offerer, non-participant, already-settled row) and asserts refusal plus an unchanged row; recipient updates still succeed; pnpm check passes.",
+      "evidence": ["src/store/repos/agreements-repo.ts", "test/store/agreements.test.ts"],
+      "depends_on": []
+    },
+    {
+      "id": "followup-c-secret-near-miss",
+      "change": "Add negative near-miss secret-scan tests: short .env-style values, a too-short AKIA string and a too-short xoxb token must NOT be blocked.",
+      "proof": "test/core/guards.test.ts near-miss cases all expect null and pass.",
+      "evidence": ["test/core/guards.test.ts", "src/core/guards.ts"],
+      "depends_on": []
+    },
+    {
+      "id": "mcp-identity-server",
+      "change": "Implement src/mcp: identity.ts (agent id from env PARLEY_AGENT_ID with cwd-folder fallback, register + heartbeat per call), guards.ts (stop-all + cap compositions, post checks), rules.ts (.parley/rules.md reminder + once-per-session text), server.ts (McpServer with talk/inbox/agree, stdio serve, retention on start), each tool returning structuredContent plus a one-paragraph text summary.",
+      "proof": "pnpm check passes; server builds and registers exactly the three tools with zod input schemas.",
+      "evidence": ["src/mcp/*.ts", "PLAN.md:224-259"],
+      "depends_on": ["deps", "followup-a-layering"]
+    },
+    {
+      "id": "mcp-tools",
+      "change": "Implement the three tools per PLAN section 5: talk (stop-all, secret scan, thread creation/postable checks, idempotent send incl. everyone fan-out, reply marks reply_to replied with events, outlook from recipient presence, poll-based wait_for_reply_s), inbox (deliver+read marking of my pending messages with events, own sent receipts, decisions, who), agree (offer/accept/counter/reject via the guarded store update; claim/renew/release with overlap conflicts).",
+      "proof": "pnpm check passes; unit-level mcp tests cover outlook, secret blocking, rules reminder and claim conflicts.",
+      "evidence": ["src/mcp/tools/*.ts", "test/mcp/*.test.ts", "PLAN.md:230-259"],
+      "depends_on": ["mcp-identity-server", "followup-b-agreement-guard"]
+    },
+    {
+      "id": "integration-tests",
+      "change": "Integration tests with the SDK InMemoryTransport: two fake agents (two server instances sharing one in-memory SQLite db) exchange messages; receipts move sent->delivered->read->replied correctly; an agreement is offered and answered by its recipient; a forbidden answer is refused.",
+      "proof": "test/mcp/integration.test.ts exits 0.",
+      "evidence": ["test/mcp/integration.test.ts", "PLAN.md:381-384"],
+      "depends_on": ["mcp-tools"]
+    },
+    {
+      "id": "token-size-test",
+      "change": "Test that listTools over the in-memory transport serializes the three tool definitions (name + description + input schema), estimates tokens at chars/4, prints the measured number, and fails above 1,500.",
+      "proof": "test/mcp/tool-size.test.ts exits 0 and prints the measurement.",
+      "evidence": ["test/mcp/tool-size.test.ts", "PLAN.md:226"],
+      "depends_on": ["mcp-identity-server"]
+    },
+    {
+      "id": "verify-handoff",
+      "change": "Run wb verify, update docs/PROGRESS.md results, record assumptions in state.json, run wb handoff, commit, and stop at the checkpoint.",
+      "proof": "pnpm check and wb verify PASS; docs/PROGRESS.md and state.json record M2 results and assumptions.",
+      "evidence": ["wb verify verdict", "docs/PROGRESS.md", ".workbench/state.json"],
+      "depends_on": ["integration-tests", "token-size-test", "followup-a-layering", "followup-b-agreement-guard", "followup-c-secret-near-miss"]
+    }
+  ]
+}

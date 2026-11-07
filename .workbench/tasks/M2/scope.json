@@ -1,0 +1,35 @@
+{
+  "task_id": "M2",
+  "goal": "Implement PLAN.md M2: the MCP server over stdio (official @modelcontextprotocol/sdk) with talk, inbox and agree, integration-tested with the SDK's in-memory transport including the tool-definition token-size check, plus the three M1 review follow-ups: (a) move cap->pause and stop-all compositions out of src/store into src/mcp so store never imports core, (b) guard updateAgreementStatus (only offered, only its recipient) with a store test attempting the forbidden update, (c) negative near-miss secret-scan tests.",
+  "allowed_files": [
+    "src/mcp/**",
+    "src/store/**",
+    "src/core/**",
+    "test/mcp/**",
+    "test/store/**",
+    "test/core/**",
+    "docs/PROGRESS.md",
+    "docs/harness-notes.md",
+    "package.json",
+    "pnpm-lock.yaml",
+    ".workbench/**"
+  ],
+  "forbidden_files": [
+    "src/cli/**",
+    "src/adapters/**",
+    "src/viewer/**",
+    "src/notify/**"
+  ],
+  "acceptance": [
+    "pnpm check",
+    "pnpm exec vitest run test/mcp/integration.test.ts",
+    "pnpm exec vitest run test/mcp/tool-size.test.ts",
+    "pnpm exec vitest run test/store/agreements.test.ts",
+    "pnpm exec vitest run test/core/guards.test.ts"
+  ],
+  "approvals": [
+    "new-dependency"
+  ],
+  "rollback_plan": "Revert the M2 commits on the local branch (git revert or reset by the human) and remove the added src/mcp and test/mcp files plus the @modelcontextprotocol/sdk dependency entry; no external services, published packages, or production data are affected.",
+  "human_approved_exceptions": []
+}

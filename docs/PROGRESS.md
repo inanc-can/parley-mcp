@@ -1,5 +1,24 @@
 # Progress
 
+## M2 — MCP server (plan, 2026-11-07, session opencode-M2)
+
+**Goal (PLAN.md M2 + M1 review follow-ups):** `serve` with `talk`, `inbox`, `agree` over stdio using the official `@modelcontextprotocol/sdk`. Fold in the three M1 review follow-ups from `state.json`: (a) move the cap→pause and stop-all compositions out of `src/store` into `src/mcp` so the store never imports core logic; (b) guard `updateAgreementStatus` (only `offered` may be answered, only by its recipient) with a store test that attempts the forbidden update; (c) negative near-miss secret-scan tests (short env values, too-short AKIA and xoxb strings must not be blocked).
+
+**Workbench:** `wb mode checkpoints --session opencode-M2`; task `M2` framed (`.workbench/tasks/M2/`). Commands via `wb run -- <cmd>`; commit after each task; never push.
+
+**Plan**
+1. **deps** — Add `@modelcontextprotocol/sdk` (PLAN-allowed runtime dep; recorded as `new-dependency` approval). Keep the lockfile in sync. Proof: `pnpm check`.
+2. **followups** — (a) Move `enforceMessageCap` → `src/mcp/guards.ts` and `checkStopAllActive` → `src/mcp/guards.ts`; `src/store` keeps only I/O and no core imports (verify by grep, and eslint `no-restricted-imports` for `src/store` importing `src/core`). (b) Guard `agreementsRepo.updateAgreementStatus`: guarded `UPDATE ... WHERE id = ? AND status = 'offered'` plus recipient condition (responder ≠ offerer and responder is a thread participant); store test attempts the forbidden update directly and asserts refusal + row unchanged. (c) Near-miss secret-scan tests: short env values, 15-char-remainder AKIA, too-short xoxb tokens return null.
+3. **mcp** (`src/mcp/`, `test/mcp/`) — `server.ts` (stdio `serve`, per-session identity from env, retention on start), `identity.ts` (agent id/registration/heartbeat), `guards.ts` (compositions from (a)), `tools/talk.ts` (send with idempotency, `everyone` fan-out, reply receipts, secrets, cap→pause, stop-all, `outlook`, poll-for-reply `wait_for_reply_s`), `tools/inbox.ts` (deliver→read marking with events, own receipts, decisions, `who`), `tools/agree.ts` (offer/accept/counter/reject + claim/renew/release with conflicts). Each tool returns `structuredContent` + a one-paragraph text summary.
+4. **verify** — Integration tests with the SDK's `InMemoryTransport`: two fake agents exchange messages, receipts move sent→delivered→read→replied correctly, an agreement is offered and accepted; a test measures and prints the token size (chars/4 of the three serialized tool definitions) and fails above 1,500. `pnpm check` and `wb verify` pass; record results; handoff; stop.
+
+**M2 acceptance checks (from PLAN.md)**
+- Integration tests (SDK in-memory transport): two fake agents exchange messages; receipts move correctly; an agreement is offered and accepted.
+- Token size of the three tool definitions is measured and printed; must be under 1,500.
+- M1 review follow-ups (a), (b), (c) have passing tests.
+
+**Constraints:** no `any`, no `as` (only `as const`), files < 400 lines, layers point one way `mcp → core → store`, Zod-parse at boundaries, in-memory SQLite for tests.
+
 ## M1 — Store and core (plan, 2026-11-07, session opencode-M1)
 
 **Goal (PLAN.md M1):** Schema, migrations, repositories with Zod row parsing; identity, message state machine, threads, agreements, claims, overlap, guards (cap, stop-all, secret scan), retention, cost estimate.
