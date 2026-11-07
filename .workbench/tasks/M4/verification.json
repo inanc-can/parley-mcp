@@ -2,8 +2,8 @@
   "schema_version": 1,
   "task_id": "M4",
   "passed": true,
-  "created_at": "2026-11-07T19:09:01+00:00",
-  "head": "2a12bb298c76710de2bc1d589792bfdaec10bb4a",
+  "created_at": "2026-11-07T19:10:46+00:00",
+  "head": "fa9c96ef3400dabd089c1adca5e72051a608a61d",
   "base_rev": "ab9ce3f914ac07e8683d8ec11f67b13cf6d46578",
   "changed_files": [
     "docs/PROGRESS.md",
@@ -44,29 +44,29 @@
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm check` exit=0 in 22640ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:08:30+00:00"
+      "detail": "`pnpm check` exit=0 in 41420ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:09:50+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/cli/setup.test.ts` exit=0 in 2504ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:08:53+00:00"
+      "detail": "`pnpm exec vitest run test/cli/setup.test.ts` exit=0 in 4881ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:10:32+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/adapters/claude-code.test.ts` exit=0 in 3045ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:08:55+00:00"
+      "detail": "`pnpm exec vitest run test/adapters/claude-code.test.ts` exit=0 in 4857ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:10:37+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/cli/hook.test.ts` exit=0 in 2789ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:08:58+00:00"
+      "detail": "`pnpm exec vitest run test/cli/hook.test.ts` exit=0 in 4609ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:10:42+00:00"
     },
     {
       "code": "scope_forbidden",

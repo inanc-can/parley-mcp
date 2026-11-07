@@ -1,0 +1,45 @@
+{
+ "task_id": "M4",
+ "round": 1,
+ "verdict": "pass",
+ "total": 7,
+ "dimensions": {
+  "problem_fit": 1,
+  "scope_discipline": 2,
+  "assumptions": 1,
+  "verification_quality": 1,
+  "handoff_readiness": 2
+ },
+ "weakest_check": {
+  "command": "pnpm exec vitest run test/adapters/claude-code.test.ts",
+  "mutation": "compute canWakeIdle from mcpWired alone, ignoring monitor files",
+  "expected": "should fail; doctor test only compares empty vs fully installed HOME"
+ },
+ "findings": [
+  {
+   "severity": "high",
+   "detail": "Identity split: MCP server entry has no env, so MCP tools act as mcp@<folder> while hooks/monitor use claude@<folder>. Add env PARLEY_HARNESS=claude (or PARLEY_AGENT_ID) to the MCP entry and test it.",
+   "citation": "src/adapters/claude-code/plugin-files.ts:19-22"
+  },
+  {
+   "severity": "medium",
+   "detail": "Plugin loading unverified: a folder in ~/.claude/plugins/<name> is not loaded (confirmed from official docs, see plugin-loading.md); doctor reports can-wake-idle from file existence only.",
+   "citation": "src/adapters/claude-code/install.ts:92-104"
+  },
+  {
+   "severity": "medium",
+   "detail": "PostToolUse registered twice (with Edit matcher and without); edits processed twice.",
+   "citation": "src/adapters/claude-code/plugin-files.ts:70-78"
+  },
+  {
+   "severity": "medium",
+   "detail": "session-end requeues delivered messages across all sessions of the agent (exceptSession=null), not just the ending session; untested.",
+   "citation": "src/cli/commands/hook-events.ts:112"
+  },
+  {
+   "severity": "low",
+   "detail": "monitor.sh exits for good if the agent isn't registered yet (race with SessionStart); SessionStart/UserPromptSubmit print status lines into model context; fake adapter still in production ADAPTERS list (real setup writes ~/.parley-fake/). Also unrecorded: Stop hook uses last_assistant_message as read evidence (beyond PLAN 4.3).",
+   "citation": "src/adapters/claude-code/plugin-files.ts:104-105"
+  }
+ ]
+}
