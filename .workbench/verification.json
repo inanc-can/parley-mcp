@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "task_id": "",
+  "passed": true,
+  "created_at": "2026-11-07T14:15:42+00:00",
+  "head": "eeedf4a75ae7975978776ffcabdfb9d786881782",
+  "base_rev": "",
+  "changed_files": [],
+  "checks": [
+    {
+      "code": "acceptance_pass",
+      "status": "pass",
+      "severity": "block",
+      "detail": "`pnpm check` exit=0 in 11428ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T14:15:31+00:00"
+    },
+    {
+      "code": "scope_forbidden",
+      "status": "pass",
+      "severity": "block",
+      "detail": "ok",
+      "artifact": ""
+    }
+  ],
+  "artifacts": [
+    ".workbench/config.json",
+    ".workbench/feedback.jsonl"
+  ]
+}
