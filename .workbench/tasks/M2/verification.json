@@ -1,11 +1,12 @@
 {
   "schema_version": 1,
   "task_id": "M2",
-  "passed": false,
-  "created_at": "2026-11-07T15:03:08+00:00",
-  "head": "8b58d4c8679ab034021ea6a32d4cfcf876a1a54d",
+  "passed": true,
+  "created_at": "2026-11-07T15:20:10+00:00",
+  "head": "41353b0472621c47c81e7387be4b91fb69b6529e",
   "base_rev": "1b6ff206909017a64f7550ba9bc029b285d0894a",
   "changed_files": [
+    "docs/PROGRESS.md",
     "package.json",
     "pnpm-lock.yaml",
     "src/core/identity.ts",
@@ -31,6 +32,8 @@
     "test/core/guards.test.ts",
     "test/core/identity.test.ts",
     "test/mcp/guards.test.ts",
+    "test/mcp/integration.test.ts",
+    "test/mcp/tool-size.test.ts",
     "test/store/agreements.test.ts",
     "test/store/layering.test.ts",
     "test/store/stop-all.test.ts"
@@ -45,38 +48,38 @@
     },
     {
       "code": "acceptance_pass",
-      "status": "fail",
+      "status": "pass",
       "severity": "block",
-      "detail": "`pnpm check` exit=1 in 7116ms: $ pnpm run lint && pnpm run typecheck && pnpm run test | $ eslint .",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T15:02:53+00:00"
-    },
-    {
-      "code": "acceptance_pass",
-      "status": "fail",
-      "severity": "block",
-      "detail": "`pnpm exec vitest run test/mcp/integration.test.ts` exit=1 in 1765ms: No test files found, exiting with code 1 |  | filter: test/mcp/integration.test.ts | include: test/**/*.test.ts | exclude:  **/node_modules/**, **/dist/**, **/cypress/**, **/.{idea,git,cache,output,temp}/**, **/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T15:03:00+00:00"
-    },
-    {
-      "code": "acceptance_pass",
-      "status": "fail",
-      "severity": "block",
-      "detail": "`pnpm exec vitest run test/mcp/tool-size.test.ts` exit=1 in 1122ms: No test files found, exiting with code 1 |  | filter: test/mcp/tool-size.test.ts | include: test/**/*.test.ts | exclude:  **/node_modules/**, **/dist/**, **/cypress/**, **/.{idea,git,cache,output,temp}/**, **/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T15:03:02+00:00"
+      "detail": "`pnpm check` exit=0 in 14271ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T15:19:45+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/store/agreements.test.ts` exit=0 in 2374ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T15:03:03+00:00"
+      "detail": "`pnpm exec vitest run test/mcp/integration.test.ts` exit=0 in 2766ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T15:19:59+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/core/guards.test.ts` exit=0 in 2106ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T15:03:06+00:00"
+      "detail": "`pnpm exec vitest run test/mcp/tool-size.test.ts` exit=0 in 2786ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T15:20:02+00:00"
+    },
+    {
+      "code": "acceptance_pass",
+      "status": "pass",
+      "severity": "block",
+      "detail": "`pnpm exec vitest run test/store/agreements.test.ts` exit=0 in 2534ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T15:20:05+00:00"
+    },
+    {
+      "code": "acceptance_pass",
+      "status": "pass",
+      "severity": "block",
+      "detail": "`pnpm exec vitest run test/core/guards.test.ts` exit=0 in 2323ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T15:20:07+00:00"
     },
     {
       "code": "scope_forbidden",

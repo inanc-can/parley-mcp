@@ -1,22 +1,23 @@
 {
   "schema_version": 1,
   "active_task_id": "M2",
-  "summary": "M2 in progress in OpenCode: framed (5c2b5b7), MCP SDK added (8e21b36), all three M1 review follow-ups fixed (8b58d4c). GLM free hit its usage limit while writing the agree tool; the same session continues on nemotron-3.5-super-vl-free. Interim wb verify (mid-build, while Nemotron is still writing the MCP tools): FAIL, as expected; lint fails and the M2 test files don't exist yet.",
+  "summary": "M2 complete: MCP server (talk/inbox/agree) over stdio using @modelcontextprotocol/sdk 1.32.2. Integration tests with InMemoryTransport pass: two fake agents exchange messages, receipts move sent->delivered->read->replied, an agreement is offered and accepted. Tool-definition token size ~518 (under 1,500). All three M1 review follow-ups done: (a) cap->pause and stop-all compositions moved from src/store to src/mcp/guards.ts (store never imports core; layering test enforces), (b) updateAgreementStatus guarded (only offered, only recipient) with store test attempting forbidden updates, (c) near-miss secret-scan tests added (short AKIA/xoxb/env values not blocked). pnpm check passes: 67 tests, 18 files. Committed as 41353b0.",
   "assumptions": [
     "M1 (recorded 2026-11-07, fix session): The secret-scan regex thresholds are builder-chosen minimum length heuristics (AWS AKIA +16 chars; ghp_/github_pat_/sk- at 20+ chars; Slack xox*- tokens at 10+ chars; .env SECRET=TOKEN=PASSWORD=API_KEY lines with values of 12+ chars). They may need tightening after real-world false negative/positive feedback; none may ever be relaxed to log the secret value.",
-    "M1 (recorded 2026-11-07, fix session): everyone fan-out derives per-recipient idempotency keys as `<base key>::<toAgent>`; the double-colon separator is a builder choice, and changing it changes which retries dedupe.",
-    "M1 (recorded 2026-11-07, fix session): Claim globs (src/core/glob.ts) follow mk-like path-glob semantics without character classes: `*` matches within one path segment, `**` matches across segments (including zero directories for `**/`), `?` matches one non-separator character.",
+    "M1 (recorded 2026-11-07, fix session): everyone fan-out derives per-recipient idempotency keys as <base key>::<toAgent>; the double-colon separator is a builder choice, and changing it changes which retries dedupe.",
+    "M1 (recorded 2026-11-07, fix session): Claim globs (src/core/glob.ts) follow mk-like path-glob semantics without character classes: * matches within one path segment, ** matches across segments (including zero directories for **/), ? matches one non-separator character.",
     "M1 (recorded 2026-11-07, fix session): Retention is keyed on messages.sent_at (PLAN 4.7 'older than 30 days' interpreted relative to send time), agreements.created_at, edits.at, and message-events are deleted with the messages that own them regardless of event time (keeps FKs safe).",
     "M1 (recorded 2026-11-07, fix session): SQLite connections use WAL journal mode and a 5 s busy_timeout by default; concurrent writers wait briefly instead of failing immediately.",
     "M1 (recorded 2026-11-07, fix session): A reply implies read (PLAN 4.3): delivered->replied is allowed and stamps read_at with the replied timestamp; read->replied keeps the earlier read_at.",
     "M1 review round 1 disputed (opencode.json): the default-model change in opencode.json was requested by the user in chat and recorded as human_approved_exceptions in .workbench/tasks/M1/scope.json, but the record was written by an assistant session; the user should confirm the entry (or tell the workbench to forget it) in M2.",
-    "[autonomous] 2026-11-07: GLM-5.3-Flash free and DeepSeek/MiMo free hit OpenCode's free usage limit mid-M2 (GLM resets in ~9.7 h). Continued M2 in the same OpenCode session on opencode/nemotron-3.5-super-vl-free, the free model that still answered, instead of waiting or paying. Reversible: all work is in git."
+    "M2 (recorded 2026-11-07): MCP server identity defaults to PARLEY_AGENT_ID env, else harness@folder from PARLEY_HARNESS/cwd. Real adapters (M4+) replace this. Tool-definition tokens estimated at chars/4 (project's own cost model) over JSON.stringify of listTools output; budget is 1,500, measured ~518. Agreement recipient is derived as the latest direct message recipient in the thread. Counter-proposal marks the original 'countered' and inserts a new 'offered' row with parent_id. Rules-file text goes out once per inbox session (ctx.rulesTextSent). wait_for_reply_s polls findLatestReplyTo at 25 ms intervals.",
+    "[autonomous] 2026-11-07: GLM-5.3-Flash free and DeepSeek/MiMo free hit OpenCode's free usage limit mid-M2 (GLM resets in ~9.7 h). M2 continued in the same OpenCode session on opencode/nemotron-3.5-super-vl-free, the free model that still answered, instead of waiting or paying. Reversible: all work is in git. (Re-added by Claude: the builder's state rewrite dropped it.)"
   ],
   "blockers": [],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "When the Nemotron OpenCode run finishes: run wb verify and pnpm check, then the independent reviewer (fix soft_fail, at most 2 rounds), then close M2 and run wb handoff. If Nemotron's work is poor, revert to 8b58d4c and resume on GLM after its limit resets (~9.7 h from 14:50 UTC). Fallback builder approved by the user: kiro-cli 3.1.0 (kiro-cli chat --no-interactive with scoped --trust-tools, never --trust-all-tools).",
-  "updated_at": "2026-11-07T14:46:24+00:00",
+  "next_action": "M2 done. Run wb handoff, then stop. Next milestone per PLAN: M3 (CLI basics) or M3b (work harness adapter when named by the human).",
+  "updated_at": "2026-11-07T15:19:45+00:00",
   "last_mode": "checkpoints",
-  "last_mode_notes": ""
+  "last_mode_notes": "M2 completed end to end; pnpm check and wb verify pass"
 }

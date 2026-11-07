@@ -1,303 +1,16 @@
 {
   "schema_version": 1,
-  "created_at": "2026-11-07T14:15:42+00:00",
+  "created_at": "2026-11-07T15:18:23+00:00",
   "task_id": "",
-  "head": "eeedf4a75ae7975978776ffcabdfb9d786881782",
+  "head": "41353b0472621c47c81e7387be4b91fb69b6529e",
   "mode": "checkpoints",
-  "mode_notes": "checkpoints mode recorded for session opencode-M1-fix (wb mode checkpoints); stop at end of milestone reached: wb verify PASS, handoff done.",
+  "mode_notes": "M2 completed end to end; pnpm check and wb verify pass",
   "autonomous_decisions": [],
-  "summary": "M1 (store and core) closed: wb verify passes (55 tests); independent review round 2 passed 8/10 after round-1 fixes. The user confirmed the opencode.json scope exception in chat on 2026-11-07.",
-  "changed_files": [],
+  "summary": "M2 complete: MCP server (talk/inbox/agree) over stdio using @modelcontextprotocol/sdk 1.32.2. Integration tests with InMemoryTransport pass: two fake agents exchange messages, receipts move sent->delivered->read->replied, an agreement is offered and accepted. Tool-definition token size ~518 (under 1,500). All three M1 review follow-ups done: (a) cap->pause and stop-all compositions moved from src/store to src/mcp/guards.ts (store never imports core; layering test enforces), (b) updateAgreementStatus guarded (only offered, only recipient) with store test attempting forbidden updates, (c) near-miss secret-scan tests added (short AKIA/xoxb/env values not blocked). pnpm check passes: 67 tests, 18 files. Committed as 41353b0.",
+  "changed_files": [
+    "docs/PROGRESS.md"
+  ],
   "commands_run": [
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/store/retention.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 3195
-    },
-    {
-      "argv": [
-        "pnpm",
-        "check"
-      ],
-      "exit_code": 0,
-      "duration_ms": 14022
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/store/messages.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 3439
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/core/fanout-and-cap.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 3171
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/core/guards.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2914
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/core/claims.test.ts",
-        "test/store/claims.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 3685
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/core/overlap.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 3337
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/store/retention.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 3452
-    },
-    {
-      "argv": [
-        "pnpm",
-        "check"
-      ],
-      "exit_code": 0,
-      "duration_ms": 17467
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/store/messages.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 3393
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/core/fanout-and-cap.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 3417
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/core/guards.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2926
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/core/claims.test.ts",
-        "test/store/claims.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 3134
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/core/overlap.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2895
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/store/retention.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 3630
-    },
-    {
-      "argv": [
-        "pnpm",
-        "check"
-      ],
-      "exit_code": 0,
-      "duration_ms": 12229
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/store/messages.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 3359
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/core/fanout-and-cap.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 3597
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/core/guards.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2854
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/core/claims.test.ts",
-        "test/store/claims.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 3167
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/core/overlap.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2951
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/store/retention.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 3371
-    },
-    {
-      "argv": [
-        "pnpm",
-        "check"
-      ],
-      "exit_code": 0,
-      "duration_ms": 10342
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/store/messages.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2076
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/core/fanout-and-cap.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2069
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/core/guards.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 1801
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/core/claims.test.ts",
-        "test/store/claims.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2025
-    },
     {
       "argv": [
         "pnpm",
@@ -327,11 +40,261 @@
       ],
       "exit_code": 0,
       "duration_ms": 11428
+    },
+    {
+      "argv": [
+        "pnpm",
+        "add",
+        "@modelcontextprotocol/sdk"
+      ],
+      "exit_code": 0,
+      "duration_ms": 3600
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 0,
+      "duration_ms": 13821
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "printf \"import { x } from \\\"../../core/threads.js\\\";\\n\" >> src/store/parse.ts && pnpm exec vitest run test/store/layering.test.ts; echo mutation-exit=$?; git checkout -- src/store/parse.ts; pnpm exec vitest run test/store/layering.test.ts; echo restored-exit=$?"
+      ],
+      "exit_code": 0,
+      "duration_ms": 5181
+    },
+    {
+      "argv": [
+        "sh",
+        "-c",
+        "printf \"import { x } from \\\"../../core/threads.js\\\";\\n\" >> src/store/parse.ts && pnpm exec vitest run test/store/layering.test.ts; echo mutation-exit=$?; git checkout -- src/store/parse.ts; pnpm exec vitest run test/store/layering.test.ts; echo restored-exit=$?"
+      ],
+      "exit_code": 0,
+      "duration_ms": 7084
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 0,
+      "duration_ms": 14202
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 1,
+      "duration_ms": 7116
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/mcp/integration.test.ts"
+      ],
+      "exit_code": 1,
+      "duration_ms": 1765
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/mcp/tool-size.test.ts"
+      ],
+      "exit_code": 1,
+      "duration_ms": 1122
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/store/agreements.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2374
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/core/guards.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2106
+    },
+    {
+      "argv": [
+        "pnpm",
+        "run",
+        "typecheck"
+      ],
+      "exit_code": 2,
+      "duration_ms": 2562
+    },
+    {
+      "argv": [
+        "pnpm",
+        "run",
+        "typecheck"
+      ],
+      "exit_code": 2,
+      "duration_ms": 2062
+    },
+    {
+      "argv": [
+        "pnpm",
+        "run",
+        "typecheck"
+      ],
+      "exit_code": 2,
+      "duration_ms": 2450
+    },
+    {
+      "argv": [
+        "pnpm",
+        "run",
+        "typecheck"
+      ],
+      "exit_code": 0,
+      "duration_ms": 1915
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 1,
+      "duration_ms": 6304
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 0,
+      "duration_ms": 9992
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 1,
+      "duration_ms": 6773
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 1,
+      "duration_ms": 6281
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 1,
+      "duration_ms": 6594
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 1,
+      "duration_ms": 8133
+    },
+    {
+      "argv": [
+        "pnpm",
+        "run",
+        "typecheck"
+      ],
+      "exit_code": 2,
+      "duration_ms": 2563
+    },
+    {
+      "argv": [
+        "pnpm",
+        "run",
+        "typecheck"
+      ],
+      "exit_code": 2,
+      "duration_ms": 2837
+    },
+    {
+      "argv": [
+        "pnpm",
+        "run",
+        "typecheck"
+      ],
+      "exit_code": 0,
+      "duration_ms": 3083
+    },
+    {
+      "argv": [
+        "pnpm",
+        "run",
+        "lint"
+      ],
+      "exit_code": 0,
+      "duration_ms": 6822
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 1,
+      "duration_ms": 13516
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 0,
+      "duration_ms": 13488
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 0,
+      "duration_ms": 12573
     }
   ],
-  "failed_attempts": [],
+  "failed_attempts": [
+    "pnpm run typecheck (exit 2)",
+    "pnpm run typecheck (exit 2)",
+    "pnpm check (exit 1)",
+    "pnpm check (exit 1)",
+    "pnpm check (exit 1)",
+    "pnpm check (exit 1)",
+    "pnpm check (exit 1)",
+    "pnpm run typecheck (exit 2)",
+    "pnpm run typecheck (exit 2)",
+    "pnpm check (exit 1)"
+  ],
   "open_risks": [],
-  "next_action": "Start M2 (MCP server: talk/inbox/agree over stdio) on glm-5.3-flash-free. Fold in M1 review follow-ups while framing M2: move enforceMessageCap/checkStopAll composition out of store into core or the mcp caller (fix the store->core import inversion); guard updateAgreementStatus (status='offered' + recipient) with a real store test; add negative near-miss secret-scan tests.",
+  "next_action": "M2 done. Run wb handoff, then stop. Next milestone per PLAN: M3 (CLI basics) or M3b (work harness adapter when named by the human).",
   "verdict_pointer": {
     "verification": ".workbench/verification.json",
     "verification_passed": true,

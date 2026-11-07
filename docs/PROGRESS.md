@@ -1,23 +1,41 @@
 # Progress
 
-## M2 — MCP server (plan, 2026-11-07, session opencode-M2)
+## M2 — Results (completed 2026-11-07)
 
-**Goal (PLAN.md M2 + M1 review follow-ups):** `serve` with `talk`, `inbox`, `agree` over stdio using the official `@modelcontextprotocol/sdk`. Fold in the three M1 review follow-ups from `state.json`: (a) move the cap→pause and stop-all compositions out of `src/store` into `src/mcp` so the store never imports core logic; (b) guard `updateAgreementStatus` (only `offered` may be answered, only by its recipient) with a store test that attempts the forbidden update; (c) negative near-miss secret-scan tests (short env values, too-short AKIA and xoxb strings must not be blocked).
+**Built**
+- `src/mcp/server.ts` — `createServer(ctx)` wires talk/inbox/agree to an `McpServer`; `serve()` opens the hub db (~/.parley-mcp/hub.db), runs retention, registers the agent, connects `StdioServerTransport`. Only file importing the SDK.
+- `src/mcp/identity.ts` — `resolveAgentId` (PARLEY_AGENT_ID / PARLEY_HARNESS / cwd fallback), `registerCaller` (upsert), `heartbeatCaller`.
+- `src/mcp/guards.ts` — `enforceMessageCap` and `checkStopAllActive` compositions moved here from `src/store` (follow-up a).
+- `src/mcp/context.ts` — `ToolContext` (db, agentId, repoRoot, nativeSession, rulesTextSent).
+- `src/mcp/response.ts` — `ToolOutcome`, `success`, `refused`, `toToolResult` (structuredContent + text summary per PLAN §5).
+- `src/mcp/rules.ts` — `readRulesFile` / `rulesReminder` for `.parley/rules.md`.
+- `src/mcp/outlook.ts` — `buildOutlook` / `pluralOutlook` from recipient heartbeat presence.
+- `src/mcp/tools/talk.ts` — stop-all, secret scan, self-message, thread resolve/create, postable check, idempotent send + everyone fan-out, sent events, reply marking, cap enforcement, wait_for_reply_s polling, structured result + summary.
+- `src/mcp/tools/inbox.ts` — deliver+read marking with events, sent receipts, accepted decisions, who (alive/idle), rules reminder + once-per-session text.
+- `src/mcp/tools/agree.ts` — offer/accept/counter/reject via guarded store update; claim/renew/release with overlap conflict warnings.
+- `src/core/identity.ts` — added `isAlive` (30 s heartbeat window).
+- `src/core/message-rules.ts` — added `MESSAGE_TTL_MS` (24 h).
+- `src/core/threads.ts` — added `titleFromFirstMessage`, `MAX_TITLE_LENGTH`.
+- `src/core/overlap.ts` — added `claimsOverlap`.
+- `src/store/schema.ts` — extracted `MESSAGE_KINDS` + `messageKindSchema`.
+- `src/store/repos/messages-repo.ts` — added `listMessagesFromAgent`, `findLatestReplyTo`.
+- `src/store/repos/agreements-repo.ts` — `updateAgreementStatus` guarded (only `offered`, only recipient thread participant), returns boolean (follow-up b).
+- Tests: `test/mcp/integration.test.ts` (SDK InMemoryTransport, two agents, message round-trip + receipt moves + offer/accept), `test/mcp/tool-size.test.ts` (~518 tokens, under 1,500), `test/mcp/guards.test.ts` (moved compositions), `test/store/layering.test.ts` (store never imports core, mutation-verified), `test/store/agreements.test.ts` (forbidden update attempts), `test/core/guards.test.ts` (near-miss AKIA/xoxb/env values) (follow-up c), `test/core/identity.test.ts` (isAlive), `test/core/fanout-and-cap.test.ts` (titleFromFirstMessage).
 
-**Workbench:** `wb mode checkpoints --session opencode-M2`; task `M2` framed (`.workbench/tasks/M2/`). Commands via `wb run -- <cmd>`; commit after each task; never push.
+**Commands/results (via `wb run -- ...`)**
+- `pnpm add @modelcontextprotocol/sdk` → v1.32.2 (PLAN-allowed runtime dep, `new-dependency` approval in scope.json).
+- `pnpm check` (eslint + tsc --noEmit + vitest): **passed** — 18 test files, 67 tests passed.
+- `wb verify`: **PASS** (all acceptance commands exit 0).
 
-**Plan**
-1. **deps** — Add `@modelcontextprotocol/sdk` (PLAN-allowed runtime dep; recorded as `new-dependency` approval). Keep the lockfile in sync. Proof: `pnpm check`.
-2. **followups** — (a) Move `enforceMessageCap` → `src/mcp/guards.ts` and `checkStopAllActive` → `src/mcp/guards.ts`; `src/store` keeps only I/O and no core imports (verify by grep, and eslint `no-restricted-imports` for `src/store` importing `src/core`). (b) Guard `agreementsRepo.updateAgreementStatus`: guarded `UPDATE ... WHERE id = ? AND status = 'offered'` plus recipient condition (responder ≠ offerer and responder is a thread participant); store test attempts the forbidden update directly and asserts refusal + row unchanged. (c) Near-miss secret-scan tests: short env values, 15-char-remainder AKIA, too-short xoxb tokens return null.
-3. **mcp** (`src/mcp/`, `test/mcp/`) — `server.ts` (stdio `serve`, per-session identity from env, retention on start), `identity.ts` (agent id/registration/heartbeat), `guards.ts` (compositions from (a)), `tools/talk.ts` (send with idempotency, `everyone` fan-out, reply receipts, secrets, cap→pause, stop-all, `outlook`, poll-for-reply `wait_for_reply_s`), `tools/inbox.ts` (deliver→read marking with events, own receipts, decisions, `who`), `tools/agree.ts` (offer/accept/counter/reject + claim/renew/release with conflicts). Each tool returns `structuredContent` + a one-paragraph text summary.
-4. **verify** — Integration tests with the SDK's `InMemoryTransport`: two fake agents exchange messages, receipts move sent→delivered→read→replied correctly, an agreement is offered and accepted; a test measures and prints the token size (chars/4 of the three serialized tool definitions) and fails above 1,500. `pnpm check` and `wb verify` pass; record results; handoff; stop.
+**Commits (local, not pushed)**
+- `docs: frame M2 MCP server workbench task`
+- `chore: add @modelcontextprotocol/sdk runtime dependency`
+- `fix: guard agreement answers, move guard compositions to the mcp layer, and add near-miss secret tests`
+- `feat: add MCP server with talk/inbox/agree over stdio`
 
-**M2 acceptance checks (from PLAN.md)**
-- Integration tests (SDK in-memory transport): two fake agents exchange messages; receipts move correctly; an agreement is offered and accepted.
-- Token size of the three tool definitions is measured and printed; must be under 1,500.
-- M1 review follow-ups (a), (b), (c) have passing tests.
+**Next (per PLAN)**
+- M3: CLI basics (who, log, export, inbox drain/watch/register, hook edit, setup/uninstall/doctor frameworks). Or M3b (work harness adapter) when the human names it.
 
-**Constraints:** no `any`, no `as` (only `as const`), files < 400 lines, layers point one way `mcp → core → store`, Zod-parse at boundaries, in-memory SQLite for tests.
 
 ## M1 — Store and core (plan, 2026-11-07, session opencode-M1)
 
