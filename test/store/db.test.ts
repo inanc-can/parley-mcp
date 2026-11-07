@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { z } from "zod";
 import { migrations, openDb, openMemoryDb } from "../../src/store/index.js";
+
+const tableRow = z.object({ name: z.string() });
+const countResult = z.object({ c: z.number() });
 
 describe("store db", () => {
   it("opens an in-memory db and applies numbered migrations", () => {
@@ -11,11 +15,15 @@ describe("store db", () => {
       .prepare("SELECT id, name FROM _migrations ORDER BY id")
       .all();
     expect(rows).toEqual(migrations.map((m) => ({ id: m.id, name: m.name })));
-    const tables = db
-      .prepare(
-        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
-      )
-      .all() as Array<{ name: string }>;
+    const tables = z
+      .array(tableRow)
+      .parse(
+        db
+          .prepare(
+            "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
+          )
+          .all(),
+      );
     const names = tables.map((t) => t.name);
     expect(names).toContain("messages");
     expect(names).toContain("message_events");
@@ -32,9 +40,9 @@ describe("store db", () => {
     const db1 = openDb({ path });
     db1.close();
     const db2 = openDb({ path });
-    const count = db2
-      .prepare("SELECT COUNT(*) AS c FROM _migrations")
-      .get() as { c: number };
+    const count = countResult.parse(
+      db2.prepare("SELECT COUNT(*) AS c FROM _migrations").get(),
+    );
     expect(count.c).toBe(migrations.length);
     db2.close();
   });

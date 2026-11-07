@@ -1,23 +1,23 @@
 import type { z } from "zod";
 
-export function parseRow<T extends z.ZodTypeAny>(
-  schema: T,
+export function parseRow<S extends z.ZodType>(
+  schema: S,
   row: unknown,
-): z.infer<T> {
+): z.output<S> {
   return schema.parse(row);
 }
 
-export function parseRows<T extends z.ZodTypeAny>(
-  schema: T,
+export function parseRows<S extends z.ZodType>(
+  schema: S,
   rows: unknown[],
-): z.infer<T>[] {
+): z.output<S>[] {
   return rows.map((row) => schema.parse(row));
 }
 
-export function parseOptionalRow<T extends z.ZodTypeAny>(
-  schema: T,
+export function parseOptionalRow<S extends z.ZodType>(
+  schema: S,
   row: unknown,
-): z.infer<T> | undefined {
+): z.output<S> | undefined {
   if (row === undefined) {
     return undefined;
   }

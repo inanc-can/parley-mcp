@@ -12,3 +12,5 @@ export * as messageEventsRepo from "./repos/message-events-repo.js";
 export * as agreementsRepo from "./repos/agreements-repo.js";
 export * as claimsRepo from "./repos/claims-repo.js";
 export * as editsRepo from "./repos/edits-repo.js";
+export { applyRetention } from "./retention.js";
+export type { RetentionResult } from "./retention.js";

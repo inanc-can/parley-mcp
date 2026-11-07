@@ -23,19 +23,46 @@ export interface InsertMessageInput {
   estTokens: number;
 }
 
+const INSERT_MESSAGE_SQL = `INSERT INTO messages(
+  id, thread_id, from_agent, to_agent, kind, body, payload_json, reply_to,
+  status, error_code, sent_at, delivered_at, read_at, replied_at, failed_at,
+  expires_at, delivered_session, idempotency_key, est_tokens
+) VALUES (
+  @id, @threadId, @fromAgent, @toAgent, @kind, @body, @payloadJson, @replyTo,
+  @status, NULL, @sentAt, NULL, NULL, NULL, NULL,
+  @expiresAt, NULL, @idempotencyKey, @estTokens
+)`;
+
 export function insertMessage(db: Db, input: InsertMessageInput): MessageRow {
-  db.prepare(
-    `INSERT INTO messages(
-      id, thread_id, from_agent, to_agent, kind, body, payload_json, reply_to,
-      status, error_code, sent_at, delivered_at, read_at, replied_at, failed_at,
-      expires_at, delivered_session, idempotency_key, est_tokens
-    ) VALUES (
-      @id, @threadId, @fromAgent, @toAgent, @kind, @body, @payloadJson, @replyTo,
-      @status, NULL, @sentAt, NULL, NULL, NULL, NULL,
-      @expiresAt, NULL, @idempotencyKey, @estTokens
-    )`,
-  ).run(input);
+  db.prepare(INSERT_MESSAGE_SQL).run(input);
   return getMessage(db, input.id);
+}
+
+export function insertMessageIdempotent(
+  db: Db,
+  input: InsertMessageInput,
+): { message: MessageRow; created: boolean } {
+  const run = db.transaction(() => {
+    const existing = findByIdempotency(db, input.fromAgent, input.idempotencyKey);
+    if (existing) {
+      return { message: existing, created: false };
+    }
+    const info = db
+      .prepare(
+        `${INSERT_MESSAGE_SQL}
+         ON CONFLICT(from_agent, idempotency_key) DO NOTHING`,
+      )
+      .run(input);
+    if (info.changes === 0) {
+      const raced = findByIdempotency(db, input.fromAgent, input.idempotencyKey);
+      if (!raced) {
+        throw new Error("idempotent insert conflict but row missing");
+      }
+      return { message: raced, created: false };
+    }
+    return { message: getMessage(db, input.id), created: true };
+  });
+  return run();
 }
 
 export function findByIdempotency(
@@ -65,10 +92,17 @@ export function findMessage(db: Db, id: string): MessageRow | undefined {
   return parseOptionalRow(messageRowSchema, row);
 }
 
+const ALLOWED_FROM: Record<MessageStatus, readonly MessageStatus[]> = {
+  sent: [],
+  delivered: ["sent"],
+  read: ["delivered"],
+  replied: ["read"],
+  failed: ["sent"],
+};
+
 export interface GuardedStatusUpdate {
   status: MessageStatus;
   at: number;
-  fromStatuses: readonly MessageStatus[];
   errorCode?: string | null;
   deliveredSession?: string | null;
 }
@@ -78,9 +112,13 @@ export function guardedStatusUpdate(
   id: string,
   update: GuardedStatusUpdate,
 ): boolean {
-  const placeholders = update.fromStatuses.map(() => "?").join(", ");
+  const fromStatuses = ALLOWED_FROM[update.status];
+  if (fromStatuses.length === 0) {
+    return false;
+  }
+  const placeholders = fromStatuses.map(() => "?").join(", ");
   const sets = ["status = ?"];
-  const args: Array<string | number | null> = [update.status];
+  const args: (string | number | null)[] = [update.status];
   if (update.status === "delivered") {
     sets.push("delivered_at = ?");
     args.push(update.at);
@@ -99,7 +137,7 @@ export function guardedStatusUpdate(
     args.push(update.errorCode ?? null);
   }
   args.push(id);
-  for (const from of update.fromStatuses) {
+  for (const from of fromStatuses) {
     args.push(from);
   }
   const info = db
