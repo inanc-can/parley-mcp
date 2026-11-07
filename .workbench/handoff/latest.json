@@ -1,63 +1,95 @@
 {
   "schema_version": 1,
-  "created_at": "2026-11-07T18:50:25+00:00",
-  "task_id": "",
-  "head": "e7dfaba7d0a4089834a2382e09c4e650706b4e7f",
+  "created_at": "2026-11-07T19:09:09+00:00",
+  "task_id": "M4",
+  "head": "dda5a2278a4a06f8de078ff2f0aa2e7a5289ad94",
   "mode": "checkpoints",
-  "mode_notes": "M3 CLI basics + four M2 review follow-ups; pnpm check and wb verify PASS; 107 tests.",
+  "mode_notes": "",
   "autonomous_decisions": [
     "[autonomous] 2026-11-07: GLM-5.3-Flash free and DeepSeek/MiMo free hit OpenCode's free usage limit mid-M2 (GLM resets in ~9.7 h). M2 continued in the same OpenCode session on opencode/nemotron-3.5-super-vl-free, the free model that still answered, instead of waiting or paying. Reversible: all work is in git. (Re-added by Claude: the builder's state rewrite dropped it.)"
   ],
-  "summary": "M3 (CLI basics) closed: wb verify passes (107 tests); independent review passed 8/10 on the first completed round. Built by kiro-cli (scoped parley-builder agent).",
-  "changed_files": [],
+  "summary": "M4 (Claude Code adapter) build complete: pnpm check passes (30 files, 139 tests) and wb verify PASS. Step 1 fixed the M3 review must-fix (fake adapter's recursive uninstall -> shared safe removeFileIfPresent/removeDirIfEmpty; a non-empty dir survives) and the other M3 follow-ups (unknown --format errors, buildProgram dry-run test, DoctorReport.hooksTrusted, documented Adapter deviation). Built src/adapters/claude-code: ~/.claude.json mcpServers.parley registration + a plugin (plugin.json, hooks.json, monitors.json, scripts) with hook handlers for SessionStart/UserPromptSubmit/Stop/PostToolUse/SessionEnd that ignore subagent payloads and take UserPromptSubmit read-evidence. The (H) live two-session test remains for the human (steps in docs/PROGRESS.md); fixtures are synthetic until then.",
+  "changed_files": [
+    "docs/PROGRESS.md",
+    "src/adapters/claude-code/fixtures/post-tool-edit.json",
+    "src/adapters/claude-code/fixtures/session-end.json",
+    "src/adapters/claude-code/fixtures/session-start.json",
+    "src/adapters/claude-code/fixtures/stop.json",
+    "src/adapters/claude-code/fixtures/subagent-post-tool.json",
+    "src/adapters/claude-code/fixtures/user-prompt.json",
+    "src/adapters/claude-code/index.ts",
+    "src/adapters/claude-code/install.ts",
+    "src/adapters/claude-code/plugin-files.ts",
+    "src/adapters/fake/index.ts",
+    "src/adapters/fs-ops.ts",
+    "src/adapters/index.ts",
+    "src/adapters/types.ts",
+    "src/cli/commands/doctor.ts",
+    "src/cli/commands/hook-events.ts",
+    "src/cli/commands/hook-payloads.ts",
+    "src/cli/index.ts",
+    "src/store/repos/messages-repo.ts",
+    "test/adapters/claude-code-fixtures.test.ts",
+    "test/adapters/claude-code.test.ts",
+    "test/adapters/fs-ops.test.ts",
+    "test/cli/hook.test.ts",
+    "test/cli/program.test.ts",
+    "test/cli/setup.test.ts"
+  ],
   "commands_run": [
     {
       "argv": [
         "pnpm",
         "exec",
+        "tsc",
+        "--noEmit"
+      ],
+      "exit_code": 0,
+      "duration_ms": 4103
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "tsc",
+        "--noEmit"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2234
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
         "vitest",
         "run",
-        "test/mcp/serve.test.ts",
-        "test/store/agreements.test.ts",
-        "test/store/db.test.ts"
+        "test/cli/setup.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 3150
+      "duration_ms": 2266
     },
     {
       "argv": [
         "pnpm",
-        "check"
-      ],
-      "exit_code": 0,
-      "duration_ms": 13148
-    },
-    {
-      "argv": [
-        "pnpm",
-        "add",
-        "commander"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2312
-    },
-    {
-      "argv": [
-        "pnpm",
+        "exec",
+        "vitest",
         "run",
-        "lint"
+        "test/adapters/fs-ops.test.ts",
+        "test/adapters/claude-code.test.ts",
+        "test/cli/hook.test.ts",
+        "test/cli/program.test.ts",
+        "test/cli/setup.test.ts"
       ],
       "exit_code": 1,
-      "duration_ms": 7047
+      "duration_ms": 2979
     },
     {
       "argv": [
-        "bash",
-        "-c",
-        "pnpm run lint && pnpm run typecheck"
+        "pnpm",
+        "check"
       ],
-      "exit_code": 0,
-      "duration_ms": 7830
+      "exit_code": 1,
+      "duration_ms": 11497
     },
     {
       "argv": [
@@ -65,16 +97,7 @@
         "check"
       ],
       "exit_code": 0,
-      "duration_ms": 13251
-    },
-    {
-      "argv": [
-        "pnpm",
-        "run",
-        "format"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2525
+      "duration_ms": 22957
     },
     {
       "argv": [
@@ -82,23 +105,7 @@
         "check"
       ],
       "exit_code": 0,
-      "duration_ms": 12514
-    },
-    {
-      "argv": [
-        "pnpm",
-        "check"
-      ],
-      "exit_code": 0,
-      "duration_ms": 12688
-    },
-    {
-      "argv": [
-        "pnpm",
-        "check"
-      ],
-      "exit_code": 0,
-      "duration_ms": 14852
+      "duration_ms": 23607
     },
     {
       "argv": [
@@ -109,7 +116,7 @@
         "test/cli/setup.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 2358
+      "duration_ms": 3237
     },
     {
       "argv": [
@@ -117,10 +124,10 @@
         "exec",
         "vitest",
         "run",
-        "test/cli/commands.test.ts"
+        "test/adapters/claude-code.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 2742
+      "duration_ms": 3143
     },
     {
       "argv": [
@@ -128,21 +135,10 @@
         "exec",
         "vitest",
         "run",
-        "test/mcp/serve.test.ts"
+        "test/cli/hook.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 2451
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/store/agreements.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2240
+      "duration_ms": 3478
     },
     {
       "argv": [
@@ -150,7 +146,7 @@
         "check"
       ],
       "exit_code": 0,
-      "duration_ms": 13104
+      "duration_ms": 22640
     },
     {
       "argv": [
@@ -161,7 +157,7 @@
         "test/cli/setup.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 2057
+      "duration_ms": 2504
     },
     {
       "argv": [
@@ -169,10 +165,10 @@
         "exec",
         "vitest",
         "run",
-        "test/cli/commands.test.ts"
+        "test/adapters/claude-code.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 2262
+      "duration_ms": 3045
     },
     {
       "argv": [
@@ -180,144 +176,22 @@
         "exec",
         "vitest",
         "run",
-        "test/mcp/serve.test.ts"
+        "test/cli/hook.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 2257
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/store/agreements.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2043
-    },
-    {
-      "argv": [
-        "pnpm",
-        "check"
-      ],
-      "exit_code": 0,
-      "duration_ms": 32810
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/setup.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 5437
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/commands.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 6380
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/mcp/serve.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 6362
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/store/agreements.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 5708
-    },
-    {
-      "argv": [
-        "pnpm",
-        "check"
-      ],
-      "exit_code": 0,
-      "duration_ms": 30218
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/setup.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 4721
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/commands.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 5717
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/mcp/serve.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 4857
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/store/agreements.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 4408
-    },
-    {
-      "argv": [
-        "pnpm",
-        "check"
-      ],
-      "exit_code": 0,
-      "duration_ms": 31911
+      "duration_ms": 2789
     }
   ],
   "failed_attempts": [
-    "pnpm run lint (exit 1)"
+    "pnpm exec vitest run test/adapters/fs-ops.test.ts test/adapters/claude-code.test.ts test/cli/hook.test.ts test/cli/program.test.ts test/cli/setup.test.ts (exit 1)",
+    "pnpm check (exit 1)"
   ],
   "open_risks": [
     "blocker: GitHub Actions won't start any job: 'The job was not started because your account is locked due to a billing issue.' (seen 2026-11-07, even after making the repo public). Only the human can fix it, at github.com/settings/billing."
   ],
-  "next_action": "Next: M3b (work harness adapter, once the human names it) or M4 (Claude Code adapter); both need the human for two-session testing. FIRST, before any real adapter: fix the fake adapter's uninstall (it recursively deletes its parent dir; must only remove what install created, and a dir only if install created it and it is empty), since real adapters will copy it into ~/.claude etc. Also fold in: a test through buildProgram/commander for setup --dry-run asserting the temp HOME is untouched; error on unknown --format; test the transport.onclose close path; record the Adapter interface deviation (env, dryRun, fake) and add 'hooks trusted?' to DoctorReport; trailing newline in overlap.ts.",
+  "next_action": "M4 build is complete and verified (wb verify PASS, 139 tests). REMAINING for M4: the human runs the live two-session acceptance test (PLAN marks it (H)); exact steps are in docs/PROGRESS.md 'Human live two-session test'. During that test, capture real anonymised Claude Code hook payloads into src/adapters/claude-code/fixtures/ (replacing the synthetic ones) and confirm the assumed bits in docs/harness-notes.md (monitor agent-id derivation, monitor stdout -> notification, parent-pid exit guard, UserPromptSubmit read-evidence echo). Then an independent reviewer should read the M4 diff. After M4 sign-off: M5 (Codex adapter) or M3b (the work harness adapter) once the human names the work harness in docs/harness-notes.md.",
   "verdict_pointer": {
-    "verification": ".workbench/verification.json",
+    "verification": ".workbench/tasks/M4/verification.json",
     "verification_passed": true,
     "verification_stale": false,
     "review": ""
