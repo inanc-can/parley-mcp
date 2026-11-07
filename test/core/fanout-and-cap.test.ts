@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { expandEveryone } from "../../src/core/message-rules.js";
-import { checkThreadPostable } from "../../src/core/threads.js";
+import {
+  checkThreadPostable,
+  DEFAULT_MESSAGE_CAP,
+} from "../../src/core/threads.js";
 import {
   messagesRepo,
   openMemoryDb,
@@ -79,7 +82,8 @@ describe("cap -> paused", () => {
     });
   });
 
-  it("pauses a thread when it reaches its message cap", () => {
+  it("pauses a thread when it reaches its message cap via enforceMessageCap", () => {
+    expect(DEFAULT_MESSAGE_CAP).toBe(20);
     const db = openMemoryDb();
     const threadId = randomUUID();
     threadsRepo.createThread(db, {
@@ -87,10 +91,10 @@ describe("cap -> paused", () => {
       repoRoot: "/repo",
       title: null,
       status: "open",
-      messageCap: 2,
+      messageCap: DEFAULT_MESSAGE_CAP,
       createdAt: 1,
     });
-    for (let i = 0; i < 2; i += 1) {
+    for (let i = 0; i < DEFAULT_MESSAGE_CAP; i += 1) {
       messagesRepo.insertMessage(db, {
         id: randomUUID(),
         threadId,
@@ -108,15 +112,48 @@ describe("cap -> paused", () => {
       });
     }
     const count = threadsRepo.countThreadMessages(db, threadId);
-    expect(count).toBe(2);
-    const thread = threadsRepo.getThread(db, threadId);
-    if (count >= thread.message_cap) {
-      threadsRepo.setThreadStatus(db, threadId, "paused");
-    }
+    expect(count).toBe(DEFAULT_MESSAGE_CAP);
+
+    // Production composition of count + cap + pause; the test does not pause
+    // the thread itself.
+    const thread = threadsRepo.enforceMessageCap(db, threadId);
+    expect(thread.status).toBe("paused");
     expect(threadsRepo.getThread(db, threadId).status).toBe("paused");
-    expect(
-      checkThreadPostable(threadsRepo.getThread(db, threadId), count),
-    ).toEqual({ ok: false, code: "thread_paused" });
+    expect(checkThreadPostable(thread, count)).toEqual({
+      ok: false,
+      code: "thread_paused",
+    });
+    db.close();
+  });
+
+  it("keeps an open thread below its cap open", () => {
+    const db = openMemoryDb();
+    const threadId = randomUUID();
+    threadsRepo.createThread(db, {
+      id: threadId,
+      repoRoot: "/repo",
+      title: null,
+      status: "open",
+      messageCap: DEFAULT_MESSAGE_CAP,
+      createdAt: 1,
+    });
+    messagesRepo.insertMessage(db, {
+      id: randomUUID(),
+      threadId,
+      fromAgent: "a@r",
+      toAgent: "b@r",
+      kind: "text",
+      body: "one message",
+      payloadJson: null,
+      replyTo: null,
+      status: "sent",
+      sentAt: 1,
+      expiresAt: 100_000,
+      idempotencyKey: randomUUID(),
+      estTokens: 1,
+    });
+    const thread = threadsRepo.enforceMessageCap(db, threadId);
+    expect(thread.status).toBe("open");
     db.close();
   });
 });
