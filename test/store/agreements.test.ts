@@ -56,6 +56,8 @@ function offer(setup: Setup, overrides: OfferOverrides = {}) {
     text: "a@r implements the migration",
     status: "offered",
     offeredBy: "a@r",
+    // b@r is the agreement's recipient (a@r sent them a message in the thread).
+    offeredTo: "b@r",
     answeredBy: null,
     parentId: null,
     createdAt: 2_000,
@@ -163,6 +165,8 @@ describe("agreement lifecycle", () => {
       text: "b@r implements it on Thursday",
       status: "offered",
       offeredBy: "b@r",
+      // A counter by b@r is offered back to the original offerer, a@r.
+      offeredTo: "a@r",
       parentId: offered.id,
       createdAt: 3_100,
     });

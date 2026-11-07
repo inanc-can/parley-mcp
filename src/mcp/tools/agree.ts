@@ -13,6 +13,7 @@ import {
   threadsRepo,
   type AgreementRow,
   type ClaimRow,
+  type Db,
   type MessageRow,
 } from "../../store/index.js";
 
@@ -87,6 +88,7 @@ function offerAgreement(
     text: args.text,
     status: "offered",
     offeredBy: ctx.agentId,
+    offeredTo: recipient,
     answeredBy: null,
     parentId: null,
     createdAt: now,
@@ -125,13 +127,49 @@ function answer(
     );
   }
 
-  const settled = agreementsRepo.updateAgreementStatus(
-    ctx.db,
-    original.id,
-    nextAgreementStatus(action),
-    ctx.agentId,
-    now,
-  );
+  const isCounter = action === "counter";
+  // Validate the counter text before touching the store: a textless counter
+  // must not mark the original `countered` and leave it orphaned.
+  if (isCounter && args.text === undefined) {
+    return refused("counter_needs_text", "A counter-proposal needs its written text.");
+  }
+
+  // Both the status change and the counter insert happen in one transaction.
+  const database: Db = ctx.db;
+  const run = database.transaction(() => {
+    const updated = agreementsRepo.updateAgreementStatus(
+      ctx.db,
+      original.id,
+      nextAgreementStatus(action),
+      ctx.agentId,
+      now,
+    );
+    if (!updated) {
+      return { settled: false };
+    }
+    if (isCounter) {
+      const text = args.text;
+      if (text === undefined) {
+        // Unreachable: textless counters are refused above before any write.
+        return { settled: false };
+      }
+      agreementsRepo.insertAgreement(ctx.db, {
+        id: randomUUID(),
+        threadId: original.thread_id,
+        repoRoot: ctx.repoRoot,
+        text,
+        status: "offered",
+        offeredBy: ctx.agentId,
+        offeredTo: original.offered_by,
+        answeredBy: null,
+        parentId: original.id,
+        createdAt: now,
+        answeredAt: null,
+      });
+    }
+    return { settled: true };
+  });
+  const { settled } = run();
   if (!settled) {
     return refused(
       "not_answerable",
@@ -139,33 +177,16 @@ function answer(
     );
   }
 
-  const isCounter = action === "counter";
-  if (!isCounter) {
-    const answered = agreementsRepo.getAgreement(ctx.db, original.id);
+  const answered = agreementsRepo.getAgreement(ctx.db, original.id);
+  if (isCounter) {
     return success(
       { agreement: serializeAgreement(answered) },
-      `${title(action)} recorded. The human can veto accepted agreements in the viewer.`,
+      `Countered: the offer is marked countered and a new offer is on the table for ${original.offered_by}.`,
     );
   }
-
-  if (args.text === undefined) {
-    return refused("counter_needs_text", "A counter-proposal needs its written text.");
-  }
-  const counter = agreementsRepo.insertAgreement(ctx.db, {
-    id: randomUUID(),
-    threadId: original.thread_id,
-    repoRoot: ctx.repoRoot,
-    text: args.text,
-    status: "offered",
-    offeredBy: ctx.agentId,
-    answeredBy: null,
-    parentId: original.id,
-    createdAt: now,
-    answeredAt: null,
-  });
   return success(
-    { agreement: serializeAgreement(counter) },
-    `Countered: the offer is marked countered and a new offer is on the table for ${original.offered_by}.`,
+    { agreement: serializeAgreement(answered) },
+    `${title(action)} recorded. The human can veto accepted agreements in the viewer.`,
   );
 }
 
@@ -242,6 +263,7 @@ function serializeAgreement(agreement: AgreementRow): Record<string, unknown> {
     status: agreement.status,
     text: agreement.text,
     offered_by: agreement.offered_by,
+    offered_to: agreement.offered_to,
     answered_by: agreement.answered_by,
     parent_id: agreement.parent_id,
     created_at: agreement.created_at,

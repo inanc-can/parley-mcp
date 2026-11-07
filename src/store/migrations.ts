@@ -108,4 +108,13 @@ CREATE INDEX IF NOT EXISTS idx_agreements_repo
   ON agreements(repo_root, created_at);
 `,
   },
+  {
+    id: 2,
+    name: "add_agreement_recipient",
+    sql: `
+ALTER TABLE agreements ADD COLUMN offered_to TEXT;
+CREATE INDEX IF NOT EXISTS idx_agreements_offered_to
+  ON agreements(offered_to);
+`,
+  },
 ];

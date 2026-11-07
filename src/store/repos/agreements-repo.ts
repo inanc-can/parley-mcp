@@ -13,6 +13,8 @@ export interface InsertAgreementInput {
   text: string;
   status: AgreementStatus;
   offeredBy: string;
+  /** The agent the offer was made to; only they may answer it. */
+  offeredTo: string;
   answeredBy: string | null;
   parentId: string | null;
   createdAt: number;
@@ -21,8 +23,8 @@ export interface InsertAgreementInput {
 
 export function insertAgreement(db: Db, input: InsertAgreementInput): AgreementRow {
   db.prepare(
-    `INSERT INTO agreements(id, thread_id, repo_root, text, status, offered_by, answered_by, parent_id, created_at, answered_at)
-     VALUES (@id, @threadId, @repoRoot, @text, @status, @offeredBy, @answeredBy, @parentId, @createdAt, @answeredAt)`,
+    `INSERT INTO agreements(id, thread_id, repo_root, text, status, offered_by, offered_to, answered_by, parent_id, created_at, answered_at)
+     VALUES (@id, @threadId, @repoRoot, @text, @status, @offeredBy, @offeredTo, @answeredBy, @parentId, @createdAt, @answeredAt)`,
   ).run(input);
   return getAgreement(db, input.id);
 }
@@ -48,10 +50,9 @@ export function updateAgreementStatus(
   answeredBy: string | null,
   answeredAt: number | null,
 ): boolean {
-  // Guarded answer (M1 review follow-up): only an agreement still in
-  // `offered` may be answered, and only by its recipient — an agent that is
-  // not the offerer and takes part in the agreement's thread. The human veto
-  // (viewer, M6) goes through its own path instead.
+  // Guarded answer: only an agreement still in `offered` may be answered,
+  // and only by the agent it was offered to (`offered_to`), who must not be
+  // the offerer. The human veto (viewer, M6) goes through its own path.
   const info = db
     .prepare(
       `UPDATE agreements
@@ -59,13 +60,9 @@ export function updateAgreementStatus(
        WHERE id = ?
          AND status = 'offered'
          AND ? <> offered_by
-         AND EXISTS (
-           SELECT 1 FROM messages m
-           WHERE m.thread_id = agreements.thread_id
-             AND (m.from_agent = ? OR m.to_agent = ?)
-         )`,
+         AND offered_to = ?`,
     )
-    .run(status, answeredBy, answeredAt, id, answeredBy, answeredBy, answeredBy);
+    .run(status, answeredBy, answeredAt, id, answeredBy, answeredBy);
   return info.changes === 1;
 }
 

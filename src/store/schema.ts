@@ -96,6 +96,8 @@ export const agreementRowSchema = z.object({
   text: z.string(),
   status: agreementStatusSchema,
   offered_by: z.string().min(1),
+  /** The agent the offer was made to; only they may accept, counter or reject. */
+  offered_to: z.string().min(1),
   answered_by: nullableText,
   parent_id: nullableText,
   created_at: ms,
