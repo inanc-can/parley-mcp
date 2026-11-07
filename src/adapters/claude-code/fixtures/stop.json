@@ -1,0 +1,11 @@
+{
+  "_synthetic": true,
+  "_note": "Synthetic Stop payload. Replace with a real anonymised capture during the human-assisted M4 test.",
+  "session_id": "synthetic-session-aaaa",
+  "transcript_path": "/home/synthetic/.claude/projects/repo/transcript.jsonl",
+  "cwd": "/home/synthetic/repo/api",
+  "permission_mode": "default",
+  "hook_event_name": "Stop",
+  "stop_hook_active": false,
+  "last_assistant_message": "Done for this turn."
+}

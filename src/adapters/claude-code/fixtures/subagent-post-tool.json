@@ -1,0 +1,13 @@
+{
+  "_synthetic": true,
+  "_note": "Synthetic PostToolUse payload fired inside a subagent (carries agent_type/agent_id). Every handler must ignore it (PLAN section 6).",
+  "session_id": "synthetic-session-aaaa",
+  "transcript_path": "/home/synthetic/.claude/projects/repo/transcript.jsonl",
+  "cwd": "/home/synthetic/repo/api",
+  "permission_mode": "default",
+  "hook_event_name": "PostToolUse",
+  "agent_id": "synthetic-subagent-001",
+  "agent_type": "Explore",
+  "tool_name": "Edit",
+  "tool_input": { "file_path": "/home/synthetic/repo/api/src/other.ts" }
+}

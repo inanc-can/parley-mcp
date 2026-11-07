@@ -1,0 +1,12 @@
+{
+  "_synthetic": true,
+  "_note": "Synthetic PostToolUse payload for an Edit tool call. Replace with a real anonymised capture during the human-assisted M4 test.",
+  "session_id": "synthetic-session-aaaa",
+  "transcript_path": "/home/synthetic/.claude/projects/repo/transcript.jsonl",
+  "cwd": "/home/synthetic/repo/api",
+  "permission_mode": "default",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Edit",
+  "tool_input": { "file_path": "/home/synthetic/repo/api/src/server.ts" },
+  "tool_response": { "success": true }
+}

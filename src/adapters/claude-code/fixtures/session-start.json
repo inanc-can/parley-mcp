@@ -1,0 +1,10 @@
+{
+  "_synthetic": true,
+  "_note": "Hand-written synthetic SessionStart payload. Replace with an anonymised real capture during the human-assisted M4 test.",
+  "session_id": "synthetic-session-aaaa",
+  "transcript_path": "/home/synthetic/.claude/projects/repo/transcript.jsonl",
+  "cwd": "/home/synthetic/repo/api",
+  "permission_mode": "default",
+  "hook_event_name": "SessionStart",
+  "source": "startup"
+}

@@ -1,0 +1,10 @@
+{
+  "_synthetic": true,
+  "_note": "Synthetic UserPromptSubmit payload. The prompt echoes a message id as read-evidence; the test substitutes a real id at runtime.",
+  "session_id": "synthetic-session-aaaa",
+  "transcript_path": "/home/synthetic/.claude/projects/repo/transcript.jsonl",
+  "cwd": "/home/synthetic/repo/api",
+  "permission_mode": "default",
+  "hook_event_name": "UserPromptSubmit",
+  "prompt": "Replying to message __MESSAGE_ID__ now."
+}
