@@ -6,9 +6,16 @@
  */
 export function buildOutlook(
   recipientId: string,
-  recipient: { lastHeartbeat: number | null } | undefined,
+  recipient: { lastHeartbeat: number | null; waking?: boolean } | undefined,
   now: number,
 ): string {
+  if (recipient?.waking === true) {
+    return (
+      `${recipientId}: waking its Codex session through the app-server; if the session is open ` +
+      `it starts a turn within seconds (after its current turn, if busy), otherwise the message ` +
+      `is queued until its next turn, expires in 24 h.`
+    );
+  }
   if (recipient === undefined) {
     return (
       `${recipientId} has never checked in; the message is queued until ` +

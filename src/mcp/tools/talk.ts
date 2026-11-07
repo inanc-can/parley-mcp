@@ -141,6 +141,7 @@ export async function handleTalk(
   }
 
   markReplyReceived(ctx, args.reply_to, now);
+  const waking = startWakes(ctx, deliveries);
 
   const capped = enforceMessageCap(db, thread.id);
 
@@ -154,7 +155,7 @@ export async function handleTalk(
       : undefined;
 
   const refreshed = messagesRepo.getMessage(db, primary.id);
-  const outlook = composeOutlook(ctx, deliveries, now);
+  const outlook = composeOutlook(ctx, deliveries, waking, now);
   const noticedPause = capped.status === "paused" && thread.status === "open";
 
   return success(
@@ -328,10 +329,38 @@ function markReplyReceived(
   }
 }
 
-function composeOutlook(ctx: ToolContext, deliveries: Delivery[], now: number): string {
+/**
+ * Start an out-of-band wake (Codex app-server) for each recipient whose new
+ * message is still queued, right after it is stored and before any
+ * wait_for_reply_s wait. Returns the recipients a wake was started for.
+ */
+function startWakes(ctx: ToolContext, deliveries: Delivery[]): ReadonlySet<string> {
+  const started = new Set<string>();
+  if (ctx.wakeRecipient === undefined) {
+    return started;
+  }
+  for (const delivery of deliveries) {
+    const agent = agentsRepo.findAgent(ctx.db, delivery.recipientId);
+    if (agent !== undefined && delivery.message.status === "sent" && ctx.wakeRecipient(agent.id, agent.harness)) {
+      started.add(agent.id);
+    }
+  }
+  return started;
+}
+
+function composeOutlook(
+  ctx: ToolContext,
+  deliveries: Delivery[],
+  waking: ReadonlySet<string>,
+  now: number,
+): string {
   const outlooks = deliveries.map((delivery) => {
     const agent = agentsRepo.findAgent(ctx.db, delivery.recipientId);
-    return buildOutlook(delivery.recipientId, { lastHeartbeat: agent?.last_heartbeat ?? null }, now);
+    return buildOutlook(
+      delivery.recipientId,
+      { lastHeartbeat: agent?.last_heartbeat ?? null, waking: waking.has(delivery.recipientId) },
+      now,
+    );
   });
   const ids = deliveries.map((d) => d.recipientId);
   return pluralOutlook(ids, outlooks);

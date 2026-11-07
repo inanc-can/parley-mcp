@@ -1,5 +1,6 @@
 import type { Command } from "commander";
-import type { Db } from "../store/index.js";
+import type { WakeSpawner } from "../adapters/codex/spawn-wake.js";
+import { messagesRepo, type Db } from "../store/index.js";
 import { runHookEdit } from "./commands/hook.js";
 import {
   runHookPostTool,
@@ -31,7 +32,12 @@ export interface HookCommandHost {
   status: () => (line: string) => void;
   /** Read and JSON-parse the hook payload from stdin. */
   readStdinJson: () => Promise<unknown>;
+  /** Start a detached `codex-wake` for an agent (the Codex Stop backstop). */
+  wakeCodex: WakeSpawner;
 }
+
+/** How long a Stop-started wake waits for the ending turn to go idle. */
+const STOP_WAKE_WAIT_S = 120;
 
 /** The extra HookEventDeps that make the shared handlers act as Codex. */
 const CODEX_HOOK_DEPS: Pick<HookEventDeps, "agentIdForCwd" | "editTools"> = {
@@ -159,7 +165,12 @@ function registerCodexHookCommands(hook: Command, host: HookCommandHost): void {
       const status = host.status();
       const payload = stopPayloadSchema.parse(await host.readStdinJson());
       host.withDb((db, repoRoot) => {
-        runHookStop({ db, repoRoot, status, ...CODEX_HOOK_DEPS }, payload);
+        const agentId = runHookStop({ db, repoRoot, status, ...CODEX_HOOK_DEPS }, payload);
+        // Backstop for messages that arrived while this turn ran: Stop fires just
+        // before the turn ends, so a detached wake waits for idle, then delivers.
+        if (agentId !== null && messagesRepo.listUndeliveredForRecipient(db, agentId, Date.now()).length > 0) {
+          host.wakeCodex(agentId, STOP_WAKE_WAIT_S);
+        }
       });
     });
 

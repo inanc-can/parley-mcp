@@ -1,5 +1,64 @@
 # Progress
 
+## M5: review + idle wake (Claude, cloud session, 2026-11-07)
+
+**Review of the kiro-M5 build** (by hand; the workbench tool is not in the cloud). The config.toml
+and hooks.json merge, uninstall and foreign-entry guard are sound. Findings, all fixed here:
+
+1. **Idle wake was not wired** (M5's core acceptance). Built and verified live (below).
+2. **A clean checkout failed `pnpm check`**: `@types/better-sqlite3` (PLAN-allowed) was missing from
+   package.json; the laptop passed only because of old node_modules. Added.
+3. **A Codex tool call erased the recorded thread id**: `heartbeatCaller` wrote the MCP server's
+   null session over the id the SessionStart hook stored. A null session now only touches liveness.
+4. **doctor's "app-server reachable" only ran `codex --version`**, which says nothing about the
+   daemon the wake needs. doctor now connects to the daemon and reads hook trust from it.
+5. **planWake steered busy threads**; PLAN prefers queuing. A busy thread is now waited on.
+6. **SessionStart fires at a session's first turn, not when it opens** (found live), so a fresh
+   idle session had no thread id. The wake now finds the thread through the daemon by folder.
+
+**How the wake works (verified live against codex 0.154.0; detail in docs/harness-notes.md):**
+`talk` to a `codex@…` agent starts a detached `mcp-parley codex-wake --agent <id>`. It connects to
+the daemon's control socket (`~/.codex/app-server-control/app-server-control.sock`, WebSocket),
+checks the version (0.154.x only), finds the agent's live thread and `turn/start`s it with the
+message line (id + reply hint). The open TUI shows the turn; its UserPromptSubmit hook sees the id
+and marks the message read. Busy: polls until idle (60 s), and the Codex Stop hook starts another
+wake at each turn end. No daemon, another version, or a closed session: the message stays queued.
+
+**Live cloud test (isolated HOME, npm Codex 0.154.0 binary used as the "standalone" install):**
+real `setup --harness codex` (user comment kept), `doctor` → "hooks NOT trusted", trust recorded →
+"can wake idle, hooks trusted"; Codex TUI opened in `repo/api` and left untouched; a real MCP
+`talk` from `claude@web` → outlook "waking"; the TUI showed the message and started a turn within
+~6 s; the message went to `read`, `delivered_session` = the thread id. Not testable in the cloud:
+the Codex model replying (OpenAI is blocked there).
+
+**Checks:** `pnpm check` passes (41 files / 225 tests).
+
+### (H) Laptop test: Claude ↔ Codex (replaces the kiro-M5 steps below)
+
+Needs Codex from the **official installer** (the daemon refuses an npm install), Claude Code, and
+this repo built.
+
+1. `codex --version` → 0.154.x. If Codex came from npm/brew, install it with the official installer
+   (`curl -fsSL https://chatgpt.com/codex/install.sh | sh`) or `codex app-server daemon start`
+   fails with "managed standalone Codex install not found".
+2. `pnpm build && node dist/cli/bin.js setup` (both harnesses).
+3. `codex app-server daemon start`.
+4. Open Codex, run `/hooks`, trust the five mcp-parley hooks, quit Codex.
+5. `node dist/cli/bin.js doctor` → codex: "can wake idle, hooks trusted".
+6. In the test repo: Codex in `api` (start it AFTER the daemon, without `-c` flags, which make it
+   run its own private server), Claude Code in `web`. Leave Codex idle.
+7. In Claude: `say hi to codex@api`. Expect Codex to start a turn within ~5 s and answer with the
+   talk tool, which wakes Claude through the M4 monitor. `node dist/cli/bin.js log --thread <id>`
+   shows read/replied.
+8. Busy case: give Codex a long task, send it a message meanwhile; it should answer after the task.
+9. Optional: capture real hook payloads into `src/adapters/codex/fixtures/` (replace the synthetic
+   ones) and run `uninstall` to confirm config.toml is restored byte for byte.
+
+Open product question for the human: after `/quit`, a busy Codex thread keeps running in the
+daemon ("Any running work continues"). A wake that lands on such a thread runs a turn with no TUI
+attached (visible in `codex agents`, reattach with `codex resume <id>`). Idle closed sessions are
+unloaded and never woken.
+
 ## M5 — Codex adapter (plan, session kiro-M5, 2026-11-07)
 
 **Goal (PLAN section 6 "Codex" + M5):** build `src/adapters/codex` — user-level MCP registration in
@@ -56,7 +115,7 @@ codex session is started.
   app-server schema files under `fixtures/schema/`; replay + app-server + install tests.
 - **Dependency:** `smol-toml@1.4.2` (PLAN-allowed, exact-pinned).
 
-### (H) Human live two-session test — exact steps (Claude ↔ Codex)
+### (H) Human live two-session test — exact steps (Claude ↔ Codex) — SUPERSEDED by the steps in the section above
 
 M5's acceptance is marked **(H)**: it needs a real Claude Code session and a real Codex session in
 one repo, with Codex idle. The build cannot run `codex` itself; automated tests use a temp HOME and

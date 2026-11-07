@@ -43,7 +43,12 @@ export function runInboxDrain(
   return pending.length;
 }
 
-function deliverMessage(db: Db, message: MessageRow, now: number, session: string | null): void {
+/**
+ * Move one message `sent -> delivered` (guarded) and stamp the delivered event.
+ * Returns whether this call moved it, so concurrent deliverers never both
+ * claim the same message.
+ */
+export function deliverMessage(db: Db, message: MessageRow, now: number, session: string | null): boolean {
   const moved = messagesRepo.guardedStatusUpdate(db, message.id, {
     status: "delivered",
     at: now,
@@ -58,9 +63,10 @@ function deliverMessage(db: Db, message: MessageRow, now: number, session: strin
       detailJson: null,
     });
   }
+  return moved;
 }
 
-function formatDrainLine(message: MessageRow, format: DrainFormat): string {
+export function formatDrainLine(message: MessageRow, format: DrainFormat): string {
   if (format === "json") {
     return JSON.stringify({
       message_id: message.id,

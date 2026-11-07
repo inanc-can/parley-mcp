@@ -130,14 +130,15 @@ export function runHookUserPrompt(deps: HookEventDeps, payload: UserPromptPayloa
  * restricts read to the model's *input* (UserPromptSubmit prompt or transcript),
  * an `inbox` call, or a reply — the assistant's own output is not in that list.
  */
-export function runHookStop(deps: HookEventDeps, payload: StopPayload): void {
+export function runHookStop(deps: HookEventDeps, payload: StopPayload): string | null {
   if (ignoreSubagent(deps, payload, "stop")) {
-    return;
+    return null;
   }
   const now = deps.now ?? Date.now();
   const agentId = agentFor(deps, payload);
   touchHeartbeat(deps.db, agentId, deps.repoRoot, payload.session_id, now);
-  deps.status(`stop ${agentId}: heartbeat (delivery left to the monitor)`);
+  deps.status(`stop ${agentId}: heartbeat (delivery left to the monitor or the Codex wake)`);
+  return agentId;
 }
 
 /**

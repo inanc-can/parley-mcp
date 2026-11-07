@@ -10,6 +10,7 @@ import {
   gateOpenForVersion,
   parseCodexVersion,
   planWake,
+  versionFromUserAgent,
   type WakeContext,
 } from "../../src/adapters/codex/app-server.js";
 
@@ -66,7 +67,7 @@ describe("planWake fails closed", () => {
   const base: WakeContext = {
     gateOpen: true,
     threadId: "thread-1",
-    activeTurnId: null,
+    threadStatus: "idle",
     requestId: 1,
     text: "ping",
   };
@@ -84,21 +85,25 @@ describe("planWake fails closed", () => {
     expect(plan.kind).toBe("fallback");
   });
 
+  it("falls back when the thread is not loaded (its session was closed)", () => {
+    const plan = planWake({ ...base, threadStatus: "notLoaded" });
+    expect(plan.kind).toBe("fallback");
+    if (plan.kind === "fallback") {
+      expect(plan.outlook).toContain("not open");
+    }
+  });
+
   it("starts a turn on an idle thread", () => {
-    const plan = planWake({ ...base, activeTurnId: null });
+    const plan = planWake({ ...base, threadStatus: "idle" });
     expect(plan.kind).toBe("turn_start");
     if (plan.kind === "turn_start") {
       expect(plan.request.method).toBe("turn/start");
     }
   });
 
-  it("steers a busy thread with the active turn id", () => {
-    const plan = planWake({ ...base, activeTurnId: "turn-7" });
-    expect(plan.kind).toBe("turn_steer");
-    if (plan.kind === "turn_steer") {
-      expect(plan.request.method).toBe("turn/steer");
-      expect(plan.request.params["expectedTurnId"]).toBe("turn-7");
-    }
+  it("waits (never steers) while the thread's turn is running", () => {
+    const plan = planWake({ ...base, threadStatus: "active" });
+    expect(plan.kind).toBe("wait");
   });
 });
 
@@ -109,6 +114,11 @@ describe("version gate", () => {
     expect(gateOpenForVersion("0.155.0")).toBe(false); // different minor
     expect(gateOpenForVersion("1.0.0")).toBe(false);
     expect(gateOpenForVersion(null)).toBe(false);
+  });
+
+  it("parses the version out of the daemon's initialize userAgent", () => {
+    expect(versionFromUserAgent("codex-tui/0.154.0 (Ubuntu 24.4.0; x86_64) linux (probe; 0)")).toBe("0.154.0");
+    expect(versionFromUserAgent("garbage")).toBeNull();
   });
 
   it("parses the version out of `codex --version` output", () => {

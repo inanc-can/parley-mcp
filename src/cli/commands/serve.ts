@@ -1,6 +1,11 @@
 import { serve, type ServeHandle, type ServeOptions } from "../../mcp/server.js";
 import { AGENT_ID_ENV } from "../../mcp/identity.js";
 import { resolveDbPath, resolveRepoRoot } from "../context.js";
+import { homedir } from "node:os";
+import { spawnCodexWake } from "../../adapters/codex/spawn-wake.js";
+
+/** How long a talk-started Codex wake waits for a busy turn to end. */
+const TALK_WAKE_WAIT_S = 60;
 
 export interface ServeCommandDeps {
   env?: NodeJS.ProcessEnv;
@@ -25,6 +30,13 @@ export async function runServe(deps: ServeCommandDeps = {}): Promise<ServeHandle
     cwd,
     sessionId: env["CLAUDE_CODE_SESSION_ID"],
     dbPath: resolveDbPath(env),
+    wakeRecipient: codexWaker(env["HOME"] ?? homedir()),
   };
   return start(options);
+}
+
+/** Codex recipients are woken through the app-server daemon (M5); others need no out-of-band wake. */
+function codexWaker(home: string): (agentId: string, harness: string) => boolean {
+  const spawnWake = spawnCodexWake(home);
+  return (agentId, harness) => harness === "codex" && spawnWake(agentId, TALK_WAKE_WAIT_S);
 }

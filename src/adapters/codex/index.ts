@@ -32,6 +32,6 @@ export const codexAdapter: Adapter = {
   },
 
   doctor(env: AdapterEnv) {
-    return Promise.resolve(doctorCodex(env));
+    return doctorCodex(env);
   },
 };

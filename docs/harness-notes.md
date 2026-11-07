@@ -240,13 +240,59 @@ Superseding details from the first M4 build, after the review and
   we DON'T attempt delivery — `outlook` says "queued until the next turn" and we fall back to the
   hooks + the MCP server's own inbox drain.
 
+### Idle wake: verified live in a cloud container (2026-11-07, Claude)
+
+Method: npm `@openai/codex@0.154.0` in a throwaway CODEX_HOME, its native binary linked in as the
+"standalone" install, the TUI driven in a pseudo-terminal, and a probe client on the control socket.
+OpenAI is unreachable from that container, so turns start but the model never answers.
+
+- **Daemon:** `codex app-server daemon start|stop|restart|version|bootstrap|enable-remote-control`.
+  It requires the official-installer layout (`$CODEX_HOME/packages/standalone/current/codex`); an
+  npm install fails with "managed standalone Codex install not found". `version` prints JSON with
+  `status`, `socketPath`, `appServerVersion`.
+- **Control socket:** `$CODEX_HOME/app-server-control/app-server-control.sock` (default
+  `~/.codex/...`). It speaks **WebSocket** (HTTP upgrade, then one JSON-RPC message per text frame);
+  raw JSON lines fail with "failed to upgrade control socket websocket connection".
+  `codex app-server proxy` only pipes bytes, so a client still has to speak WebSocket. The path must
+  stay under the Unix socket length limit (~104 bytes).
+- **The TUI attaches to the daemon:** a plain `codex` started while the daemon runs uses it (its
+  threads show in `thread/loaded/list` for other clients; `initialize` reports
+  `userAgent: "codex-tui/0.154.0 ..."`). Started with `-c key=value` flags, the TUI ran its own
+  in-process server instead. Started before the daemon, it also runs in-process.
+- **Outside `turn/start` shows in the TUI:** a second client's `turn/start {threadId, input}` on the
+  TUI's thread appeared in the TUI as a new user turn and it began working.
+- **Thread id = hook session_id = rollout/session id** (`thread/read` → `sessionId` equals `id`; the
+  hook payload's `session_id` equals the loaded thread id).
+- **SessionStart fires at the first turn, not when the TUI opens.** An outside `turn/start` fires
+  SessionStart (source `startup`) and then **UserPromptSubmit with `prompt` = our text**, so the
+  message id in the text is read evidence. The MCP server starts when the session opens (before any
+  turn), in the session's folder, with the `[mcp_servers.*.env]` vars (PARLEY_HARNESS) and HOME, but
+  no thread id in its environment.
+- **Thread status** (`thread/read` → `thread.status.type`): `idle`, `active` (a turn running),
+  `notLoaded`. `thread.environments[0].cwd` is the session folder; `updatedAt` is epoch seconds.
+- **`/quit` detaches:** "Disconnected from this task. Any running work continues. Reconnect: codex
+  resume <id>". SessionEnd did not fire. An idle detached thread is unloaded: `thread/read` says
+  `notLoaded` and `turn/start` errors "thread not found". A busy detached thread stays loaded.
+- **`turn/start` on an `active` thread** returned the running turn's id (no error): it joins the
+  running turn, like a steer. The wake never does this; it waits for `idle`.
+- **Hook trust storage:** `/hooks` trust is saved in config.toml as
+  `[hooks.state."<hooks.json path>:<event_snake_case>:<group>:<handler>"] trusted_hash = "sha256:…"`.
+  `hooks/list {cwds}` returns each hook's `key`, `command`, `currentHash` and `trustStatus`
+  (`trusted | untrusted | modified | managed`). doctor reads trust through `hooks/list`.
+  Setup never writes trust entries: trusting is the human's decision.
+- No client RPC queues input (`thread/queue/changed` is only a notification). `bypass_hook_trust`
+  exists in the binary but did not take effect from config.toml.
+- Concord (`src/relay/codex-client.ts`, `src/install/adapters/index.ts`) was read for the mechanism
+  (daemon + control socket + `thread/resume`); no code copied. We never `thread/resume`: resuming a
+  closed session would run a turn nobody sees.
+
 ### Assumed / needs the human's live two-session test (M5 acceptance)
 
-- **Mapping a Codex native session to a Parley agent id.** We derive `codex@<basename(cwd)>` from the
-  hook payload's `cwd` (same rule as Claude). The app-server's `threadId`/`turnId` (for idle wake)
-  are NOT the same as the hook `session_id`; wiring the live app-server thread id to the agent is the
-  part most likely to need adjustment on the human's real run — until confirmed, idle wake is gated
-  and falls back to "queued until next turn" rather than mis-delivering.
+- ~~Mapping a Codex native session to a Parley agent id~~: RESOLVED in the cloud test above (the
+  thread id IS the hook session_id; a fresh session is found by folder).
+- On macOS: the daemon backend (`pid` on Linux) and that the laptop's official-installer Codex
+  behaves the same. The model's reply and the Stop-hook backstop (a turn must finish) need the
+  laptop run.
 - **Whether the human's Codex build enables `features.hooks`** (on by default) and trusts our hooks.
   doctor reports what it can see; the live test confirms a real idle round trip.
 - **Fixtures are synthetic** (`src/adapters/codex/fixtures/*.json`, `_synthetic: true`) until the

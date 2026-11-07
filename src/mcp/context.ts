@@ -12,4 +12,10 @@ export interface ToolContext {
   nativeSession: string | null;
   /** The rules file text goes out once per session: flipped on first inbox. */
   rulesTextSent: boolean;
+  /**
+   * Wake a recipient whose harness cannot be woken by a monitor (Codex: the
+   * app-server). Injected by `mcp-parley serve`; absent in tests and when no
+   * adapter provides one. Returns whether a wake was started.
+   */
+  wakeRecipient?: (agentId: string, harness: string) => boolean;
 }

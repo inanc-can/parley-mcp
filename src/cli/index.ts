@@ -18,6 +18,9 @@ import { runUninstall } from "./commands/uninstall.js";
 import { runDoctor } from "./commands/doctor.js";
 import { runViewer } from "./commands/viewer.js";
 import { runServe } from "./commands/serve.js";
+import { runCodexWake } from "./commands/codex-wake.js";
+import { controlSocketPath, openControlSocket } from "../adapters/codex/control-socket.js";
+import { spawnCodexWake } from "../adapters/codex/spawn-wake.js";
 
 export const CLI_VERSION = "0.0.0";
 
@@ -213,10 +216,33 @@ function registerAdapterCommands(program: Command, deps: CliDeps): void {
       });
     });
 
+  program
+    .command("codex-wake")
+    .description("Used by the Codex adapter: wake an idle Codex session to read its messages.")
+    .requiredOption("--agent <id>", "the Codex agent to wake")
+    .option("--wait-s <seconds>", "how long to wait for a busy turn to end", "60")
+    .action(async (options: { agent: string; waitS: string }) => {
+      const db = openHubDb(deps.env);
+      try {
+        await runCodexWake(
+          {
+            db,
+            connect: () => openControlSocket(controlSocketPath(deps.env, adapterEnv(deps).home)),
+            status: statusWriter(deps),
+            waitMs: Math.max(0, Number(options.waitS) || 0) * 1000,
+          },
+          options.agent,
+        );
+      } finally {
+        db.close();
+      }
+    });
+
   registerHookCommands(program, {
     withDb: (run) => withDb(deps, run),
     status: () => statusWriter(deps),
     readStdinJson: () => readStdinJson(deps),
+    wakeCodex: spawnCodexWake(adapterEnv(deps).home),
   });
 }
 

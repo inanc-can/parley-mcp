@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
 import type { AdapterEnv } from "../../src/adapters/index.js";
+import type { DaemonProbe } from "../../src/adapters/codex/daemon-probe.js";
 import { doctorCodex, installCodex, uninstallCodex } from "../../src/adapters/codex/install.js";
 import {
   CONFIG_TOML_REL,
@@ -63,9 +64,11 @@ function allGeneratedText(): string[] {
 }
 
 /** doctor with the app-server probe stubbed so tests never spawn `codex`. */
-function doctorReachable(reachable: boolean) {
-  return doctorCodex(env(), () => reachable);
+function doctorWith(probe: DaemonProbe) {
+  return doctorCodex(env(), () => Promise.resolve(probe));
 }
+
+const DAEMON_UP: DaemonProbe = { reachable: true, gateOpen: true, hooksTrusted: null };
 
 beforeEach(() => {
   home = mkdtempSync(join(tmpdir(), "parley-codex-"));
@@ -228,30 +231,44 @@ describe("codex uninstall", () => {
 });
 
 describe("codex doctor", () => {
-  it("reports not-wired before setup", () => {
-    const before = doctorReachable(true);
+  it("reports not-wired before setup", async () => {
+    const before = await doctorWith(DAEMON_UP);
     expect(before.canWakeIdle).toBe(false);
     expect(before.hooksTrusted).toBeNull();
     expect(before.detail).toContain("run setup");
   });
 
-  it("reports can-wake-idle only when wired, hooks present and app-server reachable", () => {
+  it("reports can-wake-idle only when wired, hooks present and the daemon is up", async () => {
     installCodex(env(), false);
-    expect(doctorReachable(true).canWakeIdle).toBe(true);
-    // App-server unreachable -> idle wake falls back to queue, so not can-wake-idle.
-    const offline = doctorReachable(false);
+    expect((await doctorWith(DAEMON_UP)).canWakeIdle).toBe(true);
+    // No daemon -> the wake has nothing to connect to, so messages only queue.
+    const offline = await doctorWith({ reachable: false, gateOpen: false, hooksTrusted: null });
     expect(offline.canWakeIdle).toBe(false);
-    expect(offline.detail).toContain("app-server not reachable");
+    expect(offline.detail).toContain("codex app-server daemon start");
   });
 
-  it("never claims hooks are trusted (unknown until /hooks)", () => {
+  it("fails closed on an unverified daemon protocol", async () => {
     installCodex(env(), false);
-    const report = doctorReachable(true);
-    expect(report.hooksTrusted).toBeNull();
-    expect(report.detail).toContain("/hooks");
+    const report = await doctorWith({ reachable: true, gateOpen: false, hooksTrusted: null });
+    expect(report.canWakeIdle).toBe(false);
+    expect(report.detail).toContain("unverified protocol");
   });
 
-  it("reports cannot-wake-idle when the config command points elsewhere", () => {
+  it("reports trust only as the daemon sees it, never assumed", async () => {
+    installCodex(env(), false);
+    const unknown = await doctorWith(DAEMON_UP);
+    expect(unknown.hooksTrusted).toBeNull();
+    expect(unknown.detail).toContain("/hooks");
+    const untrusted = await doctorWith({ ...DAEMON_UP, hooksTrusted: false });
+    expect(untrusted.hooksTrusted).toBe(false);
+    expect(untrusted.canWakeIdle).toBe(false);
+    expect(untrusted.detail).toContain("not trusted yet");
+    const trusted = await doctorWith({ ...DAEMON_UP, hooksTrusted: true });
+    expect(trusted.hooksTrusted).toBe(true);
+    expect(trusted.canWakeIdle).toBe(true);
+  });
+
+  it("reports cannot-wake-idle when the config command points elsewhere", async () => {
     installCodex(env(), false);
     // Rewrite our entry's command to a different install's launcher.
     const text = readFileSync(configToml(), "utf8").replace(
@@ -259,7 +276,7 @@ describe("codex doctor", () => {
       "/somewhere/else/.mcp-parley/bin/mcp-parley",
     );
     writeFileSync(configToml(), text, "utf8");
-    const report = doctorReachable(true);
+    const report = await doctorWith(DAEMON_UP);
     expect(report.canWakeIdle).toBe(false);
     expect(report.detail).toContain("does not point at this install");
   });

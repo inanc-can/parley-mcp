@@ -37,6 +37,8 @@ export interface ServeOptions {
   dbPath?: string | undefined;
   stdin?: Readable | undefined;
   stdout?: Writable | undefined;
+  /** Starts an out-of-band wake for a recipient (see ToolContext.wakeRecipient). */
+  wakeRecipient?: ((agentId: string, harness: string) => boolean) | undefined;
 }
 
 /**
@@ -134,6 +136,9 @@ export async function serve(options: ServeOptions = {}): Promise<ServeHandle> {
     registerCaller(db, agentId, repoRoot, sessionId, Date.now());
 
     const ctx: ToolContext = { db, agentId, repoRoot, nativeSession: sessionId, rulesTextSent: false };
+    if (options.wakeRecipient !== undefined) {
+      ctx.wakeRecipient = options.wakeRecipient;
+    }
     const server = createServer(ctx);
     const stdin = options.stdin ?? process.stdin;
     const transport = new StdioServerTransport(stdin, options.stdout ?? process.stdout);

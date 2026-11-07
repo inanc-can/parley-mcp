@@ -50,12 +50,21 @@ export function registerCaller(
   });
 }
 
-/** Refresh the calling agent's heartbeat on every tool call. */
+/**
+ * Refresh the calling agent's heartbeat on every tool call. A server that does
+ * not know its harness session (Codex gives MCP servers no session id) only
+ * touches liveness: writing a null session would erase the thread id the
+ * Codex SessionStart hook recorded, which the idle wake targets.
+ */
 export function heartbeatCaller(
   db: Db,
   agentId: string,
   nativeSession: string | null,
   now: number,
 ): void {
+  if (nativeSession === null) {
+    agentsRepo.touchLiveness(db, agentId, now);
+    return;
+  }
   agentsRepo.updateHeartbeat(db, agentId, now, nativeSession);
 }
