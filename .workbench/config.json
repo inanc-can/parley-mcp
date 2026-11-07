@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "verify": [
+    "pnpm check"
+  ],
+  "forbidden": [
+    "**/.env",
+    "**/.env.*",
+    "**/*.pem",
+    "**/*.key",
+    "**/id_rsa*",
+    "**/*secret*.json",
+    ".git/**"
+  ],
+  "always_allowed": [
+    ".workbench/**"
+  ],
+  "dependency_manifests": [
+    "**/package.json",
+    "**/pyproject.toml",
+    "**/requirements*.txt",
+    "**/setup.py",
+    "**/setup.cfg",
+    "**/Pipfile",
+    "**/go.mod",
+    "**/Cargo.toml",
+    "**/Gemfile",
+    "**/composer.json",
+    "**/build.gradle*",
+    "**/pom.xml",
+    "**/*.csproj"
+  ],
+  "timeout_s": 900
+}

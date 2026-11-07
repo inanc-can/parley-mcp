@@ -53,3 +53,46 @@ Stop, write the question at the top of `docs/PROGRESS.md`, and wait when:
   agent sessions, choosing the npm package name, publishing,
 - you would need a new dependency that isn't listed in PLAN.md,
 - an acceptance check still fails after three honest attempts.
+
+## Workbench in OpenCode runs
+
+OpenCode doesn't run the workbench's Claude Code hooks, so in OpenCode follow the workbench loop
+below yourself:
+- Don't ask for a working mode. At the start of a milestone run
+  `python3 /Users/inanccan/.claude/workbench/bin/wb.py mode checkpoints --session opencode-<milestone>`
+  (for example `opencode-M1`): checkpoints means stop at the end of each milestone.
+- Frame each milestone as a workbench task (`wb task start M<n>`), run commands through `wb run -- <cmd>`,
+  and finish with `wb verify`. A milestone is done only when `wb verify` passes.
+- Never edit `.workbench/config.json` or `.workbench/rules.md`. Before stopping, update `state.json`
+  and run `wb handoff`.
+
+<!-- workbench:begin -->
+## Agent workbench
+
+This repo runs with an agent workbench. The repo is the system of record, not the chat.
+
+Read first:
+1. `.workbench/state.json`: where the last session stopped and its `next_action`.
+2. `.workbench/rules.md`: startup, forbidden, done, uncertainty, approval.
+3. The active task's `.workbench/tasks/<id>/scope.json` (allowed/forbidden files, acceptance).
+
+Verify command (full suite):
+   - `pnpm check`
+
+Working mode: at the start of every session, ask the user how to work (autonomous /
+checkpoints / supervised, or their own words) and record it with `wb mode`. Code edits are
+blocked until you do. Follow that mode for the whole session.
+
+Loop for non-trivial work:
+1. Frame: goal, facts with receipts, allowed/forbidden paths, acceptance, unknowns
+   -> `.workbench/tasks/<id>/frame.md` + `scope.json`, then `wb task start <id>`.
+2. Plan: work items with evidence, dependencies and proof -> `plan.json`, then `wb plan check`.
+3. Build inside scope. Run commands through `wb run -- <cmd>` so results are logged.
+4. Verify: `wb verify`. Never claim done without a passing verdict.
+5. Review: a separate reviewer reads the diff and verdict; the builder doesn't grade itself.
+6. Handoff: update `summary`, `next_action`, `blockers` in state.json, then `wb handoff`.
+7. A correction from a human becomes a durable control (test > scope > automation >
+   example > instruction), logged with `wb ratchet add`.
+
+`wb` = `python3 /Users/inanccan/.claude/workbench/bin/wb.py`
+<!-- workbench:end -->

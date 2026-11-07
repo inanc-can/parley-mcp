@@ -1,0 +1,3 @@
+# local-only: raw command output, per-session modes
+feedback.jsonl
+sessions/

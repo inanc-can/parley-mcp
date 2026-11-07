@@ -15,9 +15,13 @@
       ".git/**": "deny",
       "**/.env": "deny",
       "**/.env.*": "deny",
-      "opencode.json": "deny"
+      "opencode.json": "deny",
+      "/Users/inanccan/.claude/**": "deny"
     },
-    "external_directory": "deny",
+    "external_directory": {
+      "*": "deny",
+      "/Users/inanccan/.claude/workbench/**": "allow"
+    },
     "bash": {
       "*": "deny",
       "pnpm *": "allow",
@@ -49,6 +53,7 @@
       "echo *": "allow",
       "pwd": "allow",
       "which *": "allow",
+      "python3 /Users/inanccan/.claude/workbench/bin/wb.py *": "allow",
       "rm -r*": "deny",
       "rm -f*": "deny",
       "rm -rf*": "deny",
