@@ -1,5 +1,6 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
+import type { Readable, Writable } from "node:stream";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio";
 import { z } from "zod";
@@ -19,6 +20,19 @@ type AgreeArgs = z.output<z.ZodObject<typeof agreeArgsShape>>;
 
 const DEFAULT_REPO_ROOT = process.cwd();
 const DEFAULT_DB_PATH = join(homedir(), ".parley-mcp", "hub.db");
+
+/**
+ * Options for `serve`. `dbPath`, `stdin` and `stdout` default to the production
+ * values (the shared hub db and process stdio) and are exposed so tests can
+ * point `serve()` at a temporary database and drive it over a stream pair.
+ */
+export interface ServeOptions {
+  agentIdEnv?: string | undefined;
+  repoRoot?: string | undefined;
+  dbPath?: string | undefined;
+  stdin?: Readable | undefined;
+  stdout?: Writable | undefined;
+}
 
 /**
  * Builds the MCP server with the three Parley tools (talk, inbox, agree) wired
@@ -73,13 +87,18 @@ export function createServer(ctx: ToolContext): McpServer {
  * (WAL, busy timeout), runs retention, registers the calling agent, then
  * connects the SDK server to stdio. Called by each harness adapter.
  */
-export async function serve(options: {
-  agentIdEnv?: string | undefined;
-  repoRoot?: string | undefined;
-}): Promise<void> {
+export async function serve(options: ServeOptions = {}): Promise<void> {
   const repoRoot = options.repoRoot ?? DEFAULT_REPO_ROOT;
   const agentId = resolveAgentId(options.agentIdEnv, repoRoot);
-  const db = openDb({ path: DEFAULT_DB_PATH });
+  const db = openDb({ path: options.dbPath ?? DEFAULT_DB_PATH });
+  let closed = false;
+  const closeDb = (): void => {
+    if (closed) {
+      return;
+    }
+    closed = true;
+    db.close();
+  };
   try {
     // Retention on every MCP server start (PLAN 4.7).
     applyRetention(db, retentionCutoff(Date.now()));
@@ -88,9 +107,22 @@ export async function serve(options: {
 
     const ctx: ToolContext = { db, agentId, repoRoot, nativeSession: null, rulesTextSent: false };
     const server = createServer(ctx);
-    const transport = new StdioServerTransport();
+    const transport = new StdioServerTransport(
+      options.stdin ?? process.stdin,
+      options.stdout ?? process.stdout,
+    );
     await server.connect(transport);
-  } finally {
-    db.close();
+    // The db must stay open for the whole stdio session. server.connect()
+    // returns as soon as stdio is wired up, but real tool calls arrive later
+    // on stdin. Closing the db in a finally right after connect (the old
+    // behaviour) made every real stdio tool call hit a closed database.
+    // Instead we close it only when the transport closes (the harness
+    // disconnects); until then every tool call can read and write the hub.
+    transport.onclose = () => {
+      closeDb();
+    };
+  } catch (error) {
+    closeDb();
+    throw error;
   }
 }
