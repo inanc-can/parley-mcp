@@ -94,3 +94,26 @@ describe("secret scan near-misses (must not block)", () => {
     expect(scanSecret("sk-abc")).toBeNull();
   });
 });
+
+describe("scanSecret near-misses (must not block)", () => {
+  it("lets a too-short AKIA id pass", () => {
+    // AKIA requires 16 alphanumeric characters after the prefix.
+    expect(scanSecret("AKIA123456789012")).toBeNull();
+  });
+
+  it("lets a too-short Slack token pass", () => {
+    // xox[baprs]- requires 10+ characters after the dash.
+    expect(scanSecret("xoxb-12345")).toBeNull();
+  });
+
+  it("lets a short .env-style secret value pass", () => {
+    // The value must be 12+ non-space characters.
+    expect(scanSecret("SECRET=short")).toBeNull();
+  });
+
+  it("still blocks real-looking secrets", () => {
+    expect(scanSecret("AKIAIOSFODNN7EXAMPLE")).not.toBeNull();
+    expect(scanSecret("ghp_abcdefghijklmnopqrst")).not.toBeNull();
+    expect(scanSecret("SECRET=VERYLONGVALUE123")).not.toBeNull();
+  });
+});

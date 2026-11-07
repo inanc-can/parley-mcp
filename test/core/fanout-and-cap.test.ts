@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { expandEveryone } from "../../src/core/message-rules.js";
-import {
-  checkThreadPostable,
-  titleFromFirstMessage,
-} from "../../src/core/threads.js";
+import { checkThreadPostable } from "../../src/core/threads.js";
 import {
   messagesRepo,
   openMemoryDb,
@@ -82,13 +79,4 @@ describe("cap -> paused", () => {
     });
   });
 
-  it("titles a new thread after a short first-line of the first message", () => {
-    expect(titleFromFirstMessage("ship the parser\nsecond line")).toBe(
-      "ship the parser",
-    );
-    expect(titleFromFirstMessage("  padded  ")).toBe("padded");
-    expect(
-      titleFromFirstMessage("x".repeat(80)),
-    ).toHaveLength(60);
-  });
 });

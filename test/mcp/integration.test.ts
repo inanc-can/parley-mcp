@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import { Client } from "@modelcontextprotocol/sdk/client";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory";
 import type { Db } from "../../src/store/db.js";
@@ -13,6 +14,32 @@ import { applyRetention } from "../../src/store/retention.js";
 import { retentionCutoff } from "../../src/core/retention.js";
 
 const REPO_ROOT = "/repo";
+
+const TalkResult = z.object({
+  message_id: z.string(),
+  thread_id: z.string(),
+  status: z.string(),
+  outlook: z.string(),
+});
+
+const AgreementResult = z.object({
+  agreement: z.object({
+    agreement_id: z.string(),
+    status: z.string(),
+    offered_by: z.string(),
+    offered_to: z.string(),
+    answered_by: z.string().nullable(),
+  }),
+});
+
+const InboxResult = z.object({
+  messages: z.array(z.unknown()),
+});
+
+const RefusalResult = z.object({
+  error: z.string(),
+  detail: z.string(),
+});
 
 function linkedPair(): [InMemoryTransport, InMemoryTransport] {
   return InMemoryTransport.createLinkedPair();
@@ -34,48 +61,78 @@ async function startServer(db: Db, agentId: string): Promise<Client> {
   return client;
 }
 
+async function talk(
+  client: Client,
+  to: string,
+  text: string,
+  key: string,
+  replyTo?: string,
+  threadId?: string,
+): Promise<{ threadId: string; messageId: string }> {
+  const result = await client.callTool({
+    name: "talk",
+    arguments: {
+      to,
+      text,
+      idempotency_key: key,
+      ...(threadId ? { thread_id: threadId } : {}),
+      ...(replyTo ? { reply_to: replyTo } : {}),
+    },
+  });
+  expect(result.isError).not.toBe(true);
+  const content = TalkResult.parse(result.structuredContent);
+  expect(content.status).toBe("sent");
+  return { threadId: content.thread_id, messageId: content.message_id };
+}
+
 describe("MCP integration (SDK in-memory transport, two fake agents)", () => {
-  it("round-trips a message through talk and inbox", async () => {
+  it("round-trips a message and a reply moves the original to replied", async () => {
     const db = openMemoryDb();
     applyRetention(db, retentionCutoff(Date.now()));
     const clientA = await startServer(db, "a@r");
     const clientB = await startServer(db, "b@r");
 
     // A sends a message to B in a new thread.
-    await clientA.callTool({
-      name: "talk",
-      arguments: {
-        to: "b@r",
-        text: "shall we split the migration work?",
-        idempotency_key: "k1",
-      },
-    });
+    const { threadId, messageId } = await talk(
+      clientA,
+      "b@r",
+      "shall we split the migration work?",
+      "k1",
+    );
 
     // B has a pending (sent) message.
     const pending = messagesRepo.listUndeliveredForRecipient(db, "b@r", Date.now());
+    expect(pending).toHaveLength(1);
     const firstPending = pending[0];
     if (!firstPending) {
       throw new Error("expected a pending message for b@r");
     }
-    expect(pending).toHaveLength(1);
     expect(firstPending.status).toBe("sent");
-    expect(firstPending.body).toBe("shall we split the migration work?");
-    const threadId = firstPending.thread_id;
 
     // B reads inbox: sent -> delivered -> read.
-    await clientB.callTool({ name: "inbox", arguments: {} });
+    const inboxResult = await clientB.callTool({ name: "inbox", arguments: {} });
+    expect(inboxResult.isError).not.toBe(true);
+    const { messages } = InboxResult.parse(inboxResult.structuredContent);
+    expect(messages).toHaveLength(1);
 
-    // No more undelivered messages for B.
     const stillPending = messagesRepo.listUndeliveredForRecipient(db, "b@r", Date.now());
     expect(stillPending).toHaveLength(0);
 
-    // The message is now read.
     const all = messagesRepo.listThreadMessages(db, threadId);
-    const firstAll = all[0];
-    if (!firstAll) {
+    const first = all[0];
+    if (!first) {
       throw new Error("expected a message in the thread");
     }
-    expect(firstAll.status).toBe("read");
+    expect(first.status).toBe("read");
+
+    // B replies: the original moves to replied (PLAN 4.3).
+    await talk(clientB, "a@r", "yes, I can take that", "k2", messageId, threadId);
+
+    const replied = messagesRepo.findMessage(db, messageId);
+    if (!replied) {
+      throw new Error("expected the original message to exist");
+    }
+    expect(replied.status).toBe("replied");
 
     db.close();
   });
@@ -86,27 +143,15 @@ describe("MCP integration (SDK in-memory transport, two fake agents)", () => {
     const clientA = await startServer(db, "a@r");
     const clientB = await startServer(db, "b@r");
 
-    // A sends a message to B to establish a thread + recipient.
-    await clientA.callTool({
-      name: "talk",
-      arguments: {
-        to: "b@r",
-        text: "can you take this?",
-        idempotency_key: "k2",
-      },
-    });
-    const pending = messagesRepo.listUndeliveredForRecipient(db, "b@r", Date.now());
-    const firstPending = pending[0];
-    if (!firstPending) {
-      throw new Error("expected a pending message for b@r");
-    }
-    const threadId = firstPending.thread_id;
+    const { threadId } = await talk(clientA, "b@r", "can you take this?", "k2");
 
     // A offers an agreement.
-    await clientA.callTool({
+    const offerResult = await clientA.callTool({
       name: "agree",
       arguments: { action: "offer", thread_id: threadId, text: "a@r implements the migration" },
     });
+    expect(offerResult.isError).not.toBe(true);
+    AgreementResult.parse(offerResult.structuredContent);
 
     const agreements = agreementsRepo.listAgreementsByRepo(db, REPO_ROOT);
     expect(agreements).toHaveLength(1);
@@ -116,17 +161,66 @@ describe("MCP integration (SDK in-memory transport, two fake agents)", () => {
     }
     expect(offered.status).toBe("offered");
     expect(offered.offered_by).toBe("a@r");
+    expect(offered.offered_to).toBe("b@r");
     const agreementId = offered.id;
 
     // B accepts.
-    await clientB.callTool({
+    const acceptResult = await clientB.callTool({
       name: "agree",
       arguments: { action: "accept", agreement_id: agreementId },
     });
+    expect(acceptResult.isError).not.toBe(true);
+    AgreementResult.parse(acceptResult.structuredContent);
 
     const updated = agreementsRepo.getAgreement(db, agreementId);
     expect(updated.status).toBe("accepted");
     expect(updated.answered_by).toBe("b@r");
+
+    db.close();
+  });
+
+  it("refuses a forbidden answer through MCP: a third agent cannot accept an offer made to another", async () => {
+    const db = openMemoryDb();
+    applyRetention(db, retentionCutoff(Date.now()));
+    const clientA = await startServer(db, "a@r");
+    const clientB = await startServer(db, "b@r");
+    const clientC = await startServer(db, "c@r");
+
+    const { threadId } = await talk(clientA, "b@r", "can you take this?", "k3");
+
+    await clientA.callTool({
+      name: "agree",
+      arguments: { action: "offer", thread_id: threadId, text: "a@r implements the migration" },
+    });
+    const agreements = agreementsRepo.listAgreementsByRepo(db, REPO_ROOT);
+    expect(agreements).toHaveLength(1);
+    const offered = agreements[0];
+    if (!offered) {
+      throw new Error("expected an offered agreement");
+    }
+    expect(offered.offered_to).toBe("b@r");
+    const agreementId = offered.id;
+
+    // c@r was not the recipient: the accept is refused and the row stays offered.
+    const thirdResult = await clientC.callTool({
+      name: "agree",
+      arguments: { action: "accept", agreement_id: agreementId },
+    });
+    expect(thirdResult.isError).toBe(true);
+    const { error } = RefusalResult.parse(thirdResult.structuredContent);
+    expect(error).toBe("not_answerable");
+
+    const untouched = agreementsRepo.getAgreement(db, agreementId);
+    expect(untouched.status).toBe("offered");
+    expect(untouched.answered_by).toBeNull();
+
+    // b@r, the actual recipient, can still accept.
+    const acceptResult = await clientB.callTool({
+      name: "agree",
+      arguments: { action: "accept", agreement_id: agreementId },
+    });
+    expect(acceptResult.isError).not.toBe(true);
+    expect(agreementsRepo.getAgreement(db, agreementId).status).toBe("accepted");
 
     db.close();
   });
