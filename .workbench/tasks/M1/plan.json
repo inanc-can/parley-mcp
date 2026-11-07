@@ -28,6 +28,20 @@
       "proof": "pnpm check and wb verify pass; docs/PROGRESS.md records M1 plan and results.",
       "evidence": ["pnpm check output (lint+typecheck+test)", "wb verify verdict", "docs/PROGRESS.md M1 results"],
       "depends_on": ["core"]
+    },
+    {
+      "id": "review-fixes",
+      "change": "Address independent review (round 1, soft_fail): (a) retention must delete events belonging to messages it deletes, with a test for an old message that has a newer event; (b) production function enforceMessageCap that pauses a thread at its cap (uses core shouldPauseAfterCount), cap test calls it and asserts DEFAULT_MESSAGE_CAP=20; (c) real stop-all logic (core checkStopAll + store toggle) with tests; (d) tests for agreements (offer, accept, counter, reject, only the recipient may answer); (e) allow delivered->replied with read_at set (PLAN 4.3: a reply implies read), with tests; (f) record design choices as assumptions in state.json and docs/PROGRESS.md; (g) explain the pnpm-workspace.yaml build-approval change in PROGRESS.",
+      "proof": "All review findings addressed; every M1 acceptance command still exits 0; pnpm check passes; wb verify PASS with all M1 files committed.",
+      "evidence": [".workbench/tasks/M1/review.json (round 1 findings)", "src/store/retention.ts", "src/store/repos/threads-repo.ts", "src/core/guards.ts", "src/core/message-rules.ts", "src/store/repos/messages-repo.ts", "test/store/*.ts", "test/core/*.ts", "docs/PROGRESS.md"],
+      "depends_on": ["core"]
+    },
+    {
+      "id": "handoff",
+      "change": "Commit all .workbench state/scope/review artifacts, update state.json summary/next_action/assumptions, run wb handoff, update docs/PROGRESS.md.",
+      "proof": "git status clean, wb verify PASS, state.json consistent with the verification verdict.",
+      "evidence": ["git log (conventional commits)", ".workbench/state.json", "docs/PROGRESS.md"],
+      "depends_on": ["review-fixes"]
     }
   ]
 }

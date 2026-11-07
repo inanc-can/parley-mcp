@@ -1,13 +1,21 @@
 {
   "schema_version": 1,
   "active_task_id": "M1",
-  "summary": "M1 built by OpenCode: all 7 acceptance commands and pnpm check pass (39 tests). wb verify FAILs only on scope_outside_allowed: opencode.json was changed (by Claude, to switch the default model to opencode/glm-5.3-flash-free at the user's request), which is outside M1's allowed files.",
-  "assumptions": [],
+  "summary": "M1 clear: all 7 acceptance commands and pnpm check pass (55 tests), wb verify PASS (round 2). Independent review round 1 (soft_fail) addressed: retention FK-safe with old-message/newer-event test, enforceMessageCap composes count+cap+pause with mutation-checked test asserting DEFAULT_MESSAGE_CAP=20, real stop-all guard with tests, agreement lifecycle tests, delivered->replied stamps read_at per PLAN 4.3, assumptions recorded, pnpm-workspace.yaml change explained in docs/PROGRESS.md.",
+  "assumptions": [
+    "M1 (recorded 2026-11-07, fix session): The secret-scan regex thresholds are builder-chosen minimum length heuristics (AWS AKIA +16 chars; ghp_/github_pat_/sk- at 20+ chars; Slack xox*- tokens at 10+ chars; .env SECRET=TOKEN=PASSWORD=API_KEY lines with values of 12+ chars). They may need tightening after real-world false negative/positive feedback; none may ever be relaxed to log the secret value.",
+    "M1 (recorded 2026-11-07, fix session): everyone fan-out derives per-recipient idempotency keys as `<base key>::<toAgent>`; the double-colon separator is a builder choice, and changing it changes which retries dedupe.",
+    "M1 (recorded 2026-11-07, fix session): Claim globs (src/core/glob.ts) follow mk-like path-glob semantics without character classes: `*` matches within one path segment, `**` matches across segments (including zero directories for `**/`), `?` matches one non-separator character.",
+    "M1 (recorded 2026-11-07, fix session): Retention is keyed on messages.sent_at (PLAN 4.7 'older than 30 days' interpreted relative to send time), agreements.created_at, edits.at, and message-events are deleted with the messages that own them regardless of event time (keeps FKs safe).",
+    "M1 (recorded 2026-11-07, fix session): SQLite connections use WAL journal mode and a 5 s busy_timeout by default; concurrent writers wait briefly instead of failing immediately.",
+    "M1 (recorded 2026-11-07, fix session): A reply implies read (PLAN 4.3): delivered->replied is allowed and stamps read_at with the replied timestamp; read->replied keeps the earlier read_at.",
+    "M1 review round 1 disputed (opencode.json): the default-model change in opencode.json was requested by the user in chat and recorded as human_approved_exceptions in .workbench/tasks/M1/scope.json, but the record was written by an assistant session; the user should confirm the entry (or tell the workbench to forget it) in M2."
+  ],
   "blockers": [],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "Waiting on the user: approve recording opencode.json as a human-approved out-of-scope change for M1 (then re-run wb verify), or leave M1 failing. Then run the independent reviewer on M1 and start M2.",
-  "updated_at": "2026-11-07T14:55:00Z",
+  "next_action": "Run the independent reviewer on the review-fixes commits (a94c981..719bd91 + docs). If it passes, start M2 (MCP server `serve` with `talk`, `inbox`, `agree` over stdio); also confirm the opencode.json human_approved_exceptions entry captured on the user's spoken request. All M1 work is committed; nothing to push (never push).",
+  "updated_at": "2026-11-07T14:00:44+00:00",
   "last_mode": "checkpoints",
-  "last_mode_notes": "M1 only: store and core. Stopped at end of milestone with passing verification."
+  "last_mode_notes": "checkpoints mode recorded for session opencode-M1-fix (wb mode checkpoints); stop at end of milestone reached: wb verify PASS, handoff done."
 }
