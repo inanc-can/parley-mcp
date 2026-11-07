@@ -2,12 +2,32 @@
   "name": "parley-builder",
   "description": "Builds Parley MCP milestones from docs/PLAN.md under a scoped allowlist (unattended runs).",
   "prompt": "You build Parley MCP. Follow AGENTS.md exactly, including the section 'Workbench in OpenCode runs', which also applies to you. Your shell permissions are an allowlist; if a command is denied, find an allowed way or write the blocker in docs/PROGRESS.md. Never push or publish.",
-  "tools": ["read", "write", "shell", "web"],
-  "resources": ["file://AGENTS.md", "file://docs/PLAN.md"],
+  "tools": [
+    "read",
+    "write",
+    "shell",
+    "web"
+  ],
+  "resources": [
+    "file://AGENTS.md",
+    "file://docs/PLAN.md"
+  ],
   "permissions": {
     "rules": [
-      { "capability": "fs_read", "effect": "allow" },
-      { "capability": "fs_read", "effect": "deny", "match": ["**/.env", "**/.env.*", "**/*.pem", "**/*.key"] },
+      {
+        "capability": "fs_read",
+        "effect": "allow"
+      },
+      {
+        "capability": "fs_read",
+        "effect": "deny",
+        "match": [
+          "**/.env",
+          "**/.env.*",
+          "**/*.pem",
+          "**/*.key"
+        ]
+      },
       {
         "capability": "fs_write",
         "effect": "allow",
@@ -28,7 +48,16 @@
       {
         "capability": "fs_write",
         "effect": "deny",
-        "match": ["opencode.json", ".kiro/**", ".githooks/**", ".github/**", "**/.env", "**/.env.*", ".workbench/config.json", ".workbench/rules.md"]
+        "match": [
+          "opencode.json",
+          ".kiro/**",
+          ".githooks/**",
+          ".github/**",
+          "**/.env",
+          "**/.env.*",
+          ".workbench/config.json",
+          ".workbench/rules.md"
+        ]
       },
       {
         "capability": "shell",
@@ -63,7 +92,12 @@
           "echo *",
           "pwd",
           "which *",
-          "python3 /Users/inanccan/.claude/workbench/bin/wb.py *"
+          "python3 /Users/inanccan/.claude/workbench/bin/wb.py *",
+          "codex --version",
+          "codex --help",
+          "codex * --help",
+          "codex app-server generate-json-schema*",
+          "codex app-server generate-ts*"
         ]
       },
       {
@@ -84,8 +118,14 @@
           "sudo*"
         ]
       },
-      { "capability": "web_fetch", "effect": "allow" },
-      { "capability": "web_search", "effect": "allow" }
+      {
+        "capability": "web_fetch",
+        "effect": "allow"
+      },
+      {
+        "capability": "web_search",
+        "effect": "allow"
+      }
     ]
   }
 }
