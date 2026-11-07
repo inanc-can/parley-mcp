@@ -1,5 +1,103 @@
 # Progress
 
+## M3 — Results (completed 2026-11-07, session kiro-M3)
+
+**Goal (PLAN section 7 / M3):** the `parley-mcp` CLI (commander) — `serve`, `who`, `log`,
+`export`, `inbox drain|watch|register`, `hook edit`, and the `setup` / `uninstall` / `doctor`
+frameworks driven by a fake adapter and the `Adapter` interface — plus the four M2 review
+follow-ups from state.json `next_action`.
+
+**M2 review follow-ups folded in**
+1. **serve() close handling (high)** — `src/mcp/server.ts`: the db close handler is now registered
+   **before** `server.connect` (and also on stdin `end`/`close`), so no close can be missed in the
+   window between connect returning and the handler being set. `server.connect()` preserves and
+   chains an existing `transport.onclose` (verified in the SDK's `shared/protocol.js`), so the
+   SDK's own close handling is kept. `serve()` now returns a `ServeHandle` (`isClosed()`,
+   `close()`) so the close path is observable. The misleading comment was corrected. New test
+   `test/mcp/serve.test.ts` "closes the hub db when stdin ends".
+2. **recipient-guard participant test (medium)** — `test/store/agreements.test.ts`: a third agent
+   `c@r` that **is** a thread participant (it messaged `a@r` in the thread) but is **not** the
+   agreement's recipient (`offered_to = b@r`) is refused; the real recipient `b@r` still succeeds.
+3. **offered_to nullable vs required (medium)** — migration 2 added `offered_to TEXT` (nullable),
+   but the Zod row schema requires it (`z.string().min(1)`). Pre-release, no production hub.db
+   exists, so `offered_to TEXT NOT NULL` is folded into the initial schema (migration 1) and the
+   separate nullable migration is dropped: the SQL column and the Zod schema now agree. `db.test.ts`
+   maps `migrations` dynamically, so it still passes.
+4. **tidy (low)** — removed the trailing blank lines in `src/core/overlap.ts`; the serve test
+   closes its db/stream handles deterministically.
+
+**Built (CLI)**
+- `src/cli/context.ts` — `resolveRepoRoot` (git `rev-parse --show-toplevel`, cwd fallback, never
+  throws), `resolveDbPath` (`~/.parley-mcp/hub.db`, `PARLEY_DB_PATH` override), `openHubDb`.
+- `src/cli/index.ts` — the commander program (`buildProgram`) with injectable `{ write, env, cwd }`
+  deps; `withDb` opens/closes the hub db per command; `serve`, `who`, `log`, `export`, `viewer`,
+  `doctor`, `setup`, `uninstall`, and the `inbox drain|watch|register` + `hook edit` subcommands.
+- `src/cli/bin.ts` — the `#!/usr/bin/env node` entry (packaging finalised in M12).
+- `src/cli/commands/serve.ts` — resolves options and hands off to the M2 `serve()`; `start` is
+  injectable for tests.
+- `src/cli/commands/who.ts` / `log.ts` / `export.ts` — pure command functions taking an injected
+  db + writer; who marks agents alive/idle via `core/identity.isAlive`; log prints a thread or
+  lists threads; export writes md or jsonl of this repo's threads, messages and accepted decisions.
+- `src/cli/commands/inbox.ts` — `runInboxDrain` (marks pending messages `delivered`, never `read`
+  — read needs its own evidence, PLAN 4.3 — prints monitor/json lines), `runInboxRegister`
+  (upsert + heartbeat), `runInboxWatchOnce` (one-message step; the poll loop lives in index.ts).
+- `src/cli/commands/hook.ts` — `runHookEdit` records the edit then warns (never blocks) about
+  overlap with other agents' active claims and recent same-file edits via `core/overlap.detectOverlap`.
+- `src/cli/commands/viewer.ts` — stub pointing to M6.
+- `src/adapters/types.ts` — the `Adapter` interface (PLAN section 6) + `InstallReport` /
+  `DoctorReport` / `FileChange` types. `src/adapters/fake/index.ts` — the fake adapter.
+  `src/adapters/index.ts` — the `ADAPTERS` registry.
+- `src/cli/commands/setup.ts` / `uninstall.ts` / `doctor.ts` — drive the adapters; setup `--dry-run`
+  lists changes and writes nothing, setup is idempotent, uninstall restores byte for byte.
+
+**Tests**
+- `test/cli/setup.test.ts` — setup `--dry-run` lists changes and writes nothing; setup twice is
+  byte-for-byte identical the second time; uninstall of a created file removes it entirely;
+  uninstall of a merged file restores the original bytes exactly; doctor flips readiness after setup.
+- `test/cli/commands.test.ts` — who (alive/idle, empty), log (list + print + wrong-repo), export
+  (md with decisions, jsonl parseable per line), inbox drain (monitor + json, delivered-not-read,
+  second drain empty), watch --once, register, hook edit (overlap warning + no overlap), and the
+  serve command resolving options to an injected `start`.
+- `test/mcp/serve.test.ts` — added the stdin-end close-path test; existing talk-over-stdio test
+  keeps its handles closed deterministically.
+- `test/store/agreements.test.ts` — added the participant-not-recipient case.
+
+**Commands/results (via `wb run -- ...`)**
+- `pnpm add commander` → commander 15.0.0 (PLAN-approved runtime dep).
+- `pnpm check` (eslint strict + tsc --noEmit + vitest): **passed** — 25 test files, 107 tests.
+- `wb verify`: **PASS** (`.workbench/tasks/M3/verification.json`) — all acceptance commands exit 0,
+  scope + dependency (`new-dependency` approval) checks ok.
+
+**Note on prettier**: `pnpm run format` (prettier --write .) reformats the whole repo, including
+previously committed M1/M2 files and docs, because earlier milestones did not run it. It is **not**
+part of `pnpm check` (the verify gate is lint + typecheck + test). That churn was reverted so the
+M3 diff stays scoped; running `format` repo-wide is left for a dedicated formatting pass if the
+human wants one.
+
+**Commits (local, not pushed)**
+- `fix: fold M2 review follow-ups into serve lifecycle, schema and tests`
+- `chore: add commander runtime dependency for the CLI`
+- `feat: add the parley-mcp CLI program and wire the serve command`
+- `feat: add who, log, export, inbox and hook-edit CLI commands`
+- `feat: add the adapter framework with setup, uninstall and doctor`
+
+**Assumptions (M3)**
+- `resolveRepoRoot` uses git top-level with a cwd fallback and never throws (a non-repo folder is
+  still a valid place to talk; discovery then groups by that folder path).
+- The fake adapter's user-level file is `~/.parley-fake/config.json` with a managed `parley` key;
+  its JSON is pretty-printed with a trailing newline so a rewrite round-trips exactly, which is
+  what makes the byte-for-byte uninstall check deterministic. Real harness config paths/formats are
+  M4+ and recorded in `docs/harness-notes.md`.
+- `inbox watch` polls every 2 s in the command wiring; the pure `runInboxWatchOnce` step is what
+  tests drive (no real sleeping in tests).
+- The CLI `bin` entry (`src/cli/bin.ts`) exists but the package.json `bin` field and the compiled
+  path are deferred to M12 (launch polish), since there is no build pipeline yet.
+
+**Next (per PLAN)**
+- M4 (Claude Code adapter), or M3b (the work harness adapter) once `docs/harness-notes.md` names it.
+
+---
+
 ## M2 — Results (completed 2026-11-07, fixed review round 1 soft_fail)
 
 **Built** (M2 MCP server, `src/cli` untouched — the `serve` command wiring is deferred to M3, recorded as an assumption in state.json)
