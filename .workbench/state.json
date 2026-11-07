@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "active_task_id": "M1",
-  "summary": "M1 clear: all 7 acceptance commands and pnpm check pass (55 tests), wb verify PASS (round 2). Independent review round 1 (soft_fail) addressed: retention FK-safe with old-message/newer-event test, enforceMessageCap composes count+cap+pause with mutation-checked test asserting DEFAULT_MESSAGE_CAP=20, real stop-all guard with tests, agreement lifecycle tests, delivered->replied stamps read_at per PLAN 4.3, assumptions recorded, pnpm-workspace.yaml change explained in docs/PROGRESS.md.",
+  "active_task_id": "",
+  "summary": "M1 (store and core) closed: wb verify passes (55 tests); independent review round 2 passed 8/10 after round-1 fixes. The user confirmed the opencode.json scope exception in chat on 2026-11-07.",
   "assumptions": [
     "M1 (recorded 2026-11-07, fix session): The secret-scan regex thresholds are builder-chosen minimum length heuristics (AWS AKIA +16 chars; ghp_/github_pat_/sk- at 20+ chars; Slack xox*- tokens at 10+ chars; .env SECRET=TOKEN=PASSWORD=API_KEY lines with values of 12+ chars). They may need tightening after real-world false negative/positive feedback; none may ever be relaxed to log the secret value.",
     "M1 (recorded 2026-11-07, fix session): everyone fan-out derives per-recipient idempotency keys as `<base key>::<toAgent>`; the double-colon separator is a builder choice, and changing it changes which retries dedupe.",
@@ -14,8 +14,8 @@
   "blockers": [],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "Run the independent reviewer on the review-fixes commits (a94c981..719bd91 + docs). If it passes, start M2 (MCP server `serve` with `talk`, `inbox`, `agree` over stdio); also confirm the opencode.json human_approved_exceptions entry captured on the user's spoken request. All M1 work is committed; nothing to push (never push).",
-  "updated_at": "2026-11-07T14:00:44+00:00",
+  "next_action": "Start M2 (MCP server: talk/inbox/agree over stdio) on glm-5.3-flash-free. Fold in M1 review follow-ups while framing M2: move enforceMessageCap/checkStopAll composition out of store into core or the mcp caller (fix the store->core import inversion); guard updateAgreementStatus (status='offered' + recipient) with a real store test; add negative near-miss secret-scan tests.",
+  "updated_at": "2026-11-07T14:15:14+00:00",
   "last_mode": "checkpoints",
   "last_mode_notes": "checkpoints mode recorded for session opencode-M1-fix (wb mode checkpoints); stop at end of milestone reached: wb verify PASS, handoff done."
 }
