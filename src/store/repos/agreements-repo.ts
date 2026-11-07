@@ -66,6 +66,27 @@ export function updateAgreementStatus(
   return info.changes === 1;
 }
 
+/**
+ * The human's veto from the viewer (PLAN section 5 agree): only an accepted
+ * agreement can be vetoed, and only once. Returns whether this call moved it.
+ */
+export function vetoAgreement(db: Db, id: string, at: number): boolean {
+  const info = db
+    .prepare(
+      `UPDATE agreements SET status = 'vetoed', answered_by = 'you', answered_at = ?
+       WHERE id = ? AND status = 'accepted'`,
+    )
+    .run(at, id);
+  return info.changes === 1;
+}
+
+export function listAgreementsByThread(db: Db, threadId: string): AgreementRow[] {
+  const rows = db
+    .prepare("SELECT * FROM agreements WHERE thread_id = ? ORDER BY created_at, id")
+    .all(threadId);
+  return parseRows(agreementRowSchema, rows);
+}
+
 export function listAgreementsByRepo(db: Db, repoRoot: string): AgreementRow[] {
   const rows = db
     .prepare(

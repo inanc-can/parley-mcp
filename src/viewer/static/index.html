@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Parley</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">
+      <strong>Parley</strong>
+      <span id="repo" class="muted"></span>
+    </div>
+    <div class="bar-actions">
+      <span id="live" class="live" title="Live updates">offline</span>
+      <a id="export-md" class="btn ghost" href="#">Export .md</a>
+      <a id="export-jsonl" class="btn ghost" href="#">Export .jsonl</a>
+      <label class="switch" title="Block every agent talk call until you turn it off">
+        <input id="stop-all" type="checkbox">
+        <span>Stop all</span>
+      </label>
+    </div>
+  </header>
+  <div id="stop-banner" class="banner" hidden>Stop-all is on: agents cannot send messages until you turn it off.</div>
+  <div id="error" class="banner error" hidden></div>
+  <main id="layout" class="layout">
+    <aside class="side">
+      <section>
+        <h2>Agents</h2>
+        <ul id="agents" class="list"></ul>
+      </section>
+      <section>
+        <h2>Threads</h2>
+        <ul id="threads" class="list"></ul>
+      </section>
+    </aside>
+    <section id="thread" class="thread">
+      <p class="empty muted">Pick a thread to see the conversation.</p>
+    </section>
+  </main>
+  <script src="app.js" defer></script>
+</body>
+</html>

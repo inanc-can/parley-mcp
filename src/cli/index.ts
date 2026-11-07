@@ -16,7 +16,7 @@ import { registerHookCommands } from "./hook-commands.js";
 import { runSetup } from "./commands/setup.js";
 import { runUninstall } from "./commands/uninstall.js";
 import { runDoctor } from "./commands/doctor.js";
-import { runViewer } from "./commands/viewer.js";
+import { parsePort, runViewer } from "./commands/viewer.js";
 import { runServe } from "./commands/serve.js";
 import { runCodexWake } from "./commands/codex-wake.js";
 import { controlSocketPath, openControlSocket } from "../adapters/codex/control-socket.js";
@@ -127,10 +127,31 @@ export function buildProgram(deps: CliDeps = defaultDeps()): Command {
 
   program
     .command("viewer")
-    .description("Start the local viewer (arrives in M6).")
-    .option("--port <n>", "port to listen on")
-    .action(() => {
-      runViewer({ write: deps.write });
+    .description("Open the local viewer: watch threads, post as you, pause, veto, stop all.")
+    .option("--port <n>", "port to listen on (default: a free port)")
+    .option("--no-open", "print the URL without opening a browser")
+    .action(async (options: { port?: string; open: boolean }) => {
+      const db = openHubDb(deps.env);
+      const viewerDeps: Parameters<typeof runViewer>[0] = {
+        db,
+        repoRoot: resolveRepoRoot(deps.cwd),
+        home: adapterEnv(deps).home,
+        write: deps.write,
+        openBrowser: options.open,
+      };
+      const port = parsePort(options.port);
+      if (port !== undefined) {
+        viewerDeps.port = port;
+      }
+      const handle = await runViewer(viewerDeps);
+      const stop = (): void => {
+        void handle.close().then(() => {
+          db.close();
+          process.exit(0);
+        });
+      };
+      process.once("SIGINT", stop);
+      process.once("SIGTERM", stop);
     });
 
   program

@@ -11,7 +11,8 @@ import { join } from "node:path";
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name);
-    if (statSync(path).isDirectory()) return name === "fixtures" ? [] : sourceFiles(path);
+    // fixtures are data; viewer/static is bundled by esbuild for the browser, never run by Node.
+    if (statSync(path).isDirectory()) return name === "fixtures" || path.endsWith(join("viewer", "static")) ? [] : sourceFiles(path);
     return path.endsWith(".ts") ? [path] : [];
   });
 }

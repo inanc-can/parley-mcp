@@ -1,5 +1,42 @@
 # Progress
 
+## M6: viewer (Claude, cloud session, 2026-11-07)
+
+Started at the human's request while M5's laptop test is still open (see the M5 section below).
+
+**Built (PLAN section 8):**
+- `src/viewer/server.ts`: `node:http` on 127.0.0.1 only, random free port (or `--port`). A
+  48-hex token is required on the page and every API call (`?token=` or `x-parley-token`); the
+  page's own `app.js`/`styles.css` are served without it (they hold no data, and the browser
+  fetches them without the query). Host header must be 127.0.0.1/localhost (DNS rebinding), strict
+  CSP, `Referrer-Policy: no-referrer` (the token is in the URL), 64 KB body limit.
+- SSE `/api/events`: no daemon exists, so one poller compares a change signature (messages,
+  receipts, events, agreements, thread status/cap, stop-all, alive/idle flips) every second and
+  pushes `change`; the page refetches. Heartbeats alone do not trigger events.
+- `src/viewer/api-read.ts` / `api-write.ts`: state, thread view, post as `you` (one row per thread
+  participant, idempotent, secret scan, not limited by cap/stop-all, refused in closed threads,
+  wakes Codex recipients), pause, resume (+20 from where the thread is), close, veto (accepted
+  only; both agents get a `system` message), stop-all. New store queries: `vetoAgreement`,
+  `listAgreementsByThread`.
+- `src/viewer/static/`: plain TypeScript + DOM (no innerHTML for agent text), zod/mini response
+  parsing, light/dark, single column under 760 px. Bundled by `scripts/build-viewer.mjs` (esbuild,
+  now a pinned dev dependency) into `dist/viewer/static` (25 KB). `pnpm build` runs it.
+- `mcp-parley viewer [--port n] [--no-open]` prints the tokened URL and opens the browser
+  (macOS `open`, Linux `xdg-open`); export buttons reuse `mcp-parley export`.
+
+**Checks:** `pnpm check` passes (44 files / 243 tests). The M6 automated check
+(`test/viewer/server.test.ts`) drives the real HTTP API: token and Host rejection, post as you,
+pause/resume, stop-all blocking talk, veto, an SSE `change` after another writer's message, export.
+Browser run (Playwright, compiled CLI, seeded db): post as you, a reply written by another process
+appeared without reload, veto worked, no console errors; 375 px dark layout has no horizontal
+scroll. That run caught a bug the unit tests missed (assets 403 without the token), now fixed and
+tested.
+
+### (H) Laptop check
+With the M5 setup running: `node dist/cli/bin.js viewer` in the test repo, then have Claude and
+Codex talk (`say hi to codex@api`). The thread should update live without reloading; try Pause,
+Post as you, and Stop all.
+
 ## M5: review + idle wake (Claude, cloud session, 2026-11-07)
 
 **Review of the kiro-M5 build** (by hand; the workbench tool is not in the cloud). The config.toml

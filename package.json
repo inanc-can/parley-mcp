@@ -15,14 +15,15 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p src/viewer/static",
     "test": "vitest run",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json && node scripts/build-viewer.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^22.19.15",
+    "esbuild": "0.28.2",
     "eslint": "^9.39.4",
     "prettier": "^3.8.1",
     "typescript": "^5.9.3",
