@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "active_task_id": "M2",
-  "summary": "M2 complete: MCP server (talk/inbox/agree) over stdio using @modelcontextprotocol/sdk 1.32.2. Integration tests with InMemoryTransport pass: two fake agents exchange messages, receipts move sent->delivered->read->replied, an agreement is offered and accepted. Tool-definition token size ~518 (under 1,500). All three M1 review follow-ups done: (a) cap->pause and stop-all compositions moved from src/store to src/mcp/guards.ts (store never imports core; layering test enforces), (b) updateAgreementStatus guarded (only offered, only recipient) with store test attempting forbidden updates, (c) near-miss secret-scan tests added (short AKIA/xoxb/env values not blocked). pnpm check passes: 67 tests, 18 files. Committed as 41353b0.",
+  "summary": "M2 review round 1 soft_fail fixed by OpenCode (Nemotron free). All five review findings are fixed and re-tested: (1) serve() keeps the hub db open until the stdio transport closes, with a serve() stream-pair test making a real talk call; (2) the agreement recipient (offered_to) is stored via a new migration and answers are guarded on it, including a 3-agent test where a third agent's accept is refused; (3) counter validates text before touching the store and does both writes in one transaction; (4) the integration test now asserts a reply moves the original to replied, refuses a forbidden answer through MCP, and asserts structuredContent, plus new unit tests for outlook, secret blocking (near-misses), rules reminder and claim conflicts; (5) agree claim reports only other agents' claims, the claimsOverlap alias and the no-op listMessagesFromAgent JOIN are removed, and the titleFromFirstMessage test moved into test/core/threads.test.ts. wb verify for task M2 passes: 87 tests, every acceptance command. The serve command itself (the `parley-mcp serve` CLI wiring in src/cli) is NOT part of M2; it is wired in M3 (src/cli) - recorded as an assumption below.",
   "assumptions": [
     "M1 (recorded 2026-11-07, fix session): The secret-scan regex thresholds are builder-chosen minimum length heuristics (AWS AKIA +16 chars; ghp_/github_pat_/sk- at 20+ chars; Slack xox*- tokens at 10+ chars; .env SECRET=TOKEN=PASSWORD=API_KEY lines with values of 12+ chars). They may need tightening after real-world false negative/positive feedback; none may ever be relaxed to log the secret value.",
     "M1 (recorded 2026-11-07, fix session): everyone fan-out derives per-recipient idempotency keys as <base key>::<toAgent>; the double-colon separator is a builder choice, and changing it changes which retries dedupe.",
@@ -11,13 +11,14 @@
     "M1 (recorded 2026-11-07, fix session): A reply implies read (PLAN 4.3): delivered->replied is allowed and stamps read_at with the replied timestamp; read->replied keeps the earlier read_at.",
     "M1 review round 1 disputed (opencode.json): the default-model change in opencode.json was requested by the user in chat and recorded as human_approved_exceptions in .workbench/tasks/M1/scope.json, but the record was written by an assistant session; the user should confirm the entry (or tell the workbench to forget it) in M2.",
     "M2 (recorded 2026-11-07): MCP server identity defaults to PARLEY_AGENT_ID env, else harness@folder from PARLEY_HARNESS/cwd. Real adapters (M4+) replace this. Tool-definition tokens estimated at chars/4 (project's own cost model) over JSON.stringify of listTools output; budget is 1,500, measured ~518. Agreement recipient is derived as the latest direct message recipient in the thread. Counter-proposal marks the original 'countered' and inserts a new 'offered' row with parent_id. Rules-file text goes out once per inbox session (ctx.rulesTextSent). wait_for_reply_s polls findLatestReplyTo at 25 ms intervals.",
-    "[autonomous] 2026-11-07: GLM-5.3-Flash free and DeepSeek/MiMo free hit OpenCode's free usage limit mid-M2 (GLM resets in ~9.7 h). M2 continued in the same OpenCode session on opencode/nemotron-3.5-super-vl-free, the free model that still answered, instead of waiting or paying. Reversible: all work is in git. (Re-added by Claude: the builder's state rewrite dropped it.)"
+    "[autonomous] 2026-11-07: GLM-5.3-Flash free and DeepSeek/MiMo free hit OpenCode's free usage limit mid-M2 (GLM resets in ~9.7 h). M2 continued in the same OpenCode session on opencode/nemotron-3.5-super-vl-free, the free model that still answered, instead of waiting or paying. Reversible: all work is in git. (Re-added by Claude: the builder's state rewrite dropped it.)",
+    "M2 (recorded 2026-11-07, fix session): The serve command itself (the `parley-mcp serve` CLI wiring in src/cli) is deferred to M3; M2 only owns src/mcp/server.ts#serve and its stdio database lifecycle. src/cli is forbidden in M2 and was not touched."
   ],
   "blockers": [],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "M2 done. Run wb handoff, then stop. Next milestone per PLAN: M3 (CLI basics) or M3b (work harness adapter when named by the human).",
-  "updated_at": "2026-11-07T15:19:45+00:00",
+  "next_action": "wb verify passes for M2 (87 tests, all acceptance commands). Run wb handoff and stop. Pushing to GitHub is a blocker for the human (outward action).",
+  "updated_at": "2026-11-07T15:22:38+00:00",
   "last_mode": "checkpoints",
-  "last_mode_notes": "M2 completed end to end; pnpm check and wb verify pass"
+  "last_mode_notes": "M2 review findings fixed; pnpm check and wb verify pass; 87 tests"
 }

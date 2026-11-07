@@ -1,68 +1,47 @@
 {
-  "task_id": "M2",
+  "task_id": "M2-fix",
   "items": [
     {
-      "id": "deps",
-      "change": "Add the PLAN-approved runtime dependency @modelcontextprotocol/sdk (official SDK, stdio + in-memory transport); keep the lockfile in sync.",
-      "proof": "pnpm check passes after install with the dependency present in package.json.",
-      "evidence": ["docs/PLAN.md:139 (allowed runtime deps)", "package.json", "pnpm-lock.yaml"],
+      "id": "fix-1-serve-db-lifecycle",
+      "change": "Refactor src/mcp/server.ts serve(): accept optional dbPath/stdin/stdout (for tests), open the hub db once, run retention + register, connect the stdio transport, and keep the db open until transport.onclose (then close it). No finally-close after connect.",
+      "proof": "test/mcp/serve.test.ts drives serve() over a stream pair and makes a real talk call; pnpm check passes.",
+      "evidence": ["src/mcp/server.ts:76-110", "test/mcp/serve.test.ts"],
       "depends_on": []
     },
     {
-      "id": "followup-a-layering",
-      "change": "Move the cap->pause composition (enforceMessageCap) and the stop-all composition (checkStopAllActive) out of src/store into src/mcp/guards.ts so no src/store file imports src/core; update the existing stop-all and cap tests to import the compositions from src/mcp.",
-      "proof": "grep finds no src/core imports under src/store; existing cap and stop-all tests pass with the new import source; pnpm check passes.",
-      "evidence": ["src/mcp/guards.ts", "src/store/repos/threads-repo.ts", "src/store/repos/settings-repo.ts", "test/mcp/guards.test.ts", "test/core/fanout-and-cap.test.ts"],
+      "id": "fix-2-offered-to-guard",
+      "change": "Add migration id 2 adding agreements.offered_to; store offered_to on insert; updateAgreementStatus guards on status='offered', answered_by <> offered_by, and offered_to = answered_by. Store test: 3rd agent's accepted update is refused; recipient's still succeeds.",
+      "proof": "test/store/agreements.test.ts offers to b@r, asserts c@r's accept is refused and row unchanged, b@r's accept succeeds; integration 3-agent MCP test refuses a third agent's accept.",
+      "evidence": ["src/store/migrations.ts", "src/store/schema.ts", "src/store/repos/agreements-repo.ts:44-70", "test/store/agreements.test.ts"],
       "depends_on": []
     },
     {
-      "id": "followup-b-agreement-guard",
-      "change": "Guard agreementsRepo.updateAgreementStatus so only an 'offered' agreement can be answered and only by its recipient (responder is not the offerer and is a participant of the agreement's thread); the function returns whether the update happened.",
-      "proof": "test/store/agreements.test.ts attempts the forbidden update directly (offerer, non-participant, already-settled row) and asserts refusal plus an unchanged row; recipient updates still succeed; pnpm check passes.",
-      "evidence": ["src/store/repos/agreements-repo.ts", "test/store/agreements.test.ts"],
-      "depends_on": []
+      "id": "fix-3-counter-validate-first-transaction",
+      "change": "In agree.ts answer(): validate counter text before touching the store; perform the original->countered update and the counter insert in one db.transaction so a textless counter cannot orphan the original.",
+      "proof": "integration test: counter without text is refused and the original stays offered; counter with text marks original countered and creates a new offered row.",
+      "evidence": ["src/mcp/tools/agree.ts:111-175", "test/mcp/integration.test.ts"],
+      "depends_on": ["fix-2-offered-to-guard"]
     },
     {
-      "id": "followup-c-secret-near-miss",
-      "change": "Add negative near-miss secret-scan tests: short .env-style values, a too-short AKIA string and a too-short xoxb token must NOT be blocked.",
-      "proof": "test/core/guards.test.ts near-miss cases all expect null and pass.",
-      "evidence": ["test/core/guards.test.ts", "src/core/guards.ts"],
-      "depends_on": []
+      "id": "fix-4-integration-plus-unit-tests",
+      "change": "Extend test/mcp/integration.test.ts: a reply moves the original to replied, a forbidden answer through MCP is refused, structuredContent is asserted on talk/inbox/agree results. Add unit tests: test/mcp/outlook.test.ts (outlook), test/core/guards.test.ts (secret blocking near-misses), test/mcp/rules.test.ts (rules reminder), claim-conflict coverage via agree.test.",
+      "proof": "pnpm check passes; all new tests pass; integration asserts structuredContent and receipt statuses.",
+      "evidence": ["test/mcp/integration.test.ts", "test/mcp/outlook.test.ts", "test/core/guards.test.ts", "test/mcp/rules.test.ts", "test/mcp/agree.test.ts"],
+      "depends_on": ["fix-3-counter-validate-first-transaction"]
     },
     {
-      "id": "mcp-identity-server",
-      "change": "Implement src/mcp: identity.ts (agent id from env PARLEY_AGENT_ID with cwd-folder fallback, register + heartbeat per call), guards.ts (stop-all + cap compositions, post checks), rules.ts (.parley/rules.md reminder + once-per-session text), server.ts (McpServer with talk/inbox/agree, stdio serve, retention on start), each tool returning structuredContent plus a one-paragraph text summary.",
-      "proof": "pnpm check passes; server builds and registers exactly the three tools with zod input schemas.",
-      "evidence": ["src/mcp/*.ts", "PLAN.md:224-259"],
-      "depends_on": ["deps", "followup-a-layering"]
-    },
-    {
-      "id": "mcp-tools",
-      "change": "Implement the three tools per PLAN section 5: talk (stop-all, secret scan, thread creation/postable checks, idempotent send incl. everyone fan-out, reply marks reply_to replied with events, outlook from recipient presence, poll-based wait_for_reply_s), inbox (deliver+read marking of my pending messages with events, own sent receipts, decisions, who), agree (offer/accept/counter/reject via the guarded store update; claim/renew/release with overlap conflicts).",
-      "proof": "pnpm check passes; unit-level mcp tests cover outlook, secret blocking, rules reminder and claim conflicts.",
-      "evidence": ["src/mcp/tools/*.ts", "test/mcp/*.test.ts", "PLAN.md:230-259"],
-      "depends_on": ["mcp-identity-server", "followup-b-agreement-guard"]
-    },
-    {
-      "id": "integration-tests",
-      "change": "Integration tests with the SDK InMemoryTransport: two fake agents (two server instances sharing one in-memory SQLite db) exchange messages; receipts move sent->delivered->read->replied correctly; an agreement is offered and answered by its recipient; a forbidden answer is refused.",
-      "proof": "test/mcp/integration.test.ts exits 0.",
-      "evidence": ["test/mcp/integration.test.ts", "PLAN.md:381-384"],
-      "depends_on": ["mcp-tools"]
-    },
-    {
-      "id": "token-size-test",
-      "change": "Test that listTools over the in-memory transport serializes the three tool definitions (name + description + input schema), estimates tokens at chars/4, prints the measured number, and fails above 1,500.",
-      "proof": "test/mcp/tool-size.test.ts exits 0 and prints the measurement.",
-      "evidence": ["test/mcp/tool-size.test.ts", "PLAN.md:226"],
-      "depends_on": ["mcp-identity-server"]
+      "id": "fix-5-claims-cleanup",
+      "change": "agree claim conflicts exclude the caller's own claims; remove claimsOverlap alias from src/core/overlap.ts (use globMatch directly); remove the no-op JOIN from listMessagesFromAgent; move titleFromFirstMessage test from test/core/fanout-and-cap.test.ts into a new test/core/threads.test.ts.",
+      "proof": "overlap.test.ts / agree claim tests assert other-agents-only conflicts; no test imports claimsOverlap; threads.test.ts exists and passes; pnpm check passes.",
+      "evidence": ["src/core/overlap.ts", "src/mcp/tools/agree.ts", "src/store/repos/messages-repo.ts:212-222", "test/core/threads.test.ts", "test/core/fanout-and-cap.test.ts"],
+      "depends_on": ["fix-4-integration-plus-unit-tests"]
     },
     {
       "id": "verify-handoff",
-      "change": "Run wb verify, update docs/PROGRESS.md results, record assumptions in state.json, run wb handoff, commit, and stop at the checkpoint.",
-      "proof": "pnpm check and wb verify PASS; docs/PROGRESS.md and state.json record M2 results and assumptions.",
+      "change": "Run pnpm check, run wb verify, update docs/PROGRESS.md and state.json (keep existing assumptions, add the serve-command-M3 assumption), commit each fix with conventional messages, run wb handoff, stop.",
+      "proof": "pnpm check and wb verify PASS; state.json claims only what is tested.",
       "evidence": ["wb verify verdict", "docs/PROGRESS.md", ".workbench/state.json"],
-      "depends_on": ["integration-tests", "token-size-test", "followup-a-layering", "followup-b-agreement-guard", "followup-c-secret-near-miss"]
+      "depends_on": ["fix-1-serve-db-lifecycle", "fix-2-offered-to-guard", "fix-3-counter-validate-first-transaction", "fix-4-integration-plus-unit-tests", "fix-5-claims-cleanup"]
     }
   ]
 }

@@ -1,38 +1,22 @@
-# M2 — MCP server (talk/inbox/agree over stdio)
+# M2 fix — review round 1 soft_fail findings
 
 ## Goal
-Implement PLAN.md milestone M2: the MCP `serve` command with `talk`, `inbox` and `agree`, using the official `@modelcontextprotocol/sdk` over stdio, plus the three M1 review follow-ups recorded in `.workbench/state.json` `next_action`.
+Fix every finding in `.workbench/tasks/M2/review.json` (soft_fail, 5/10) without touching `src/cli` (forbidden in M2), then re-verify (`pnpm check` + `wb verify`) and hand off.
 
 ## Facts (with receipts)
-- PLAN.md §5 defines the three tools, their exact schemas and the 1,500-token budget (receipt: `docs/PLAN.md`).
-- M1 store + core are complete; `wb verify` round 2 passes with 55 tests (receipt: `docs/PROGRESS.md`, `.workbench/tasks/M1/verification.json`).
-- Store currently imports core in `src/store/repos/threads-repo.ts` (`shouldPauseAfterCount`) and `src/store/repos/settings-repo.ts` (`checkStopAll`) — the M1 review follow-up (a) inversion to fix (receipt: those files).
-- `agreementsRepo.updateAgreementStatus` is currently unguarded: any caller can move any row to any status (receipt: `src/store/repos/agreements-repo.ts`).
-- Secret patterns have length minima that near-misses must not trigger (receipt: `src/core/guards.ts`).
-- `@modelcontextprotocol/sdk` is on PLAN's allowed runtime dependency list (receipt: `docs/PLAN.md` §3); recorded as `new-dependency` approval in scope.json.
+- Review finding 1 (high): `serve()` closes `db` in `finally` right after `server.connect(transport)`. stdio `start()` returns immediately, so real stdio tool calls hit a closed db. Fix: keep db open until transport close (`transport.onclose`); add a test driving `serve()` over a stream pair and making a real tool call. Receipt: `src/mcp/server.ts:76-95`.
+- Review finding 2 (medium): agreement recipient never stored; guard allows any non-offerer participant, so a third agent can answer an offer made to another. Fix: store `offered_to` and guard on it; 3-agent test where a third agent's accept is refused. Receipt: `src/store/repos/agreements-repo.ts:44-70`.
+- Review finding 3 (medium): `counter` marks the original countered before checking text; a counter without text orphans the original. Fix: validate text first, do both writes in one transaction. Receipt: `src/mcp/tools/agree.ts:111-170`.
+- Review finding 4 (medium): integration test stops at read; no reply→replied assertion, no forbidden answer through MCP, no `structuredContent` assertion; missing unit tests for outlook, secret blocking, rules reminder and claim conflicts. Receipt: `test/mcp/integration.test.ts`.
+- Review finding 5 (low): `agree claim` counts the caller's own claims as conflicts (PLAN 4.5: other agents). Remove `claimsOverlap` alias, remove no-op JOIN in `listMessagesFromAgent`, move `titleFromFirstMessage` test into a threads test file. Receipt: `src/mcp/tools/agree.ts:206-236`, `src/core/overlap.ts:62`, `src/store/repos/messages-repo.ts:212-222`, `test/core/fanout-and-cap.test.ts:85-93`.
+- Allowed files (scope.json): `src/mcp/**`, `src/store/**`, `src/core/**`, `test/mcp/**`, `test/store/**`, `test/core/**`, `docs/PROGRESS.md`, `docs/harness-notes.md`, `package.json`, `pnpm-lock.yaml`, `.workbench/**`.
+- Forbidden: `src/cli/**` (the `serve` command wiring is deferred to M3; record as an assumption in state.json).
 
-## Allowed files
-- `src/mcp/**`, `src/store/**`, `src/core/**` (core only if a follow-up requires a pure helper)
-- `test/mcp/**`, `test/store/**`, `test/core/**`
-- `docs/PROGRESS.md`, `docs/harness-notes.md`
-- `package.json`, `pnpm-lock.yaml`
-- `.workbench/**`
-
-## Forbidden files
-- `src/cli/**`, `src/adapters/**`, `src/viewer/**`, `src/notify/**` (later milestones)
-- Anything in `.workbench/config.json` forbidden list
-
-## Acceptance (M2, from PLAN.md + state.json next_action)
-- Integration tests with the SDK's in-memory transport: two fake agents exchange messages, receipts move correctly, an agreement is offered and accepted.
-- A test measures and prints the token size of the three tool definitions and fails above 1,500.
-- Follow-up (a): store never imports core logic (cap→pause and stop-all compositions live in `src/mcp/guards.ts`).
-- Follow-up (b): `updateAgreementStatus` refuses non-`offered` rows and non-recipients; a store test attempts the forbidden update.
-- Follow-up (c): near-miss secret-scan tests (short env values, too-short AKIA, too-short xoxb) pass.
-- `pnpm check` and `wb verify` pass.
+## Acceptance
+- `pnpm check` (lint + typecheck + full test suite) passes.
+- `wb verify` passes for M2.
+- Every review finding fixed with a test that would fail on the pre-fix code.
 
 ## Unknowns
-- discoverable: exact `@modelcontextprotocol/sdk` API surface for the installed version (tool registration, `structuredContent`, `InMemoryTransport`) — resolve from the installed package's d.ts during build; recorded in harness-notes.
-- discoverable: token estimate method — PLAN gives only "under 1,500 tokens"; using the project's own chars/4 estimate over the serialized tool definitions, printed by the test.
-- decidable (recorded in PROGRESS/state when chosen): identity source for M2 (env `PARLEY_AGENT_ID`, adapters replace it in M4+), agreement recipient derivation (thread participant ≠ offerer), counter = mark original `countered` + new `offered` child row, claim renew/release keyed by caller + path_glob.
-- human: none for M2 scope. Dependency `@modelcontextprotocol/sdk` is pre-approved by PLAN.md §3.
-- deferred: real harness wake/delivery (M3b/M4+), viewer veto (M6), notifications (M7/M9), rules-file end-to-end check (M7; the one-line reminder + once-per-session rules text is included here because it is part of `talk`/`inbox` behavior).
+- discoverable: none remaining; the installed SDK (`1.32.2`) `StdioServerTransport` accepts injected `stdin`/`stdout` streams (receipt: `node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.d.ts`).
+- assumption to record in state.json: the `serve` command itself is wired in M3 (`src/cli`); M2 only owns `src/mcp/server.ts#serve`.

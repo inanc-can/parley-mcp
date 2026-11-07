@@ -1,37 +1,49 @@
 # Progress
 
-## M2 — Results (completed 2026-11-07)
+## M2 — Results (completed 2026-11-07, fixed review round 1 soft_fail)
 
-**Built**
-- `src/mcp/server.ts` — `createServer(ctx)` wires talk/inbox/agree to an `McpServer`; `serve()` opens the hub db (~/.parley-mcp/hub.db), runs retention, registers the agent, connects `StdioServerTransport`. Only file importing the SDK.
-- `src/mcp/identity.ts` — `resolveAgentId` (PARLEY_AGENT_ID / PARLEY_HARNESS / cwd fallback), `registerCaller` (upsert), `heartbeatCaller`.
-- `src/mcp/guards.ts` — `enforceMessageCap` and `checkStopAllActive` compositions moved here from `src/store` (follow-up a).
-- `src/mcp/context.ts` — `ToolContext` (db, agentId, repoRoot, nativeSession, rulesTextSent).
-- `src/mcp/response.ts` — `ToolOutcome`, `success`, `refused`, `toToolResult` (structuredContent + text summary per PLAN §5).
-- `src/mcp/rules.ts` — `readRulesFile` / `rulesReminder` for `.parley/rules.md`.
-- `src/mcp/outlook.ts` — `buildOutlook` / `pluralOutlook` from recipient heartbeat presence.
-- `src/mcp/tools/talk.ts` — stop-all, secret scan, self-message, thread resolve/create, postable check, idempotent send + everyone fan-out, sent events, reply marking, cap enforcement, wait_for_reply_s polling, structured result + summary.
-- `src/mcp/tools/inbox.ts` — deliver+read marking with events, sent receipts, accepted decisions, who (alive/idle), rules reminder + once-per-session text.
-- `src/mcp/tools/agree.ts` — offer/accept/counter/reject via guarded store update; claim/renew/release with overlap conflict warnings.
-- `src/core/identity.ts` — added `isAlive` (30 s heartbeat window).
-- `src/core/message-rules.ts` — added `MESSAGE_TTL_MS` (24 h).
-- `src/core/threads.ts` — added `titleFromFirstMessage`, `MAX_TITLE_LENGTH`.
-- `src/core/overlap.ts` — added `claimsOverlap`.
-- `src/store/schema.ts` — extracted `MESSAGE_KINDS` + `messageKindSchema`.
-- `src/store/repos/messages-repo.ts` — added `listMessagesFromAgent`, `findLatestReplyTo`.
-- `src/store/repos/agreements-repo.ts` — `updateAgreementStatus` guarded (only `offered`, only recipient thread participant), returns boolean (follow-up b).
-- Tests: `test/mcp/integration.test.ts` (SDK InMemoryTransport, two agents, message round-trip + receipt moves + offer/accept), `test/mcp/tool-size.test.ts` (~518 tokens, under 1,500), `test/mcp/guards.test.ts` (moved compositions), `test/store/layering.test.ts` (store never imports core, mutation-verified), `test/store/agreements.test.ts` (forbidden update attempts), `test/core/guards.test.ts` (near-miss AKIA/xoxb/env values) (follow-up c), `test/core/identity.test.ts` (isAlive), `test/core/fanout-and-cap.test.ts` (titleFromFirstMessage).
+**Built** (M2 MCP server, `src/cli` untouched — the `serve` command wiring is deferred to M3, recorded as an assumption in state.json)
+- `src/mcp/server.ts` — `createServer(ctx)` wires talk/inbox/agree to an `McpServer`; `serve()` opens the hub db once, runs retention, registers the agent, connects `StdioServerTransport`, and keeps the db open until `transport.onclose` (harness disconnect) instead of closing in a `finally` right after connect. Only file importing the SDK. Accepts optional `dbPath`/`stdin`/`stdout` for tests.
+- `src/store/migrations.ts` — migration id 2 `add_agreement_recipient`: adds `agreements.offered_to TEXT` + index.
+- `src/store/schema.ts` — `agreements` row gains required `offered_to` (`AgreementRow.offeredTo`).
+- `src/store/repos/agreements-repo.ts` — `insertAgreement` takes `offeredTo`; `updateAgreementStatus` now guards on `status='offered' AND answered_by <> offered_by AND offered_to = answered_by` (only the stored recipient may answer).
+- `src/mcp/tools/agree.ts` — offers store `offered_to` = thread recipient; counter validates `text` before touching the store and performs the original→`countered` update plus the counter insert in one `db.transaction`; `agree claim` reports only **other agents'** active overlapping claims (PLAN 4.5); uses `globMatch` directly.
+- `src/core/overlap.ts` — removed the `claimsOverlap` alias (keep `detectOverlap`).
+- `src/store/repos/messages-repo.ts` — `listMessagesFromAgent` no longer does the no-op `JOIN threads`.
+- All other M2 files from the original build (identity, guards, context, response, rules, outlook, talk, inbox, core identity/message-rules/threads, store schema/messages-repo) unchanged.
+
+**Tests**
+- `test/mcp/serve.test.ts` — drives `serve()` over a real stdio stream pair, makes a `talk` call, and confirms the write committed to the still-open hub db (finding 1).
+- `test/store/agreements.test.ts` — offers to b@r; a 3rd agent c@r's accept is refused and the row stays `offered`; b@r's accept succeeds; counter-proposal offered to a@r (finding 2).
+- `test/mcp/agree.test.ts` — claim conflicts report other agents only (never the caller's own); textless counter refused and original stays `offered`; proper counter marks original `countered` and adds a new offered counter row (findings 3 & 5).
+- `test/mcp/integration.test.ts` — a reply moves the original to `replied`; a third agent's MCP `accept` is refused with `not_answerable`; `structuredContent` asserted on talk/inbox/agree (finding 4).
+- `test/mcp/outlook.test.ts` — `buildOutlook` (never-checked-in / active / idle) and `pluralOutlook` (finding 4).
+- `test/mcp/rules.test.ts` — `rulesReminder` and `readRulesFile` present/absent (finding 4).
+- `test/core/guards.test.ts` — secret near-misses: too-short AKIA / xoxb / .env value must not block; real patterns still blocked (finding 4).
+- `test/core/threads.test.ts` — `titleFromFirstMessage` moved here from `test/core/fanout-and-cap.test.ts` (finding 5).
+- `test/core/fanout-and-cap.test.ts` — `titleFromFirstMessage` test removed (now in threads.test.ts).
 
 **Commands/results (via `wb run -- ...`)**
-- `pnpm add @modelcontextprotocol/sdk` → v1.32.2 (PLAN-allowed runtime dep, `new-dependency` approval in scope.json).
-- `pnpm check` (eslint + tsc --noEmit + vitest): **passed** — 18 test files, 67 tests passed.
-- `wb verify`: **PASS** (all acceptance commands exit 0).
+- `pnpm check` (eslint + tsc --noEmit + vitest): **passed** — 23 test files, 87 tests passed.
+- `wb verify`: **PASS** (all acceptance commands exit 0; `.workbench/tasks/M2/verification.json`).
 
 **Commits (local, not pushed)**
 - `docs: frame M2 MCP server workbench task`
 - `chore: add @modelcontextprotocol/sdk runtime dependency`
 - `fix: guard agreement answers, move guard compositions to the mcp layer, and add near-miss secret tests`
 - `feat: add MCP server with talk/inbox/agree over stdio`
+- `feat: keep serve() db open until the stdio transport closes`
+- `fix: guard agreement answers on stored recipient; make counter atomic`
+- `fix: report claim conflicts for other agents only; drop claimsOverlap alias and no-op JOIN`
+- `test: add outlook, rules, secret and claim-conflict tests; extend integration test`
+
+**M2 — Review round 1 fixes (2026-11-07, session opencode-M2-fix)**
+Independent review `.workbench/tasks/M2/review.json` scored M2 `soft_fail` (5/10). All five findings fixed, each with a test that fails on the pre-fix code:
+1. **serve() db lifecycle (high)** — db now stays open until `transport.onclose`; new `test/mcp/serve.test.ts` drives `serve()` over a stream pair and makes a real talk call.
+2. **Agreement recipient stored + guarded (medium)** — new migration `agreements.offered_to`; answers guarded on `offered_to`; 3-agent test refuses a third agent's accept.
+3. **Counter validate-first + single transaction (medium)** — counter text validated before any write; both writes in one `db.transaction`; textless counter can't orphan the original.
+4. **Integration + missing unit tests (medium)** — integration asserts reply→replied, refuses a forbidden MCP answer, asserts structuredContent; new unit tests for outlook, secret blocking, rules reminder, claim conflicts.
+5. **Claim conflicts / cleanup (low)** — claim conflicts exclude the caller's own claims; `claimsOverlap` alias removed; no-op `JOIN` removed from `listMessagesFromAgent`; `titleFromFirstMessage` test moved to `test/core/threads.test.ts`.
 
 **Next (per PLAN)**
 - M3: CLI basics (who, log, export, inbox drain/watch/register, hook edit, setup/uninstall/doctor frameworks). Or M3b (work harness adapter) when the human names it.
