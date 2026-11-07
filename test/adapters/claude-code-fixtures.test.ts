@@ -44,9 +44,9 @@ function loadFixture(name: string): unknown {
   return JSON.parse(readFileSync(join(FIXTURES, name), "utf8"));
 }
 
-function collector(): { lines: string[]; write: (line: string) => void } {
+function collector(): { lines: string[]; status: (line: string) => void } {
   const lines: string[] = [];
-  return { lines, write: (line) => lines.push(line) };
+  return { lines, status: (line) => lines.push(line) };
 }
 
 function seedSentMessage(db: Db, to: string): string {
@@ -98,7 +98,7 @@ describe("replay session-start fixture", () => {
   it("registers the agent", () => {
     const db = openMemoryDb();
     const payload = sessionStartPayloadSchema.parse(loadFixture("session-start.json"));
-    runHookSessionStart({ db, repoRoot: REPO, write: collector().write, now: 5_000 }, payload);
+    runHookSessionStart({ db, repoRoot: REPO, status: collector().status, now: 5_000 }, payload);
     expect(agentsRepo.findAgent(db, AGENT)?.id).toBe(AGENT);
     db.close();
   });
@@ -113,7 +113,7 @@ describe("replay user-prompt fixture", () => {
       ...raw,
       prompt: raw.prompt.replace("__MESSAGE_ID__", id),
     });
-    const read = runHookUserPrompt({ db, repoRoot: REPO, write: collector().write, now: 6_000 }, payload);
+    const read = runHookUserPrompt({ db, repoRoot: REPO, status: collector().status, now: 6_000 }, payload);
     expect(read).toBe(1);
     expect(messagesRepo.getMessage(db, id).status).toBe("read");
     db.close();
@@ -126,7 +126,7 @@ describe("replay subagent fixture", () => {
     const id = seedSentMessage(db, AGENT);
     const payload = postToolPayloadSchema.parse(loadFixture("subagent-post-tool.json"));
     const out = collector();
-    runHookPostTool({ db, repoRoot: REPO, write: out.write, now: 7_000 }, payload);
+    runHookPostTool({ db, repoRoot: REPO, status: out.status, now: 7_000 }, payload);
     expect(messagesRepo.getMessage(db, id).status).toBe("sent");
     expect(out.lines.join("\n")).toContain("ignored subagent payload");
     db.close();
@@ -137,7 +137,7 @@ describe("replay session-end fixture", () => {
   it("parses and requeues zero when nothing is delivered", () => {
     const db = openMemoryDb();
     const payload = sessionEndPayloadSchema.parse(loadFixture("session-end.json"));
-    const requeued = runHookSessionEnd({ db, repoRoot: REPO, write: collector().write }, payload);
+    const requeued = runHookSessionEnd({ db, repoRoot: REPO, status: collector().status }, payload);
     expect(requeued).toBe(0);
     db.close();
   });

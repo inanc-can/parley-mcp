@@ -177,6 +177,22 @@ export function requeueDeliveredForSession(
   return info.changes;
 }
 
+/**
+ * Requeue (delivered -> sent) only messages delivered to a specific session.
+ * Used by SessionEnd: when a session ends, its own undelivered-but-delivered
+ * messages go back to `sent` for the agent's next session (PLAN 4.3 requeue).
+ * Messages delivered to other live sessions of the same agent are untouched.
+ */
+export function requeueDeliveredToSession(db: Db, toAgent: string, session: string): number {
+  const info = db
+    .prepare(
+      `UPDATE messages SET status = 'sent', delivered_at = NULL, delivered_session = NULL
+       WHERE to_agent = ? AND status = 'delivered' AND delivered_session = ?`,
+    )
+    .run(toAgent, session);
+  return info.changes;
+}
+
 export function expireSentMessages(db: Db, now: number): number {
   const info = db
     .prepare(

@@ -20,7 +20,13 @@ import {
 export interface HookEventDeps {
   db: Db;
   repoRoot: string;
-  write: (line: string) => void;
+  /**
+   * Status/diagnostic lines. These must NOT reach the harness's stdout, because
+   * Claude Code turns a hook's stdout into model context (SessionStart /
+   * UserPromptSubmit additionalContext). Route them to stderr. Only deliveries
+   * Claude should actually see belong on stdout (the monitor handles those).
+   */
+  status: (line: string) => void;
   now?: number;
 }
 
@@ -37,7 +43,7 @@ export function runHookSessionStart(deps: HookEventDeps, payload: SessionStartPa
   const now = deps.now ?? Date.now();
   const agentId = claudeAgentId(payload.cwd);
   registerAgent(deps.db, agentId, deps.repoRoot, payload.session_id, now);
-  deps.write(`registered ${agentId} (session ${payload.session_id})`);
+  deps.status(`registered ${agentId} (session ${payload.session_id})`);
 }
 
 /**
@@ -54,14 +60,17 @@ export function runHookUserPrompt(deps: HookEventDeps, payload: UserPromptPayloa
   const agentId = claudeAgentId(payload.cwd);
   touchHeartbeat(deps.db, agentId, deps.repoRoot, payload.session_id, now);
   const read = markReadByEvidence(deps.db, agentId, payload.prompt, now);
-  deps.write(`user-prompt ${agentId}: marked ${String(read)} message(s) read`);
+  deps.status(`user-prompt ${agentId}: marked ${String(read)} message(s) read`);
   return read;
 }
 
 /**
  * `hook stop`: at the safe point of turn end, drain queued messages (deliver
- * them so the monitor/next turn can surface them) and take read-evidence from
- * the final assistant message. Subagent payloads are ignored.
+ * them so the monitor/next turn can surface them). Subagent payloads are
+ * ignored. We do NOT treat the final assistant message as read-evidence:
+ * PLAN 4.3 restricts read to the model's *input* (UserPromptSubmit prompt or
+ * transcript), an `inbox` call, or a reply — the assistant's own output is not
+ * in that list, so a delivered-but-unechoed message stays `delivered`.
  */
 export function runHookStop(deps: HookEventDeps, payload: StopPayload): void {
   if (ignoreSubagent(deps, payload, "stop")) {
@@ -70,11 +79,8 @@ export function runHookStop(deps: HookEventDeps, payload: StopPayload): void {
   const now = deps.now ?? Date.now();
   const agentId = claudeAgentId(payload.cwd);
   touchHeartbeat(deps.db, agentId, deps.repoRoot, payload.session_id, now);
-  if (payload.last_assistant_message !== undefined) {
-    markReadByEvidence(deps.db, agentId, payload.last_assistant_message, now);
-  }
   const delivered = drain(deps.db, agentId, payload.session_id, now);
-  deps.write(`stop ${agentId}: delivered ${String(delivered)} message(s)`);
+  deps.status(`stop ${agentId}: delivered ${String(delivered)} message(s)`);
 }
 
 /**
@@ -92,11 +98,11 @@ export function runHookPostTool(deps: HookEventDeps, payload: PostToolPayload): 
   if (payload.tool_name !== undefined && EDIT_TOOLS.has(payload.tool_name)) {
     const path = editedPath(payload.tool_input);
     if (path !== null) {
-      runHookEdit({ db: deps.db, repoRoot: deps.repoRoot, write: deps.write, now }, agentId, path);
+      runHookEdit({ db: deps.db, repoRoot: deps.repoRoot, status: deps.status, now }, agentId, path);
     }
   }
   const delivered = drain(deps.db, agentId, payload.session_id, now);
-  deps.write(`post-tool ${agentId}: delivered ${String(delivered)} message(s)`);
+  deps.status(`post-tool ${agentId}: delivered ${String(delivered)} message(s)`);
 }
 
 /**
@@ -109,14 +115,16 @@ export function runHookSessionEnd(deps: HookEventDeps, payload: SessionEndPayloa
     return 0;
   }
   const agentId = claudeAgentId(payload.cwd);
-  const requeued = messagesRepo.requeueDeliveredForSession(deps.db, agentId, null);
-  deps.write(`session-end ${agentId}: requeued ${String(requeued)} unread message(s)`);
+  // Requeue only messages delivered to THIS ending session, not every delivered
+  // message across the agent's other live sessions (PLAN 4.3 requeue).
+  const requeued = messagesRepo.requeueDeliveredToSession(deps.db, agentId, payload.session_id);
+  deps.status(`session-end ${agentId}: requeued ${String(requeued)} unread message(s)`);
   return requeued;
 }
 
 function ignoreSubagent(deps: HookEventDeps, payload: PayloadMeta, event: string): boolean {
   if (isSubagentPayload(payload)) {
-    deps.write(`${event}: ignored subagent payload`);
+    deps.status(`${event}: ignored subagent payload`);
     return true;
   }
   return false;

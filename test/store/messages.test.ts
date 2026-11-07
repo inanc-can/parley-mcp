@@ -172,6 +172,30 @@ describe("message status moves", () => {
     db.close();
   });
 
+  it("requeueDeliveredToSession requeues only the ending session's deliveries", () => {
+    const db = openMemoryDb();
+    const { threadId } = setup(db);
+    const a = messagesRepo.insertMessage(db, msgInput(threadId));
+    const b = messagesRepo.insertMessage(db, msgInput(threadId));
+    messagesRepo.guardedStatusUpdate(db, a.id, {
+      status: "delivered",
+      at: 2_000,
+      deliveredSession: "sess-A",
+    });
+    messagesRepo.guardedStatusUpdate(db, b.id, {
+      status: "delivered",
+      at: 2_000,
+      deliveredSession: "sess-B",
+    });
+    // Ending session A requeues only A's message.
+    const changed = messagesRepo.requeueDeliveredToSession(db, "b@repo", "sess-A");
+    expect(changed).toBe(1);
+    expect(messagesRepo.getMessage(db, a.id).status).toBe("sent");
+    expect(messagesRepo.getMessage(db, b.id).status).toBe("delivered");
+    expect(messagesRepo.getMessage(db, b.id).delivered_session).toBe("sess-B");
+    db.close();
+  });
+
   it("expires sent messages after their expiry time", () => {
     const db = openMemoryDb();
     const { threadId } = setup(db);

@@ -266,7 +266,7 @@ describe("cli hook edit", () => {
     });
     const out = collector();
     const conflicts = runHookEdit(
-      { db, repoRoot: REPO, write: out.write, now: 1_000 },
+      { db, repoRoot: REPO, status: out.write, now: 1_000 },
       "a@repo",
       "src/app.ts",
     );
@@ -279,7 +279,7 @@ describe("cli hook edit", () => {
     const db = openMemoryDb();
     const out = collector();
     const conflicts = runHookEdit(
-      { db, repoRoot: REPO, write: out.write, now: 1_000 },
+      { db, repoRoot: REPO, status: out.write, now: 1_000 },
       "a@repo",
       "src/lonely.ts",
     );

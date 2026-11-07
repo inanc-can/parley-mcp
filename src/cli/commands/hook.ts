@@ -5,7 +5,8 @@ import { claimsRepo, editsRepo, type Db } from "../../store/index.js";
 export interface HookEditDeps {
   db: Db;
   repoRoot: string;
-  write: (line: string) => void;
+  /** Diagnostic lines (stderr for Claude hooks; see HookEventDeps.status). */
+  status: (line: string) => void;
   now?: number;
 }
 
@@ -39,12 +40,12 @@ export function runHookEdit(deps: HookEditDeps, agentId: string, path: string): 
     recentEdits,
   });
   if (conflicts.length === 0) {
-    deps.write(`edit recorded: ${agentId} ${path} (no overlap)`);
+    deps.status(`edit recorded: ${agentId} ${path} (no overlap)`);
     return 0;
   }
-  deps.write(`edit recorded: ${agentId} ${path} — overlap warning:`);
+  deps.status(`edit recorded: ${agentId} ${path} — overlap warning:`);
   for (const conflict of conflicts) {
-    deps.write(`  ${conflict.agentId} (${conflict.kind}): ${conflict.detail}`);
+    deps.status(`  ${conflict.agentId} (${conflict.kind}): ${conflict.detail}`);
   }
   return conflicts.length;
 }
