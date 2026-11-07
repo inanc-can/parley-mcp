@@ -1,0 +1,45 @@
+{
+ "task_id": "M4",
+ "round": 3,
+ "verdict": "pass",
+ "total": 7,
+ "dimensions": {
+  "problem_fit": 1,
+  "scope_discipline": 2,
+  "assumptions": 2,
+  "verification_quality": 1,
+  "handoff_readiness": 1
+ },
+ "weakest_check": {
+  "command": "pnpm exec vitest run test/cli/hook.test.ts",
+  "mutation": "current code: monitor drains as monitor-$$, SessionEnd requeues by Claude session_id",
+  "expected": "should fail; test calls requeueDeliveredToSession('monitor-7') directly"
+ },
+ "findings": [
+  {
+   "severity": "high",
+   "detail": "Monitor deliveries are never requeued: monitor records delivered_session=monitor-<pid>, SessionEnd matches Claude's session_id. Fix (e.g. SessionStart requeues delivered-unread messages from sessions no longer live, or SessionEnd also requeues this agent's monitor-* deliveries) and test through runHookSessionEnd/runHookSessionStart.",
+   "citation": "src/cli/commands/hook-events.ts:126"
+  },
+  {
+   "severity": "medium",
+   "detail": "The monitor-requeue test bypasses the hook (calls the repo function with monitor-7 directly), hiding the bug.",
+   "citation": "test/cli/hook.test.ts:239-256"
+  },
+  {
+   "severity": "medium",
+   "detail": "Stale handoff docs after 82e48f5: latest.md and harness-notes still say the launcher needs tsx; verification.json predates the build fix.",
+   "citation": ".workbench/handoff/latest.md:20"
+  },
+  {
+   "severity": "low",
+   "detail": "No automated test runs the compiled CLI (only a regex guard); setup from .ts still writes a tsx launcher.",
+   "citation": "test/cli/build-imports.test.ts:20"
+  },
+  {
+   "severity": "low",
+   "detail": "Live-test step 7 says who prints thread ids (only `log` does); no step checks requeue after closing session B.",
+   "citation": "docs/PROGRESS.md:72-75"
+  }
+ ]
+}
