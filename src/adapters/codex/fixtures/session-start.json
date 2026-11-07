@@ -1,0 +1,10 @@
+{
+  "_synthetic": true,
+  "session_id": "codex-sess-0001",
+  "transcript_path": "/home/synthetic/.codex/sessions/codex-sess-0001.jsonl",
+  "cwd": "/home/synthetic/repo/api",
+  "hook_event_name": "SessionStart",
+  "permission_mode": "default",
+  "model": "gpt-5-codex",
+  "source": "startup"
+}
