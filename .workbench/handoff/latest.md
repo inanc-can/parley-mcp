@@ -1,14 +1,14 @@
-# Handoff 2026-11-07T20:45:05+00:00
+# Handoff 2026-11-07T21:07:06+00:00
 
-- Task: (none)
-- HEAD: `400ead244a59`
-- Verification: PASS `.workbench/verification.json`
+- Task: M5
+- HEAD: `f0bbf10ae971`
+- Verification: PASS `.workbench/tasks/M5/verification.json`
 - Review: `none`
 
-- Mode: checkpoints (M4 fix round 3 (Kiro): monitor-delivery requeue via SessionStart/SessionEnd, stale-doc refresh, build smoke test. wb verify PASS. Next: the human's live two-session test closes M4.)
+- Mode: checkpoints (M5 (Kiro, kiro-M5): Codex adapter built — config.toml + hooks.json merge (comments/other hooks preserved, byte-for-byte uninstall, foreign-entry guard), app-server idle-wake builders gated + fail-closed, doctor reports untrusted hooks. wb verify PASS (193 tests). Next: the human's live Claude<->Codex two-session test closes M5.)
 
 ## Summary
-M4 (Claude Code adapter) closed after the human-assisted live test passed: idle web session woke <1 s after api's message, read 1 s later, replied on its own in the same thread 10 s later (2026-11-07 20:43 UTC, Claude Code 2.1.319). Five reviews; live-test bugs fixed in a7a14c9 and 400ead2. 164 tests, wb verify passes.
+M5 (Codex adapter) built and wb verify PASS (36 files / 193 tests). Codex 0.154.0 verified live: MCP server merged into ~/.codex/config.toml [mcp_servers.mcp-parley] with smol-toml (comments + other tables preserved, byte-for-byte uninstall, foreign-entry guard); lifecycle hooks merged into ~/.codex/hooks.json (user's hooks kept); app-server idle-wake client (turn/start / turn/steer with expectedTurnId) gated to the verified v2 protocol and fail-closed (unreachable/mismatch -> queued-until-next-turn). doctor reports each check and never claims hooks trusted (the human trusts via /hooks). Shared hook handlers generalized for codex@<folder> + apply_patch; hook command registration split into src/cli/hook-commands.ts for the 400-line cap. Synthetic fixtures + replay tests; two app-server schema files vendored into fixtures/schema. Awaiting the human's (H) live Claude<->Codex round trip (steps in docs/PROGRESS.md). M4 remains closed (live test passed 2026-11-07 20:43 UTC).
 
 ## Decisions made without asking (review these)
 - [autonomous] 2026-11-07: GLM-5.3-Flash free and DeepSeek/MiMo free hit OpenCode's free usage limit mid-M2 (GLM resets in ~9.7 h). M2 continued in the same OpenCode session on opencode/nemotron-3.5-super-vl-free, the free model that still answered, instead of waiting or paying. Reversible: all work is in git. (Re-added by Claude: the builder's state rewrite dropped it.)
@@ -21,45 +21,60 @@ M4 (Claude Code adapter) closed after the human-assisted live test passed: idle 
 - [autonomous] 2026-11-07: review round 4 (soft_fail 5/10) findings fixed directly; reply_to with no thread_id now joins the original's thread (live re-test showed reply_to_unknown). isOurEntry treats any command ending in /.mcp-parley/bin/mcp-parley as ours (another install counts as ours; Windows paths unsupported): a known limit for later.
 
 ## Next action
-Human decisions: push the local commits; restore the research Parley `parley` MCP entry the old setup overwrote (from parley/README.md). Then M5 (Codex adapter) or M3b (work harness). Follow-ups for the next milestone: capture real hook payloads as fixtures (synthetic still), live-check requeue-on-close, two sessions started in one folder share an agent, isOurEntry suffix rule (Windows).
+Human (H) acceptance for M5: run the live Claude <-> Codex round trip with Codex idle (exact steps in docs/PROGRESS.md 'M5 ... live two-session test'): build + setup --harness codex, trust the hooks via /hooks, confirm an idle Codex session answers within 5 s (app-server turn/start, or fall back to queued-until-next-turn), check doctor reports untrusted hooks, capture real hook payloads + one turn/start exchange as fixtures (replace the synthetic ones), and confirm byte-for-byte uninstall. Also still pending from M4: push the local commits; restore the research Parley `parley` MCP entry the old setup overwrote. Then M6 (viewer) or M3b (work harness) per PLAN. Follow-ups: wire the live app-server threadId/turnId into talk (deferred), Windows command_windows hook variants, isOurEntry suffix rule (Windows paths).
 
 ## Changed files
-- none
+- `docs/PROGRESS.md`
+- `package.json`
+- `pnpm-lock.yaml`
+- `src/adapters/codex/app-server.ts`
+- `src/adapters/codex/config-files.ts`
+- `src/adapters/codex/fixtures/post-tool-edit.json`
+- `src/adapters/codex/fixtures/schema/TurnStartParams.json`
+- `src/adapters/codex/fixtures/schema/TurnSteerParams.json`
+- `src/adapters/codex/fixtures/session-end.json`
+- `src/adapters/codex/fixtures/session-start.json`
+- `src/adapters/codex/fixtures/stop.json`
+- `src/adapters/codex/fixtures/subagent-post-tool.json`
+- `src/adapters/codex/fixtures/user-prompt.json`
+- `src/adapters/codex/hooks-merge.ts`
+- `src/adapters/codex/index.ts`
+- `src/adapters/codex/install.ts`
+- `src/adapters/codex/toml-merge.ts`
+- `src/adapters/index.ts`
+- `src/cli/commands/hook-events.ts`
+- `src/cli/commands/hook-payloads.ts`
+- `src/cli/hook-commands.ts`
+- `src/cli/index.ts`
+- `test/adapters/codex-app-server.test.ts`
+- `test/adapters/codex-fixtures.test.ts`
+- `test/adapters/codex.test.ts`
 
 ## Open risks
 - blocker: GitHub Actions blocked by the account billing lock (human-only fix).
 
 ## Failed attempts
-- pnpm check (exit 2)
+- pnpm check (exit 1)
 
 ## Commands (last 30)
-- `pnpm check` exit 0 (31397ms)
-- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (4969ms)
-- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (5007ms)
-- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (5158ms)
-- `node -e JSON.parse(require('fs').readFileSync('.workbench/state.json','utf8')); console.log('state.json OK')` exit 0 (142ms)
-- `pnpm check` exit 0 (21446ms)
-- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (2635ms)
-- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (2931ms)
-- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (2808ms)
-- `pnpm check` exit 0 (23064ms)
-- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (2583ms)
-- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (3016ms)
-- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (2917ms)
-- `pnpm check` exit 2 (14193ms)
-- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (3037ms)
-- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (2993ms)
-- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (2664ms)
-- `pnpm check` exit 0 (23873ms)
-- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (3358ms)
-- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (3222ms)
-- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (3245ms)
-- `pnpm check` exit 0 (31565ms)
-- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (3611ms)
-- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (3960ms)
-- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (3480ms)
-- `pnpm check` exit 0 (27773ms)
-- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (2687ms)
-- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (2937ms)
-- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (2655ms)
-- `pnpm check` exit 0 (18706ms)
+- `pnpm add smol-toml@1.4.2` exit 0 (2350ms)
+- `pnpm typecheck` exit 0 (3136ms)
+- `pnpm check` exit 1 (11219ms)
+- `pnpm check` exit 0 (16610ms)
+- `pnpm check` exit 0 (15981ms)
+- `pnpm exec vitest run test/adapters/codex.test.ts` exit 0 (2141ms)
+- `pnpm exec vitest run test/adapters/codex-app-server.test.ts` exit 0 (1962ms)
+- `pnpm exec vitest run test/adapters/codex-fixtures.test.ts` exit 0 (2145ms)
+- `git status --short` exit 0 (14ms)
+- `git add package.json pnpm-lock.yaml` exit 0 (14ms)
+- `git commit -m chore: add smol-toml for merging Codex config.toml` exit 0 (36ms)
+- `git add src/adapters/codex src/adapters/index.ts` exit 0 (34ms)
+- `git commit -m feat: add the Codex adapter with config.toml/hooks merge and app-server idle wake` exit 0 (35ms)
+- `git add src/cli/hook-commands.ts src/cli/index.ts src/cli/commands/hook-events.ts src/cli/commands/hook-payloads.ts` exit 0 (13ms)
+- `git commit -m feat: wire Codex hook commands and generalize shared hook handlers` exit 0 (30ms)
+- `git add test/adapters/codex.test.ts test/adapters/codex-app-server.test.ts test/adapters/codex-fixtures.test.ts` exit 0 (13ms)
+- `git commit -m test: cover Codex install/uninstall/doctor, app-server builders and fixtures` exit 0 (31ms)
+- `tail -12 .workbench/state.json` exit 0 (4ms)
+- `git add docs/PROGRESS.md docs/harness-notes.md .workbench/state.json .workbench/tasks/M5` exit 0 (18ms)
+- `git commit -m docs: record M5 Codex verified facts, live-test steps and state` exit 0 (34ms)
+- `git status --short` exit 0 (10ms)

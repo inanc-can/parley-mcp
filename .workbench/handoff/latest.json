@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "created_at": "2026-11-07T20:45:05+00:00",
-  "task_id": "",
-  "head": "400ead244a59379434dbeb4d39efd6fba3c04c55",
+  "created_at": "2026-11-07T21:07:06+00:00",
+  "task_id": "M5",
+  "head": "f0bbf10ae9712fa41adf0151de3658611b1976ab",
   "mode": "checkpoints",
-  "mode_notes": "M4 fix round 3 (Kiro): monitor-delivery requeue via SessionStart/SessionEnd, stale-doc refresh, build smoke test. wb verify PASS. Next: the human's live two-session test closes M4.",
+  "mode_notes": "M5 (Kiro, kiro-M5): Codex adapter built \u2014 config.toml + hooks.json merge (comments/other hooks preserved, byte-for-byte uninstall, foreign-entry guard), app-server idle-wake builders gated + fail-closed, doctor reports untrusted hooks. wb verify PASS (193 tests). Next: the human's live Claude<->Codex two-session test closes M5.",
   "autonomous_decisions": [
     "[autonomous] 2026-11-07: GLM-5.3-Flash free and DeepSeek/MiMo free hit OpenCode's free usage limit mid-M2 (GLM resets in ~9.7 h). M2 continued in the same OpenCode session on opencode/nemotron-3.5-super-vl-free, the free model that still answered, instead of waiting or paying. Reversible: all work is in git. (Re-added by Claude: the builder's state rewrite dropped it.)",
     "[autonomous] 2026-11-07: The M4 plugin-loading fix is held until the round-1 reviewer finishes, so the reviewer reads a stable tree; then plugin loading and the review findings go to the builder as one fix.",
@@ -15,58 +15,59 @@
     "[autonomous] 2026-11-07, live-test fix round (Claude): (1) MCP key, plugin and marketplace renamed to mcp-parley; setup never overwrites and uninstall never removes an entry under that key that it did not create (commands ending in /.mcp-parley/bin/mcp-parley are ours). Cause: the old key `parley` collided with the research Parley server and setup overwrote it. (2) Identity follows the Claude session: hooks look up the agent by session_id (cwd only as fallback) so a session that cd's keeps its agent; the MCP server names itself after the session folder (process.cwd()), not the repo root, records CLAUDE_CODE_SESSION_ID, and reuses the session's agent if SessionStart registered it first. Known limit: two sessions started in the same folder still share one agent (the monitor has no session id). (3) A monitor drain refreshes liveness. (4) Monitor lines carry the message id and say how to reply; talk's description says to answer peer messages. (5) Manifests get description/author; failed claude commands report stdout when stderr is empty.",
     "[autonomous] 2026-11-07: review round 4 (soft_fail 5/10) findings fixed directly; reply_to with no thread_id now joins the original's thread (live re-test showed reply_to_unknown). isOurEntry treats any command ending in /.mcp-parley/bin/mcp-parley as ours (another install counts as ours; Windows paths unsupported): a known limit for later."
   ],
-  "summary": "M4 (Claude Code adapter) closed after the human-assisted live test passed: idle web session woke <1 s after api's message, read 1 s later, replied on its own in the same thread 10 s later (2026-11-07 20:43 UTC, Claude Code 2.1.319). Five reviews; live-test bugs fixed in a7a14c9 and 400ead2. 164 tests, wb verify passes.",
-  "changed_files": [],
+  "summary": "M5 (Codex adapter) built and wb verify PASS (36 files / 193 tests). Codex 0.154.0 verified live: MCP server merged into ~/.codex/config.toml [mcp_servers.mcp-parley] with smol-toml (comments + other tables preserved, byte-for-byte uninstall, foreign-entry guard); lifecycle hooks merged into ~/.codex/hooks.json (user's hooks kept); app-server idle-wake client (turn/start / turn/steer with expectedTurnId) gated to the verified v2 protocol and fail-closed (unreachable/mismatch -> queued-until-next-turn). doctor reports each check and never claims hooks trusted (the human trusts via /hooks). Shared hook handlers generalized for codex@<folder> + apply_patch; hook command registration split into src/cli/hook-commands.ts for the 400-line cap. Synthetic fixtures + replay tests; two app-server schema files vendored into fixtures/schema. Awaiting the human's (H) live Claude<->Codex round trip (steps in docs/PROGRESS.md). M4 remains closed (live test passed 2026-11-07 20:43 UTC).",
+  "changed_files": [
+    "docs/PROGRESS.md",
+    "package.json",
+    "pnpm-lock.yaml",
+    "src/adapters/codex/app-server.ts",
+    "src/adapters/codex/config-files.ts",
+    "src/adapters/codex/fixtures/post-tool-edit.json",
+    "src/adapters/codex/fixtures/schema/TurnStartParams.json",
+    "src/adapters/codex/fixtures/schema/TurnSteerParams.json",
+    "src/adapters/codex/fixtures/session-end.json",
+    "src/adapters/codex/fixtures/session-start.json",
+    "src/adapters/codex/fixtures/stop.json",
+    "src/adapters/codex/fixtures/subagent-post-tool.json",
+    "src/adapters/codex/fixtures/user-prompt.json",
+    "src/adapters/codex/hooks-merge.ts",
+    "src/adapters/codex/index.ts",
+    "src/adapters/codex/install.ts",
+    "src/adapters/codex/toml-merge.ts",
+    "src/adapters/index.ts",
+    "src/cli/commands/hook-events.ts",
+    "src/cli/commands/hook-payloads.ts",
+    "src/cli/hook-commands.ts",
+    "src/cli/index.ts",
+    "test/adapters/codex-app-server.test.ts",
+    "test/adapters/codex-fixtures.test.ts",
+    "test/adapters/codex.test.ts"
+  ],
   "commands_run": [
     {
       "argv": [
         "pnpm",
+        "add",
+        "smol-toml@1.4.2"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2350
+    },
+    {
+      "argv": [
+        "pnpm",
+        "typecheck"
+      ],
+      "exit_code": 0,
+      "duration_ms": 3136
+    },
+    {
+      "argv": [
+        "pnpm",
         "check"
       ],
-      "exit_code": 0,
-      "duration_ms": 31397
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/setup.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 4969
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/adapters/claude-code.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 5007
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/hook.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 5158
-    },
-    {
-      "argv": [
-        "node",
-        "-e",
-        "JSON.parse(require('fs').readFileSync('.workbench/state.json','utf8')); console.log('state.json OK')"
-      ],
-      "exit_code": 0,
-      "duration_ms": 142
+      "exit_code": 1,
+      "duration_ms": 11219
     },
     {
       "argv": [
@@ -74,40 +75,7 @@
         "check"
       ],
       "exit_code": 0,
-      "duration_ms": 21446
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/setup.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2635
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/adapters/claude-code.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2931
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/hook.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2808
+      "duration_ms": 16610
     },
     {
       "argv": [
@@ -115,7 +83,7 @@
         "check"
       ],
       "exit_code": 0,
-      "duration_ms": 23064
+      "duration_ms": 15981
     },
     {
       "argv": [
@@ -123,10 +91,10 @@
         "exec",
         "vitest",
         "run",
-        "test/cli/setup.test.ts"
+        "test/adapters/codex.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 2583
+      "duration_ms": 2141
     },
     {
       "argv": [
@@ -134,10 +102,10 @@
         "exec",
         "vitest",
         "run",
-        "test/adapters/claude-code.test.ts"
+        "test/adapters/codex-app-server.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 3016
+      "duration_ms": 1962
     },
     {
       "argv": [
@@ -145,193 +113,153 @@
         "exec",
         "vitest",
         "run",
-        "test/cli/hook.test.ts"
+        "test/adapters/codex-fixtures.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 2917
+      "duration_ms": 2145
     },
     {
       "argv": [
-        "pnpm",
-        "check"
+        "git",
+        "status",
+        "--short"
       ],
-      "exit_code": 2,
-      "duration_ms": 14193
+      "exit_code": 0,
+      "duration_ms": 14
     },
     {
       "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/setup.test.ts"
+        "git",
+        "add",
+        "package.json",
+        "pnpm-lock.yaml"
       ],
       "exit_code": 0,
-      "duration_ms": 3037
+      "duration_ms": 14
     },
     {
       "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/adapters/claude-code.test.ts"
+        "git",
+        "commit",
+        "-m",
+        "chore: add smol-toml for merging Codex config.toml"
       ],
       "exit_code": 0,
-      "duration_ms": 2993
+      "duration_ms": 36
     },
     {
       "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/hook.test.ts"
+        "git",
+        "add",
+        "src/adapters/codex",
+        "src/adapters/index.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 2664
+      "duration_ms": 34
     },
     {
       "argv": [
-        "pnpm",
-        "check"
+        "git",
+        "commit",
+        "-m",
+        "feat: add the Codex adapter with config.toml/hooks merge and app-server idle wake"
       ],
       "exit_code": 0,
-      "duration_ms": 23873
+      "duration_ms": 35
     },
     {
       "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/setup.test.ts"
+        "git",
+        "add",
+        "src/cli/hook-commands.ts",
+        "src/cli/index.ts",
+        "src/cli/commands/hook-events.ts",
+        "src/cli/commands/hook-payloads.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 3358
+      "duration_ms": 13
     },
     {
       "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/adapters/claude-code.test.ts"
+        "git",
+        "commit",
+        "-m",
+        "feat: wire Codex hook commands and generalize shared hook handlers"
       ],
       "exit_code": 0,
-      "duration_ms": 3222
+      "duration_ms": 30
     },
     {
       "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/hook.test.ts"
+        "git",
+        "add",
+        "test/adapters/codex.test.ts",
+        "test/adapters/codex-app-server.test.ts",
+        "test/adapters/codex-fixtures.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 3245
+      "duration_ms": 13
     },
     {
       "argv": [
-        "pnpm",
-        "check"
+        "git",
+        "commit",
+        "-m",
+        "test: cover Codex install/uninstall/doctor, app-server builders and fixtures"
       ],
       "exit_code": 0,
-      "duration_ms": 31565
+      "duration_ms": 31
     },
     {
       "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/setup.test.ts"
+        "tail",
+        "-12",
+        ".workbench/state.json"
       ],
       "exit_code": 0,
-      "duration_ms": 3611
+      "duration_ms": 4
     },
     {
       "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/adapters/claude-code.test.ts"
+        "git",
+        "add",
+        "docs/PROGRESS.md",
+        "docs/harness-notes.md",
+        ".workbench/state.json",
+        ".workbench/tasks/M5"
       ],
       "exit_code": 0,
-      "duration_ms": 3960
+      "duration_ms": 18
     },
     {
       "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/hook.test.ts"
+        "git",
+        "commit",
+        "-m",
+        "docs: record M5 Codex verified facts, live-test steps and state"
       ],
       "exit_code": 0,
-      "duration_ms": 3480
+      "duration_ms": 34
     },
     {
       "argv": [
-        "pnpm",
-        "check"
+        "git",
+        "status",
+        "--short"
       ],
       "exit_code": 0,
-      "duration_ms": 27773
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/setup.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2687
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/adapters/claude-code.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2937
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/cli/hook.test.ts"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2655
-    },
-    {
-      "argv": [
-        "pnpm",
-        "check"
-      ],
-      "exit_code": 0,
-      "duration_ms": 18706
+      "duration_ms": 10
     }
   ],
   "failed_attempts": [
-    "pnpm check (exit 2)"
+    "pnpm check (exit 1)"
   ],
   "open_risks": [
     "blocker: GitHub Actions blocked by the account billing lock (human-only fix)."
   ],
-  "next_action": "Human decisions: push the local commits; restore the research Parley `parley` MCP entry the old setup overwrote (from parley/README.md). Then M5 (Codex adapter) or M3b (work harness). Follow-ups for the next milestone: capture real hook payloads as fixtures (synthetic still), live-check requeue-on-close, two sessions started in one folder share an agent, isOurEntry suffix rule (Windows).",
+  "next_action": "Human (H) acceptance for M5: run the live Claude <-> Codex round trip with Codex idle (exact steps in docs/PROGRESS.md 'M5 ... live two-session test'): build + setup --harness codex, trust the hooks via /hooks, confirm an idle Codex session answers within 5 s (app-server turn/start, or fall back to queued-until-next-turn), check doctor reports untrusted hooks, capture real hook payloads + one turn/start exchange as fixtures (replace the synthetic ones), and confirm byte-for-byte uninstall. Also still pending from M4: push the local commits; restore the research Parley `parley` MCP entry the old setup overwrote. Then M6 (viewer) or M3b (work harness) per PLAN. Follow-ups: wire the live app-server threadId/turnId into talk (deferred), Windows command_windows hook variants, isOurEntry suffix rule (Windows paths).",
   "verdict_pointer": {
-    "verification": ".workbench/verification.json",
+    "verification": ".workbench/tasks/M5/verification.json",
     "verification_passed": true,
     "verification_stale": false,
     "review": ""
