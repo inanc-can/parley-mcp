@@ -1,5 +1,109 @@
 # Progress
 
+## M4 — Claude Code adapter (completed build 2026-11-07, session kiro-M4)
+
+**Goal (PLAN section 6 "Claude Code" + section 7 + M4):** build `src/adapters/claude-code` — a
+real harness adapter that registers the Parley MCP server at user level and installs a Claude Code
+plugin (monitor + hooks), idempotent, with an exact uninstall. First fix the M3 review must-fix on
+the fake adapter's uninstall and fold in the other M3 follow-ups.
+
+**Step 1 — M3 review fixes (done first)**
+- **Must-fix (recursive uninstall):** `src/adapters/fake/index.ts` used
+  `rmSync(dirname(path), { recursive: true, force: true })`, which would delete the whole parent
+  directory even if setup didn't create it or it held other files. Replaced with a shared helper
+  `src/adapters/fs-ops.ts`: `removeFileIfPresent` (delete one file) and `removeDirIfEmpty` (remove a
+  directory **only if empty**, never recursive). New test in `test/cli/setup.test.ts`: when the
+  config's parent dir holds an unrelated `notes.txt`, uninstall removes only our file and leaves the
+  sibling file and the directory intact. Covered directly by `test/adapters/fs-ops.test.ts`.
+- **Other follow-ups:** (a) a `buildProgram`/commander test (`test/cli/program.test.ts`) runs
+  `setup --dry-run` against a temp HOME and asserts nothing is written; (b) an unknown `--format`
+  now errors via commander `.choices()` instead of silently defaulting (export + inbox drain/watch),
+  with negative-path tests; (c) the `transport.onclose` close path stays covered by the M3
+  `test/mcp/serve.test.ts`; (d) `DoctorReport` gained `hooksTrusted?: boolean | null` and the
+  `Adapter` interface deviation (`env`, `dryRun`, `fake`) is documented in `src/adapters/types.ts`;
+  (e) `overlap.ts` trailing newline confirmed.
+
+**Built (Claude Code adapter)**
+- `src/adapters/claude-code/plugin-files.ts` — constants that generate the plugin: `.claude-plugin/
+  plugin.json`, `hooks/hooks.json` (SessionStart, UserPromptSubmit, Stop, PostToolUse with an
+  `Edit|Write|MultiEdit` matcher + a catch-all, SessionEnd), `monitors/monitors.json` (the inbox
+  monitor), and the per-event + monitor shell scripts that pipe stdin into `parley-mcp hook <event>`.
+  User-level MCP registration targets `~/.claude.json` `mcpServers.parley`.
+- `src/adapters/claude-code/install.ts` — `installClaudeCode` (merge `mcpServers.parley` into
+  `~/.claude.json`; write the plugin files; idempotent, writing only missing/different files),
+  `uninstallClaudeCode` (remove exactly the plugin files, prune only now-empty plugin dirs, unmerge
+  the `parley` key and remove `~/.claude.json` only if it existed solely for us), `doctorClaudeCode`
+  (installed? MCP wired? plugin present? can wake idle? `hooksTrusted: null` — Claude Code plugins
+  need no per-hook trust).
+- `src/adapters/claude-code/index.ts` — the `Adapter`; `detect` reports installed when `~/.claude`
+  or `~/.claude.json` exists (never launches `claude`). Registered in `src/adapters/index.ts`.
+- `src/cli/commands/hook-payloads.ts` + `hook-events.ts` — the five hook handlers (see Step 1 note
+  above). Wired into `src/cli/index.ts` as `hook session-start|user-prompt|stop|post-tool|session-end`
+  reading JSON from stdin.
+- `src/adapters/claude-code/fixtures/*.json` — synthetic payloads (marked `"_synthetic": true`),
+  replayed by `test/adapters/claude-code-fixtures.test.ts`.
+
+**Tests**
+- `test/adapters/claude-code.test.ts` — install writes the `mcpServers.parley` entry + plugin files;
+  install twice is byte-for-byte; dry-run writes nothing; merge keeps unrelated `~/.claude.json`
+  keys and other servers; uninstall removes exactly what it created, restores a pre-existing
+  `~/.claude.json` byte for byte, and leaves a pre-existing `~/.claude/settings.json` + dir intact;
+  doctor reports not-wired before and wired after; detect reflects `~/.claude`.
+- `test/cli/hook.test.ts` — every handler ignores a subagent payload (`agent_type` or `agent_id`);
+  session-start registers from the cwd basename; user-prompt marks read only when the id is present
+  (and delivers-then-reads a still-sent message); post-tool drains + records an Edit; session-end
+  requeues a delivered-unread message.
+- `test/adapters/fs-ops.test.ts`, `test/cli/program.test.ts`, `test/cli/setup.test.ts` (new case),
+  `test/adapters/claude-code-fixtures.test.ts`.
+
+**Commands/results (via `wb run -- ...`)**
+- `pnpm check` (eslint strict + tsc --noEmit + vitest): **passed** — 30 test files, **139 tests**.
+- `wb verify`: **PASS** (`.workbench/tasks/M4/verification.json`) — all acceptance commands exit 0,
+  scope checks ok, no new dependencies.
+
+**Commits (local, not pushed)**
+- `fix: remove only what install created and never recurse on uninstall`
+- `feat: reject unknown --format values and cover setup --dry-run via buildProgram`
+- `feat: add Claude Code hook event handlers with read-evidence and subagent guard`
+- `feat: add the Claude Code adapter with user-level MCP registration and a plugin`
+
+### (H) Human live two-session test — exact steps
+
+This is M4's acceptance check (PLAN marks it **(H)**). The build cannot run `claude` itself and the
+automated tests use a temporary HOME; a real run needs two Claude Code sessions.
+
+1. **Build/link the CLI.** There is no published package yet, so make `parley-mcp` runnable, e.g.
+   `pnpm build` is not wired until M12 — for now run the CLI via a local shim so the plugin scripts'
+   `npx parley-mcp …` resolves to this repo (or temporarily alias `parley-mcp` to
+   `node <repo>/dist|src entry`). Confirm `parley-mcp doctor` runs.
+2. **Install into your real user config:** `parley-mcp setup --harness claude-code`. It prints the
+   exact files it changed: `~/.claude.json` (merged `mcpServers.parley`) and the plugin under
+   `~/.claude/plugins/parley/`. Review the printed list.
+3. **Trust / enable the plugin** in Claude Code if it prompts (monitors are experimental; ensure
+   your Claude Code is recent enough — notes.md records the version floor). Restart any open session
+   so the new MCP server and plugin load.
+4. **Open two sessions in one repo, different folders**, e.g. terminal A in `<repo>/api`, terminal B
+   in `<repo>/web`. Each registers as `claude@api` / `claude@web` on SessionStart. Check with
+   `parley-mcp who` (run in the repo) that both appear and are alive.
+5. **Leave session B idle.** In session A type: `say hi to claude@web`. Expect session B's monitor to
+   surface the message as a notification and the idle agent to answer **within 5 seconds with no
+   typing in B**.
+6. **Confirm read receipts:** once B's reply (or its next prompt echoing the message id) lands,
+   `parley-mcp log` / the viewer (M6) should show the message progress to read ✓✓ / replied ↩.
+7. **Capture fixtures:** while doing the above, save the real hook payloads Claude Code sends (from
+   the debug log or a temporary logging wrapper), anonymise paths and ids, drop them into
+   `src/adapters/claude-code/fixtures/` replacing the synthetic ones (keep the `_synthetic` flag
+   false or remove it), and keep the replay tests green.
+8. **Uninstall check:** `parley-mcp uninstall` then confirm `~/.claude.json` keeps your other keys
+   and `~/.claude/plugins/parley/` is gone.
+
+If step 5 does not deliver within 5 s, the likely causes to check (recorded as assumptions in
+`docs/harness-notes.md`): the monitor's agent-id derivation (`claude@$(basename "$PWD")`), whether
+the monitor's stdout truly reaches Claude as a notification on your version, and the parent-pid exit
+guard. Write findings into `docs/harness-notes.md` (verified vs assumed).
+
+---
+
 ## M3 — Results (completed 2026-11-07, session kiro-M3)
 
 **Goal (PLAN section 7 / M3):** the `parley-mcp` CLI (commander) — `serve`, `who`, `log`,

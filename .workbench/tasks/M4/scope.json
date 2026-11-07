@@ -1,0 +1,24 @@
+{
+  "task_id": "M4",
+  "goal": "Milestone M4: build src/adapters/claude-code (user-level MCP registration in ~/.claude.json, a Claude Code plugin with a monitor running `parley-mcp inbox drain --format monitor` and hooks for SessionStart/UserPromptSubmit/Stop/PostToolUse/SessionEnd that ignore subagent payloads), idempotent install, exact uninstall, doctor. Step 1 first: fix the fake adapter's recursive-parent-dir uninstall so it removes only what install created and a directory only if install created it and it is now empty (shared safe helper), add a test where the target dir already holds other files that must survive, and fold in the other M3 follow-ups from state.json next_action (buildProgram dry-run test, unknown --format error, transport.onclose close-path test, record the Adapter interface deviation + add 'hooks trusted?' to DoctorReport, overlap.ts trailing newline).",
+  "allowed_files": [
+    "src/adapters/**",
+    "src/cli/**",
+    "src/core/**",
+    "src/store/**",
+    "test/**",
+    "docs/PROGRESS.md",
+    "docs/harness-notes.md",
+    ".workbench/**"
+  ],
+  "forbidden_files": ["src/viewer/**", "src/notify/**", "src/mcp/**", "package.json", "pnpm-lock.yaml"],
+  "acceptance": [
+    "pnpm check",
+    "pnpm exec vitest run test/cli/setup.test.ts",
+    "pnpm exec vitest run test/adapters/claude-code.test.ts",
+    "pnpm exec vitest run test/cli/hook.test.ts"
+  ],
+  "approvals": [],
+  "rollback_plan": "Revert the M4 commits on the local branch (git revert); the only files touched are under src/adapters, src/cli, src/core, src/store and test, plus docs. No new dependencies, no external services, no production data, no repo writes: all install/uninstall work targets a temporary HOME in tests. Nothing was published or pushed.",
+  "human_approved_exceptions": []
+}
