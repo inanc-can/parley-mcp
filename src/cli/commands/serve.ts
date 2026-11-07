@@ -3,6 +3,7 @@ import { AGENT_ID_ENV } from "../../mcp/identity.js";
 import { resolveDbPath, resolveRepoRoot } from "../context.js";
 import { homedir } from "node:os";
 import { spawnCodexWake } from "../../adapters/codex/spawn-wake.js";
+import { osNotifier } from "../../notify/os-notify.js";
 
 /** How long a talk-started Codex wake waits for a busy turn to end. */
 const TALK_WAKE_WAIT_S = 60;
@@ -31,6 +32,7 @@ export async function runServe(deps: ServeCommandDeps = {}): Promise<ServeHandle
     sessionId: env["CLAUDE_CODE_SESSION_ID"],
     dbPath: resolveDbPath(env),
     wakeRecipient: codexWaker(env["HOME"] ?? homedir()),
+    notify: osNotifier({ env }),
   };
   return start(options);
 }

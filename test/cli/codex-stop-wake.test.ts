@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { Command } from "commander";
 import { registerHookCommands, type HookCommandHost } from "../../src/cli/hook-commands.js";
+import { silentNotifier } from "../../src/notify/os-notify.js";
 import { registerCaller } from "../../src/mcp/identity.js";
 import { handleTalk } from "../../src/mcp/tools/talk.js";
 import { openMemoryDb, type Db } from "../../src/store/index.js";
@@ -30,6 +31,7 @@ async function runStop(wakes: string[]): Promise<void> {
       wakes.push(`${agentId}:${String(waitSeconds)}`);
       return true;
     },
+    notify: silentNotifier,
   };
   const program = new Command();
   registerHookCommands(program, host);

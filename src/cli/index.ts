@@ -21,6 +21,7 @@ import { runServe } from "./commands/serve.js";
 import { runCodexWake } from "./commands/codex-wake.js";
 import { controlSocketPath, openControlSocket } from "../adapters/codex/control-socket.js";
 import { spawnCodexWake } from "../adapters/codex/spawn-wake.js";
+import { osNotifier } from "../notify/os-notify.js";
 
 export const CLI_VERSION = "0.0.0";
 
@@ -264,6 +265,7 @@ function registerAdapterCommands(program: Command, deps: CliDeps): void {
     status: () => statusWriter(deps),
     readStdinJson: () => readStdinJson(deps),
     wakeCodex: spawnCodexWake(adapterEnv(deps).home),
+    notify: osNotifier({ env: deps.env }),
   });
 }
 

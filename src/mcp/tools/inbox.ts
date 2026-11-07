@@ -79,7 +79,7 @@ export function handleInbox(
     if (!ctx.rulesTextSent && rules.text !== null) {
       value.rules_text = rules.text;
       ctx.rulesTextSent = true;
-      parts.push("The rules text is included below (once per session).");
+      parts.push("The rules text is in rules_text (sent once per session).");
     }
   }
 

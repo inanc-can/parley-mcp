@@ -1,6 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { detectOverlap, EDIT_OVERLAP_WINDOW_MS } from "../../core/overlap.js";
-import { claimsRepo, editsRepo, type Db } from "../../store/index.js";
+import { MESSAGE_TTL_MS } from "../../core/message-rules.js";
+import { DEFAULT_MESSAGE_CAP } from "../../core/threads.js";
+import { estimateTokens } from "../../core/cost.js";
+import { conflictNotice, type Notifier } from "../../notify/os-notify.js";
+import {
+  claimsRepo,
+  editsRepo,
+  messageEventsRepo,
+  messagesRepo,
+  threadsRepo,
+  type Db,
+} from "../../store/index.js";
 
 export interface HookEditDeps {
   db: Db;
@@ -8,7 +19,12 @@ export interface HookEditDeps {
   /** Diagnostic lines (stderr for Claude hooks; see HookEventDeps.status). */
   status: (line: string) => void;
   now?: number;
+  /** Tell the human about a conflict (PLAN 4.5 / section 9). */
+  notify?: Notifier;
 }
+
+/** The system sender for hub-written messages (same id the viewer's veto notices use). */
+const SYSTEM_ID = "system";
 
 /**
  * `mcp-parley hook edit --agent <id> --path <path>`: used by post-edit hooks.
@@ -18,8 +34,9 @@ export interface HookEditDeps {
  */
 export function runHookEdit(deps: HookEditDeps, agentId: string, path: string): number {
   const now = deps.now ?? Date.now();
+  const editId = randomUUID();
   editsRepo.insertEdit(deps.db, {
-    id: randomUUID(),
+    id: editId,
     repoRoot: deps.repoRoot,
     agentId,
     path,
@@ -47,5 +64,66 @@ export function runHookEdit(deps: HookEditDeps, agentId: string, path: string): 
   for (const conflict of conflicts) {
     deps.status(`  ${conflict.agentId} (${conflict.kind}): ${conflict.detail}`);
   }
+  const others = [...new Set(conflicts.map((c) => c.agentId))].sort();
+  tellAgents(deps, now, editId, path, agentId, others, conflicts.map((c) => `${c.agentId}: ${c.detail}`));
+  deps.notify?.(conflictNotice(path, agentId, others));
   return conflicts.length;
+}
+
+/**
+ * PLAN 4.5: on a conflict, both sides get a system message in a thread named
+ * after the file (reused while it is open), so each sees it in its inbox.
+ */
+function tellAgents(
+  deps: HookEditDeps,
+  now: number,
+  editId: string,
+  path: string,
+  editor: string,
+  others: readonly string[],
+  details: readonly string[],
+): void {
+  const title = `conflict: ${path}`;
+  const existing = threadsRepo
+    .listThreadsByRepo(deps.db, deps.repoRoot)
+    .find((t) => t.title === title && t.status !== "closed");
+  const thread =
+    existing ??
+    threadsRepo.createThread(deps.db, {
+      id: randomUUID(),
+      repoRoot: deps.repoRoot,
+      title,
+      status: "open",
+      messageCap: DEFAULT_MESSAGE_CAP,
+      createdAt: now,
+    });
+  const body =
+    `Overlap on ${path}: ${editor} just edited it while ${others.join(", ")} also claimed or edited it ` +
+    `(${details.join("; ")}). Nothing was blocked; agree who owns it with the agree tool.`;
+  for (const to of [editor, ...others]) {
+    const inserted = messagesRepo.insertMessageIdempotent(deps.db, {
+      id: randomUUID(),
+      threadId: thread.id,
+      fromAgent: SYSTEM_ID,
+      toAgent: to,
+      kind: "text",
+      body,
+      payloadJson: null,
+      replyTo: null,
+      status: "sent",
+      sentAt: now,
+      expiresAt: now + MESSAGE_TTL_MS,
+      idempotencyKey: `conflict-${editId}::${to}`,
+      estTokens: estimateTokens(body),
+    });
+    if (inserted.created) {
+      messageEventsRepo.insertMessageEvent(deps.db, {
+        id: randomUUID(),
+        messageId: inserted.message.id,
+        event: "sent",
+        at: now,
+        detailJson: null,
+      });
+    }
+  }
 }

@@ -4,6 +4,7 @@ import { globMatch } from "../../core/glob.js";
 import { activeClaims, claimExpiresAt } from "../../core/claims.js";
 import { nextAgreementStatus } from "../../core/agreements.js";
 import type { ToolContext } from "../context.js";
+import { agreementNotice } from "../../notify/os-notify.js";
 import { heartbeatCaller } from "../identity.js";
 import { refused, success, type ToolOutcome } from "../response.js";
 import {
@@ -178,6 +179,10 @@ function answer(
   }
 
   const answered = agreementsRepo.getAgreement(ctx.db, original.id);
+  if (action === "accept") {
+    // PLAN section 9: accepted agreements notify the human, who can veto them.
+    ctx.notify?.(agreementNotice(answered.offered_by, ctx.agentId, answered.text));
+  }
   if (isCounter) {
     return success(
       { agreement: serializeAgreement(answered) },

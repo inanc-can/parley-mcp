@@ -1,4 +1,5 @@
 import type { Db } from "../store/db.js";
+import type { Notifier } from "../notify/os-notify.js";
 
 /**
  * Per-server context shared by the three tools: one server process serves one
@@ -18,4 +19,6 @@ export interface ToolContext {
    * adapter provides one. Returns whether a wake was started.
    */
   wakeRecipient?: (agentId: string, harness: string) => boolean;
+  /** Tell the human (OS notification, PLAN section 9). Injected by `serve`; absent in tests. */
+  notify?: Notifier;
 }

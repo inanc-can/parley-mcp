@@ -12,6 +12,7 @@ import {
 import type { ToolContext } from "../context.js";
 import { checkStopAllActive, enforceMessageCap } from "../guards.js";
 import { heartbeatCaller } from "../identity.js";
+import { pausedNotice } from "../../notify/os-notify.js";
 import { buildOutlook, pluralOutlook } from "../outlook.js";
 import { refused, success, type ToolOutcome } from "../response.js";
 import { readRulesFile, rulesReminder } from "../rules.js";
@@ -144,6 +145,10 @@ export async function handleTalk(
   const waking = startWakes(ctx, deliveries);
 
   const capped = enforceMessageCap(db, thread.id);
+  if (capped.status === "paused" && thread.status === "open") {
+    // PLAN 4.4 and section 9: the human hears about a thread that hit its cap.
+    ctx.notify?.(pausedNotice(capped.title ?? titleFromFirstMessage(args.text), capped.message_cap));
+  }
 
   const reply =
     (args.wait_for_reply_s ?? 0) > 0

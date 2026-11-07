@@ -1,6 +1,6 @@
 export interface ToolResultShape {
   [x: string]: unknown;
-  content: [{ type: "text"; text: string }];
+  content: { type: "text"; text: string }[];
   structuredContent: Record<string, unknown>;
   isError?: boolean;
 }
@@ -30,18 +30,18 @@ export function refused(code: string, detail: string): ToolOutcome {
 
 /**
  * Every Parley MCP tool returns `structuredContent` plus a one-paragraph
- * text summary (PLAN section 5).
+ * text summary (PLAN section 5). The MCP spec asks a tool that returns
+ * structured content to also return it serialized as text, for clients that
+ * only show the model the text blocks; without it such a client would mark
+ * inbox messages read (and hand over the rules text) that the model never saw.
  */
 export function toToolResult(outcome: ToolOutcome): ToolResultShape {
+  const content = [
+    { type: "text" as const, text: outcome.summary },
+    { type: "text" as const, text: JSON.stringify(outcome.value) },
+  ];
   if (outcome.isError === true) {
-    return {
-      content: [{ type: "text", text: outcome.summary }],
-      structuredContent: outcome.value,
-      isError: true,
-    };
+    return { content, structuredContent: outcome.value, isError: true };
   }
-  return {
-    content: [{ type: "text", text: outcome.summary }],
-    structuredContent: outcome.value,
-  };
+  return { content, structuredContent: outcome.value };
 }

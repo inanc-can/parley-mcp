@@ -6,7 +6,8 @@ import {
   messagesRepo,
   type Db,
 } from "../../store/index.js";
-import { runHookEdit } from "./hook.js";
+import { runHookEdit, type HookEditDeps } from "./hook.js";
+import type { Notifier } from "../../notify/os-notify.js";
 import {
   claudeAgentId,
   isSubagentPayload,
@@ -41,6 +42,8 @@ export interface HookEventDeps {
    * PostToolUse tool names, docs/harness-notes.md M5).
    */
   editTools?: ReadonlySet<string>;
+  /** Tell the human about an edit conflict (PLAN section 9). */
+  notify?: Notifier;
 }
 
 const EDIT_TOOLS = new Set(["Edit", "Write", "MultiEdit"]);
@@ -159,7 +162,11 @@ export function runHookPostTool(deps: HookEventDeps, payload: PostToolPayload): 
   if (payload.tool_name !== undefined && editToolsFor(deps).has(payload.tool_name)) {
     const path = editedPath(payload.tool_input);
     if (path !== null) {
-      runHookEdit({ db: deps.db, repoRoot: deps.repoRoot, status: deps.status, now }, agentId, path);
+      const editDeps: HookEditDeps = { db: deps.db, repoRoot: deps.repoRoot, status: deps.status, now };
+      if (deps.notify !== undefined) {
+        editDeps.notify = deps.notify;
+      }
+      runHookEdit(editDeps, agentId, path);
     }
   }
   deps.status(`post-tool ${agentId}: heartbeat + edits (delivery left to the monitor)`);

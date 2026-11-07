@@ -2,6 +2,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Readable, Writable } from "node:stream";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { Notifier } from "../notify/os-notify.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { retentionCutoff } from "../core/retention.js";
@@ -39,6 +40,8 @@ export interface ServeOptions {
   stdout?: Writable | undefined;
   /** Starts an out-of-band wake for a recipient (see ToolContext.wakeRecipient). */
   wakeRecipient?: ((agentId: string, harness: string) => boolean) | undefined;
+  /** OS notifications for the human (PLAN section 9). */
+  notify?: Notifier | undefined;
 }
 
 /**
@@ -138,6 +141,9 @@ export async function serve(options: ServeOptions = {}): Promise<ServeHandle> {
     const ctx: ToolContext = { db, agentId, repoRoot, nativeSession: sessionId, rulesTextSent: false };
     if (options.wakeRecipient !== undefined) {
       ctx.wakeRecipient = options.wakeRecipient;
+    }
+    if (options.notify !== undefined) {
+      ctx.notify = options.notify;
     }
     const server = createServer(ctx);
     const stdin = options.stdin ?? process.stdin;

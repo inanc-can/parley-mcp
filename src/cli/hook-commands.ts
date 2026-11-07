@@ -1,5 +1,6 @@
 import type { Command } from "commander";
 import type { WakeSpawner } from "../adapters/codex/spawn-wake.js";
+import type { Notifier } from "../notify/os-notify.js";
 import { messagesRepo, type Db } from "../store/index.js";
 import { runHookEdit } from "./commands/hook.js";
 import {
@@ -34,6 +35,8 @@ export interface HookCommandHost {
   readStdinJson: () => Promise<unknown>;
   /** Start a detached `codex-wake` for an agent (the Codex Stop backstop). */
   wakeCodex: WakeSpawner;
+  /** OS notifications for edit conflicts (PLAN section 9). */
+  notify: Notifier;
 }
 
 /** How long a Stop-started wake waits for the ending turn to go idle. */
@@ -56,7 +59,7 @@ export function registerHookCommands(program: Command, host: HookCommandHost): v
     .action((options: { agent: string; path: string }) => {
       const status = host.status();
       host.withDb((db, repoRoot) => {
-        runHookEdit({ db, repoRoot, status }, options.agent, options.path);
+        runHookEdit({ db, repoRoot, status, notify: host.notify }, options.agent, options.path);
       });
     });
 
@@ -112,7 +115,7 @@ function registerClaudeHookCommands(hook: Command, host: HookCommandHost): void 
       const status = host.status();
       const payload = postToolPayloadSchema.parse(await host.readStdinJson());
       host.withDb((db, repoRoot) => {
-        runHookPostTool({ db, repoRoot, status }, payload);
+        runHookPostTool({ db, repoRoot, status, notify: host.notify }, payload);
       });
     });
 
@@ -181,7 +184,7 @@ function registerCodexHookCommands(hook: Command, host: HookCommandHost): void {
       const status = host.status();
       const payload = postToolPayloadSchema.parse(await host.readStdinJson());
       host.withDb((db, repoRoot) => {
-        runHookPostTool({ db, repoRoot, status, ...CODEX_HOOK_DEPS }, payload);
+        runHookPostTool({ db, repoRoot, status, notify: host.notify, ...CODEX_HOOK_DEPS }, payload);
       });
     });
 

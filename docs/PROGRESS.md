@@ -1,5 +1,31 @@
 # Progress
 
+## M7: notifications, rules file, loop guard end to end (Claude, cloud session, 2026-11-07)
+
+**Built:**
+- `src/notify/os-notify.ts` (PLAN section 9): macOS `osascript`, Linux `notify-send` when on PATH,
+  Windows nothing. Text is passed as command arguments, never spliced into the script (no
+  AppleScript or shell injection). Content never beyond a 60-character preview. Failures are
+  swallowed so a notification can never break a tool call or hook.
+- Notifications fire for: a thread pausing at its cap (`talk`), an accepted agreement (`agree`),
+  and an edit conflict (`hook edit`, also through Claude/Codex PostToolUse). `serve` and the CLI
+  hooks inject the real notifier.
+- PLAN 4.5 conflict messages (were missing): on a conflict both agents get a `system` message in a
+  thread titled `conflict: <path>`, reused while open.
+- Every tool result now also carries its structured value as JSON text (MCP spec guidance). Before,
+  the text block held only the summary, so a client that shows the model only text would have marked
+  inbox messages read, and sent the rules text, without the model seeing either.
+
+**Checks:** `pnpm check` passes (46 files / 255 tests). The M7 check is
+`test/mcp/m7-end-to-end.test.ts`, through the real MCP server: a scripted 20-message conversation
+pauses the thread, notifies once and refuses the 21st with `thread_paused`; a fake `ghp_` token is
+blocked as `secret_blocked` and never echoed; with `.parley/rules.md` present, talk and inbox carry
+the reminder and inbox returns the text once per session. Notifier tests cover the argument-only
+osascript call, Linux with/without notify-send, Windows, failures, and the 60-character cap.
+
+**Laptop check (optional):** create `.parley/rules.md` in the test repo, then have two agents argue
+until the thread pauses: a macOS notification "Parley: thread paused" should appear.
+
 ## M6: viewer (Claude, cloud session, 2026-11-07)
 
 Started at the human's request while M5's laptop test is still open (see the M5 section below).
