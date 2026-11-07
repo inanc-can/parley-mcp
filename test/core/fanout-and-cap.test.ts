@@ -3,7 +3,6 @@ import { randomUUID } from "node:crypto";
 import { expandEveryone } from "../../src/core/message-rules.js";
 import {
   checkThreadPostable,
-  DEFAULT_MESSAGE_CAP,
 } from "../../src/core/threads.js";
 import {
   messagesRepo,
@@ -80,80 +79,5 @@ describe("cap -> paused", () => {
       ok: false,
       code: "thread_paused",
     });
-  });
-
-  it("pauses a thread when it reaches its message cap via enforceMessageCap", () => {
-    expect(DEFAULT_MESSAGE_CAP).toBe(20);
-    const db = openMemoryDb();
-    const threadId = randomUUID();
-    threadsRepo.createThread(db, {
-      id: threadId,
-      repoRoot: "/repo",
-      title: null,
-      status: "open",
-      messageCap: DEFAULT_MESSAGE_CAP,
-      createdAt: 1,
-    });
-    for (let i = 0; i < DEFAULT_MESSAGE_CAP; i += 1) {
-      messagesRepo.insertMessage(db, {
-        id: randomUUID(),
-        threadId,
-        fromAgent: "a@r",
-        toAgent: "b@r",
-        kind: "text",
-        body: `m${String(i)}`,
-        payloadJson: null,
-        replyTo: null,
-        status: "sent",
-        sentAt: i,
-        expiresAt: 100_000,
-        idempotencyKey: randomUUID(),
-        estTokens: 1,
-      });
-    }
-    const count = threadsRepo.countThreadMessages(db, threadId);
-    expect(count).toBe(DEFAULT_MESSAGE_CAP);
-
-    // Production composition of count + cap + pause; the test does not pause
-    // the thread itself.
-    const thread = threadsRepo.enforceMessageCap(db, threadId);
-    expect(thread.status).toBe("paused");
-    expect(threadsRepo.getThread(db, threadId).status).toBe("paused");
-    expect(checkThreadPostable(thread, count)).toEqual({
-      ok: false,
-      code: "thread_paused",
-    });
-    db.close();
-  });
-
-  it("keeps an open thread below its cap open", () => {
-    const db = openMemoryDb();
-    const threadId = randomUUID();
-    threadsRepo.createThread(db, {
-      id: threadId,
-      repoRoot: "/repo",
-      title: null,
-      status: "open",
-      messageCap: DEFAULT_MESSAGE_CAP,
-      createdAt: 1,
-    });
-    messagesRepo.insertMessage(db, {
-      id: randomUUID(),
-      threadId,
-      fromAgent: "a@r",
-      toAgent: "b@r",
-      kind: "text",
-      body: "one message",
-      payloadJson: null,
-      replyTo: null,
-      status: "sent",
-      sentAt: 1,
-      expiresAt: 100_000,
-      idempotencyKey: randomUUID(),
-      estTokens: 1,
-    });
-    const thread = threadsRepo.enforceMessageCap(db, threadId);
-    expect(thread.status).toBe("open");
-    db.close();
   });
 });

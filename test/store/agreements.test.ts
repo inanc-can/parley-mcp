@@ -1,15 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import {
-  canAnswerAgreement,
-  nextAgreementStatus,
-} from "../../src/core/agreements.js";
-import {
   agreementsRepo,
+  messagesRepo,
   openMemoryDb,
   threadsRepo,
 } from "../../src/store/index.js";
 import type { Db } from "../../src/store/db.js";
+import type { AgreementStatus } from "../../src/store/schema.js";
 
 const DEFAULT_THREADS = {
   repoRoot: "/repo",
@@ -19,17 +17,41 @@ const DEFAULT_THREADS = {
   createdAt: 1_000,
 };
 
-function setup(db: Db): string {
-  const threadId = randomUUID();
-  threadsRepo.createThread(db, { id: threadId, ...DEFAULT_THREADS });
-  return threadId;
+interface Setup {
+  db: Db;
+  threadId: string;
 }
 
-function offer(db: Db, threadId: string, overrides = {}) {
-  const id = randomUUID();
-  agreementsRepo.insertAgreement(db, {
-    id,
+function setupThreadWithParticipants(): Setup {
+  const db = openMemoryDb();
+  const threadId = randomUUID();
+  threadsRepo.createThread(db, { id: threadId, ...DEFAULT_THREADS });
+  // a@r has talked to b@r in this thread, so both are thread participants.
+  messagesRepo.insertMessage(db, {
+    id: randomUUID(),
     threadId,
+    fromAgent: "a@r",
+    toAgent: "b@r",
+    kind: "text",
+    body: "shall we split the migration work?",
+    payloadJson: null,
+    replyTo: null,
+    status: "delivered",
+    sentAt: 1_100,
+    expiresAt: 100_000,
+    idempotencyKey: randomUUID(),
+    estTokens: 8,
+  });
+  return { db, threadId };
+}
+
+type OfferOverrides = Partial<Parameters<typeof agreementsRepo.insertAgreement>[1]>;
+
+function offer(setup: Setup, overrides: OfferOverrides = {}) {
+  const id = randomUUID();
+  agreementsRepo.insertAgreement(setup.db, {
+    id,
+    threadId: setup.threadId,
     repoRoot: "/repo",
     text: "a@r implements the migration",
     status: "offered",
@@ -40,94 +62,114 @@ function offer(db: Db, threadId: string, overrides = {}) {
     answeredAt: null,
     ...overrides,
   });
-  return agreementsRepo.getAgreement(db, id);
+  return agreementsRepo.getAgreement(setup.db, id);
 }
 
-function answer(
-  db: Db,
+function attempt(
+  setup: Setup,
   agreementId: string,
-  action: "accept" | "counter" | "reject" | "veto",
-  responderId: string,
-  recipientId: string,
-  at: number,
+  status: AgreementStatus,
+  answeredBy: string,
+  answeredAt: number,
 ) {
-  expect(canAnswerAgreement("offered", responderId, recipientId)).toBe(true);
-  agreementsRepo.updateAgreementStatus(
-    db,
+  return agreementsRepo.updateAgreementStatus(
+    setup.db,
     agreementId,
-    nextAgreementStatus(action),
-    responderId,
-    at,
+    status,
+    answeredBy,
+    answeredAt,
   );
-  return agreementsRepo.getAgreement(db, agreementId);
 }
 
 describe("agreement lifecycle", () => {
   it("records offered -> accepted by the recipient", () => {
-    const db = openMemoryDb();
-    const threadId = setup(db);
-    const offered = offer(db, threadId);
+    const setup = setupThreadWithParticipants();
+    const offered = offer(setup);
     expect(offered.status).toBe("offered");
     expect(offered.answered_by).toBeNull();
 
-    const accepted = answer(db, offered.id, "accept", "b@r", "b@r", 3_000);
+    // The recipient answers directly through the store; the guard accepts it.
+    expect(attempt(setup, offered.id, "accepted", "b@r", 3_000)).toBe(true);
+    const accepted = agreementsRepo.getAgreement(setup.db, offered.id);
     expect(accepted.status).toBe("accepted");
     expect(accepted.answered_by).toBe("b@r");
-    db.close();
+    expect(accepted.answered_at).toBe(3_000);
+    setup.db.close();
   });
 
   it("lets the recipient counter instead", () => {
-    const db = openMemoryDb();
-    const threadId = setup(db);
-    const offered = offer(db, threadId);
-    const countered = answer(db, offered.id, "counter", "b@r", "b@r", 3_000);
+    const setup = setupThreadWithParticipants();
+    const offered = offer(setup);
+    expect(attempt(setup, offered.id, "countered", "b@r", 3_000)).toBe(true);
+    const countered = agreementsRepo.getAgreement(setup.db, offered.id);
     expect(countered.status).toBe("countered");
     expect(countered.answered_by).toBe("b@r");
-    db.close();
+    setup.db.close();
   });
 
   it("lets the recipient reject", () => {
-    const db = openMemoryDb();
-    const threadId = setup(db);
-    const offered = offer(db, threadId);
-    const rejected = answer(db, offered.id, "reject", "b@r", "b@r", 3_000);
-    expect(rejected.status).toBe("rejected");
-    db.close();
+    const setup = setupThreadWithParticipants();
+    const offered = offer(setup);
+    expect(attempt(setup, offered.id, "rejected", "b@r", 3_000)).toBe(true);
+    expect(agreementsRepo.getAgreement(setup.db, offered.id).status).toBe(
+      "rejected",
+    );
+    setup.db.close();
   });
 
-  it("forbids a non-recipient from answering", () => {
-    const db = openMemoryDb();
-    const threadId = setup(db);
-    const offered = offer(db, threadId);
-    expect(canAnswerAgreement("offered", "c@r", "b@r")).toBe(false);
-    // The store row stays untouched when the guard rejects the answer.
-    expect(agreementsRepo.getAgreement(db, offered.id).status).toBe("offered");
-    expect(agreementsRepo.getAgreement(db, offered.id).answered_by).toBeNull();
-    db.close();
+  it("refuses the update attempt when the offerer tries to answer their own offer", () => {
+    const setup = setupThreadWithParticipants();
+    const offered = offer(setup);
+    // The forbidden update is actually attempted: a@r (the offerer) answers.
+    expect(attempt(setup, offered.id, "accepted", "a@r", 3_000)).toBe(false);
+    expect(agreementsRepo.getAgreement(setup.db, offered.id).status).toBe(
+      "offered",
+    );
+    expect(agreementsRepo.getAgreement(setup.db, offered.id).answered_by).toBeNull();
+    setup.db.close();
   });
 
-  it("forbids answering twice: a settled agreement is no longer offered", () => {
-    const db = openMemoryDb();
-    const threadId = setup(db);
-    const offered = offer(db, threadId);
-    answer(db, offered.id, "accept", "b@r", "b@r", 3_000);
-    expect(canAnswerAgreement("accepted", "b@r", "b@r")).toBe(false);
-    db.close();
+  it("refuses the update attempt by an agent that is not a thread participant", () => {
+    const setup = setupThreadWithParticipants();
+    const offered = offer(setup);
+    // c@r takes part in no message of this thread, so they are not the
+    // agreement's recipient.
+    expect(attempt(setup, offered.id, "accepted", "c@r", 3_000)).toBe(false);
+    const row = agreementsRepo.getAgreement(setup.db, offered.id);
+    expect(row.status).toBe("offered");
+    expect(row.answered_by).toBeNull();
+    setup.db.close();
+  });
+
+  it("refuses the update attempt on a settled agreement", () => {
+    const setup = setupThreadWithParticipants();
+    const offered = offer(setup);
+    expect(attempt(setup, offered.id, "accepted", "b@r", 3_000)).toBe(true);
+    // Too late: the agreement is no longer `offered`.
+    expect(attempt(setup, offered.id, "rejected", "b@r", 4_000)).toBe(false);
+    const row = agreementsRepo.getAgreement(setup.db, offered.id);
+    expect(row.status).toBe("accepted");
+    expect(row.answered_by).toBe("b@r");
+    expect(row.answered_at).toBe(3_000);
+    setup.db.close();
   });
 
   it("keeps counter-proposals linked to their parent agreement", () => {
-    const db = openMemoryDb();
-    const threadId = setup(db);
-    const offered = offer(db, threadId);
-    const counter = offer(db, threadId, {
+    const setup = setupThreadWithParticipants();
+    const offered = offer(setup);
+    const parentResp = attempt(setup, offered.id, "countered", "b@r", 3_000);
+    expect(parentResp).toBe(true);
+    const counter = offer(setup, {
       text: "b@r implements it on Thursday",
-      status: "countered",
+      status: "offered",
       offeredBy: "b@r",
       parentId: offered.id,
-      createdAt: 3_000,
+      createdAt: 3_100,
     });
     expect(counter.parent_id).toBe(offered.id);
-    expect(counter.status).toBe("countered");
-    db.close();
+    expect(counter.status).toBe("offered");
+    // The original offerer may answer the counter-proposal.
+    expect(attempt(setup, counter.id, "accepted", "a@r", 4_000)).toBe(true);
+    setup.db.close();
   });
 });

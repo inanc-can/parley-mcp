@@ -70,3 +70,27 @@ describe("secret scan", () => {
     expect(JSON.stringify(match)).not.toContain("ghp_");
   });
 });
+
+describe("secret scan near-misses (must not block)", () => {
+  it("allows an AKIA string with fewer than 16 following characters", () => {
+    // One character short of the real 16-character AWS key tail.
+    expect(scanSecret("key AKIA000000000000000 here")).toBeNull();
+  });
+
+  it("allows a Slack xoxb token with fewer than 10 trailing characters", () => {
+    // One character short of the minimum Slack token tail.
+    expect(scanSecret("xoxb-123456789")).toBeNull();
+  });
+
+  it("allows .env-style lines with short values", () => {
+    // One character short of the 12-character minimum value.
+    expect(scanSecret("MY_SECRET=abcdefghijk")).toBeNull();
+    expect(scanSecret("API_TOKEN=abc")).toBeNull();
+    expect(scanSecret("DB_PASSWORD=letmein")).toBeNull();
+  });
+
+  it("allows short ghp_ and sk- strings", () => {
+    expect(scanSecret("prefix ghp_abcd, see docs")).toBeNull();
+    expect(scanSecret("sk-abc")).toBeNull();
+  });
+});

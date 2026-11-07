@@ -47,10 +47,26 @@ export function updateAgreementStatus(
   status: AgreementStatus,
   answeredBy: string | null,
   answeredAt: number | null,
-): void {
-  db.prepare(
-    "UPDATE agreements SET status = ?, answered_by = ?, answered_at = ? WHERE id = ?",
-  ).run(status, answeredBy, answeredAt, id);
+): boolean {
+  // Guarded answer (M1 review follow-up): only an agreement still in
+  // `offered` may be answered, and only by its recipient — an agent that is
+  // not the offerer and takes part in the agreement's thread. The human veto
+  // (viewer, M6) goes through its own path instead.
+  const info = db
+    .prepare(
+      `UPDATE agreements
+       SET status = ?, answered_by = ?, answered_at = ?
+       WHERE id = ?
+         AND status = 'offered'
+         AND ? <> offered_by
+         AND EXISTS (
+           SELECT 1 FROM messages m
+           WHERE m.thread_id = agreements.thread_id
+             AND (m.from_agent = ? OR m.to_agent = ?)
+         )`,
+    )
+    .run(status, answeredBy, answeredAt, id, answeredBy, answeredBy, answeredBy);
+  return info.changes === 1;
 }
 
 export function listAgreementsByRepo(db: Db, repoRoot: string): AgreementRow[] {

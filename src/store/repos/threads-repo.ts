@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { shouldPauseAfterCount } from "../../core/threads.js";
 import type { Db } from "../db.js";
 import { parseOptionalRow, parseRows } from "../parse.js";
 import { threadRowSchema, type ThreadRow, type ThreadStatus } from "../schema.js";
@@ -60,24 +59,4 @@ export function addThreadCap(db: Db, id: string, add: number): void {
     add,
     id,
   );
-}
-
-/**
- * Production cap enforcement: counts the thread's messages and, using the pure
- * core decision, pauses the thread when it has reached its message cap. Call
- * it after inserting messages; `talk` calls into a paused thread then fail
- * with `thread_paused` via `checkThreadPostable`.
- */
-export function enforceMessageCap(db: Db, threadId: string): ThreadRow {
-  return db.transaction(() => {
-    const thread = getThread(db, threadId);
-    const count = countThreadMessages(db, threadId);
-    if (
-      thread.status === "open" &&
-      shouldPauseAfterCount(count, thread.message_cap)
-    ) {
-      setThreadStatus(db, threadId, "paused");
-    }
-    return getThread(db, threadId);
-  })();
 }
