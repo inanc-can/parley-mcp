@@ -1,0 +1,33 @@
+{
+  "task_id": "M1",
+  "items": [
+    {
+      "id": "deps",
+      "change": "Add PLAN-approved runtime dependencies better-sqlite3 and zod, and dev dependency @types/better-sqlite3; keep lockfile in sync.",
+      "proof": "pnpm check passes after install with the new dependencies present in package.json.",
+      "evidence": ["docs/PLAN.md:138-142 (allowed deps)", "package.json (dependencies/devDependencies)"],
+      "depends_on": []
+    },
+    {
+      "id": "store",
+      "change": "Implement src/store: SQLite connection in WAL mode with busy timeout, numbered migrations, Zod row schemas, and repositories per table with indexes for hot queries.",
+      "proof": "Store unit tests using in-memory SQLite pass and cover schema/migrations and repository behavior.",
+      "evidence": ["docs/PLAN.md:158-176 (data model/indexes/migrations)", "src/store/*.ts", "test/store/*.test.ts"],
+      "depends_on": ["deps"]
+    },
+    {
+      "id": "core",
+      "change": "Implement pure core in src/core: identity, message state machine (guarded moves, idempotency, requeue, expiry, everyone fan-out), threads/guards (message cap->paused, stop-all, secret scan), agreements, claims, overlap, retention, and cost estimate.",
+      "proof": "Core unit tests pass and cover every M1 acceptance behavior (status moves incl. guarded no-ops/requeue/expiry, idempotent sends, everyone fan-out, cap->paused, each secret pattern, claim expiry, overlap detection, 30-day retention).",
+      "evidence": ["docs/PLAN.md:178-222 and 374-382 (M1 behaviors/acceptance)", "src/core/*.ts", "test/core/*.test.ts"],
+      "depends_on": ["store"]
+    },
+    {
+      "id": "verify",
+      "change": "Run full verification, confirm every M1 acceptance check has a test, update docs/PROGRESS.md and workbench state/handoff.",
+      "proof": "pnpm check and wb verify pass; docs/PROGRESS.md records M1 plan and results.",
+      "evidence": ["pnpm check output (lint+typecheck+test)", "wb verify verdict", "docs/PROGRESS.md M1 results"],
+      "depends_on": ["core"]
+    }
+  ]
+}
