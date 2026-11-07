@@ -136,12 +136,14 @@ Superseding details from the first M4 build, after the review and
   and the MCP entry, every hook script, the monitor and the fake adapter's config all use that
   absolute launcher path. `doctor` additionally checks the MCP entry's `command` equals the
   launcher path, so a stale `npx` entry from an older install reports cannot-wake-idle.
-  - **ASSUMED (needs the human's live test / possible dep):** there is no build step yet (M12), so
-    the launcher runs the TypeScript entry via `node --import tsx <abs>/src/cli/bin.ts`. This
-    requires `tsx` to be available. `tsx` is NOT in PLAN's dependency list, so it is left for the
-    human to add as a dev dependency (or the launcher regenerates to plain `node` once M12 produces
-    a compiled `src/cli/bin.js`, which `cliEntryPath()` already prefers when present). Flag, not a
-    silent dependency add.
+  - **Build-first launcher (resolved 2026-11-07).** There is a `build` script
+    (`tsc -p tsconfig.build.json` → `dist/`). `cliEntryPath()` prefers a compiled
+    `dist/cli/bin.js` when it exists, so a launcher written by `setup` run from the built
+    package uses **plain `node dist/cli/bin.js`** and needs no extra tooling. The live-test
+    steps (`docs/PROGRESS.md`) run `pnpm build` first for exactly this reason. **Known
+    limitation:** running `setup` directly from the `.ts` source (no `pnpm build` first)
+    falls back to `node --import tsx <abs>/src/cli/bin.ts`, which needs `tsx` — not in PLAN's
+    dependency list, so not added silently. Build first and this path is not used.
 - **Mid-turn delivery.** `PostToolUse` and `Stop` hooks no longer drain. The documented
   `additionalContext` output for PostToolUse is not reliably surfaced to the model (public bug
   report, Jan 2026), so a drained-but-unshown message would be a silent loss. The hooks now only

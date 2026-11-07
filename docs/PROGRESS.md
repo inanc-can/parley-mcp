@@ -70,12 +70,17 @@ automated tests use a temporary HOME + a fake runner; a real run needs two Claud
 6. **Leave session B idle.** In session A type `say hi to claude@web`. Expect B's monitor to surface
    the message and the idle agent to answer **within 5 s with no typing in B**.
 7. **Confirm receipts without the viewer (M6 not built).** Run
-   `node dist/cli/bin.js log --thread <id>` (the thread id is printed by `who`/`log`), or
+   `node dist/cli/bin.js log --thread <id>` (the thread id is printed by `log`), or
    call the `inbox` MCP tool with `include_sent: true` from session A, and confirm the message shows
    `delivered ✓✓` and, after B's reply or a prompt echoing the id, `read` / `replied`.
-8. **Capture fixtures:** save the real hook payloads Claude Code sends, anonymise paths/ids, replace
+8. **Check requeue when a reader closes unread.** Send A→B a new message and, before B reads or
+   replies, **close session B**. Then re-open session B in the same folder. The message must be back
+   to `sent` and surface again: SessionStart (`source=startup`) requeues this agent's delivered-but-
+   unread messages, and SessionEnd requeues any monitor-surfaced deliveries, because the monitor
+   records `delivered_session=monitor-<pid>` which no Claude SessionEnd can match (PLAN 4.3).
+9. **Capture fixtures:** save the real hook payloads Claude Code sends, anonymise paths/ids, replace
    the synthetic `src/adapters/claude-code/fixtures/*.json`, and keep the replay tests green.
-9. **Uninstall check:** `node dist/cli/bin.js uninstall`, then confirm
+10. **Uninstall check:** `node dist/cli/bin.js uninstall`, then confirm
    `claude plugin list --json` no longer shows `parley`, `~/.claude.json` keeps your other keys, and
    both `~/.mcp-parley/claude-marketplace/` and `~/.mcp-parley/bin/mcp-parley` are gone.
 
