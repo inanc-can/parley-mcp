@@ -1,0 +1,43 @@
+{
+  "task_id": "M5",
+  "goal": "Milestone M5: build src/adapters/codex. Register the Parley MCP server at user level in ~/.codex/config.toml [mcp_servers.mcp-parley] merged with smol-toml (keep comments and every other table), write Codex lifecycle hooks to ~/.codex/hooks.json (SessionStart/UserPromptSubmit/PostToolUse/Stop/SessionEnd, same roles as the Claude Code adapter, subagent payloads ignored), and an app-server idle-wake client (turn/start for an idle thread, turn/steer with expectedTurnId for a busy one) gated to the verified protocol (codex 0.154.0, v2) and fail-closed (unreachable/wrong version -> outlook 'queued until the next turn', fall back to hooks). Idempotent install, byte-for-byte uninstall, doctor that reports untrusted hooks and never falsely claims trusted. setup tells the human to trust the hooks via /hooks. Reuse the M4 patterns the live test proved: absolute launcher (never npx), MCP key mcp-parley, never overwrite/remove a foreign entry, identity bound to the harness session via PARLEY_HARNESS, monitor/drain lines carrying the message id and a reply hint, heartbeat on every poll. All tests use a temporary HOME and fake runners/sockets; never touch the real ~/.codex, never start codex sessions.",
+  "allowed_files": [
+    "src/adapters/**",
+    "src/cli/**",
+    "src/mcp/**",
+    "test/**",
+    "docs/PROGRESS.md",
+    "docs/harness-notes.md",
+    ".workbench/**",
+    "package.json",
+    "pnpm-lock.yaml"
+  ],
+  "forbidden_files": [
+    "src/viewer/**",
+    "src/notify/**",
+    "src/core/**",
+    "src/store/**",
+    "docs/PLAN.md"
+  ],
+  "acceptance": [
+    "pnpm check",
+    "pnpm exec vitest run test/adapters/codex.test.ts",
+    "pnpm exec vitest run test/adapters/codex-app-server.test.ts",
+    "pnpm exec vitest run test/adapters/codex-fixtures.test.ts"
+  ],
+  "approvals": [
+    "new-dependency"
+  ],
+  "rollback_plan": "Revert the M5 commits on the local branch (git revert); the only files touched are under src/adapters, src/cli, src/mcp and test, plus docs and package.json/pnpm-lock.yaml for the smol-toml add. smol-toml is on PLAN's allowed runtime-dependency list (pinned exact version). No external services, no production data, no repo writes: all install/uninstall/app-server work targets a temporary HOME and fake sockets in tests; the real ~/.codex is never read or written and no codex session is started. Nothing published or pushed.",
+  "human_approved_exceptions": [],
+  "scope_changes": [
+    {
+      "date": "2026-11-07",
+      "by": "kiro (kiro-M5)",
+      "approvals_added": [
+        "new-dependency"
+      ],
+      "reason": "smol-toml is added as a runtime dependency to merge ~/.codex/config.toml while preserving comments and other tables (PLAN section 3 lists smol-toml as an allowed runtime dependency, explicitly 'smol-toml (Codex config)'; the task brief directs its use). Pinned to an exact version. The 'new-dependency' approval is recorded because the verify gate flags any package.json/pnpm-lock.yaml change."
+    }
+  ]
+}

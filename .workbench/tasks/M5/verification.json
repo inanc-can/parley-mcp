@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "task_id": "M5",
+  "passed": true,
+  "created_at": "2026-11-07T21:05:27+00:00",
+  "head": "49eda01246b4e6e99a48d9f361de01284b60c839",
+  "base_rev": "49eda01246b4e6e99a48d9f361de01284b60c839",
+  "changed_files": [
+    "docs/PROGRESS.md",
+    "package.json",
+    "pnpm-lock.yaml",
+    "src/adapters/codex/app-server.ts",
+    "src/adapters/codex/config-files.ts",
+    "src/adapters/codex/fixtures/post-tool-edit.json",
+    "src/adapters/codex/fixtures/schema/TurnStartParams.json",
+    "src/adapters/codex/fixtures/schema/TurnSteerParams.json",
+    "src/adapters/codex/fixtures/session-end.json",
+    "src/adapters/codex/fixtures/session-start.json",
+    "src/adapters/codex/fixtures/stop.json",
+    "src/adapters/codex/fixtures/subagent-post-tool.json",
+    "src/adapters/codex/fixtures/user-prompt.json",
+    "src/adapters/codex/hooks-merge.ts",
+    "src/adapters/codex/index.ts",
+    "src/adapters/codex/install.ts",
+    "src/adapters/codex/toml-merge.ts",
+    "src/adapters/index.ts",
+    "src/cli/commands/hook-events.ts",
+    "src/cli/commands/hook-payloads.ts",
+    "src/cli/hook-commands.ts",
+    "src/cli/index.ts",
+    "test/adapters/codex-app-server.test.ts",
+    "test/adapters/codex-fixtures.test.ts",
+    "test/adapters/codex.test.ts"
+  ],
+  "checks": [
+    {
+      "code": "scope_contract_valid",
+      "status": "pass",
+      "severity": "block",
+      "detail": "ok",
+      "artifact": ".workbench/tasks/M5/scope.json"
+    },
+    {
+      "code": "acceptance_pass",
+      "status": "pass",
+      "severity": "block",
+      "detail": "`pnpm check` exit=0 in 15981ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T21:05:05+00:00"
+    },
+    {
+      "code": "acceptance_pass",
+      "status": "pass",
+      "severity": "block",
+      "detail": "`pnpm exec vitest run test/adapters/codex.test.ts` exit=0 in 2141ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T21:05:21+00:00"
+    },
+    {
+      "code": "acceptance_pass",
+      "status": "pass",
+      "severity": "block",
+      "detail": "`pnpm exec vitest run test/adapters/codex-app-server.test.ts` exit=0 in 1962ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T21:05:23+00:00"
+    },
+    {
+      "code": "acceptance_pass",
+      "status": "pass",
+      "severity": "block",
+      "detail": "`pnpm exec vitest run test/adapters/codex-fixtures.test.ts` exit=0 in 2145ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T21:05:25+00:00"
+    },
+    {
+      "code": "scope_forbidden",
+      "status": "pass",
+      "severity": "block",
+      "detail": "ok",
+      "artifact": ""
+    },
+    {
+      "code": "scope_outside_allowed",
+      "status": "pass",
+      "severity": "block",
+      "detail": "ok",
+      "artifact": ""
+    },
+    {
+      "code": "dependency_approval",
+      "status": "pass",
+      "severity": "block",
+      "detail": "dependency manifests changed: ['package.json']",
+      "artifact": ""
+    }
+  ],
+  "artifacts": [
+    ".workbench/config.json",
+    ".workbench/feedback.jsonl",
+    ".workbench/tasks/M5/scope.json"
+  ]
+}

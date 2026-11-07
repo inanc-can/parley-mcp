@@ -171,3 +171,86 @@ Superseding details from the first M4 build, after the review and
   registration as a SessionStart concern; the monitor doing it too means a folder with a running
   Claude session always has a registered agent even if SessionStart was missed. This is intentional
   (idempotent, never deletes) and recorded in `.workbench/state.json` assumptions.
+
+## M5 (2026-11-07, kiro): Codex adapter
+
+### Verified live against the installed Codex and generated schema
+
+- **Codex version:** `codex-cli 0.154.0` (`codex --version`). The app-server protocol schema was
+  generated with `codex app-server generate-json-schema --out <dir>` into a gitignored
+  `dist/codex-schema/` (JSON Schema per message type, plus `v1/` and `v2/` dirs and
+  `codex_app_server_protocol.v2.schemas.json`). No real `~/.codex` file was read or written by the
+  build; the live Codex was only queried for `--help`, `--version` and the schema.
+- **MCP server config path (VERIFIED by official docs + `codex mcp`):** `~/.codex/config.toml`,
+  table `[mcp_servers.<name>]`. We manage `[mcp_servers.mcp-parley]`. Codex, the IDE extension and
+  the desktop app all read this one file. `codex mcp add|list|get|remove` exist, but we **merge the
+  TOML ourselves with `smol-toml`** (PLAN-approved dep) so we can preserve comments and every other
+  table, keep the merge idempotent, and restore byte-for-byte on uninstall — `codex mcp add` would
+  rewrite the file in Codex's own style and is harder to reverse exactly.
+  - Entry shape: `command` = this install's absolute launcher path (never `npx`),
+    `args = ["serve"]`, and `[mcp_servers.mcp-parley.env] PARLEY_HARNESS = "codex"` so the per-session
+    MCP server resolves the same `codex@<folder>` id its hooks use (same identity-split fix as M4).
+- **Hooks (VERIFIED, learn.chatgpt.com/docs/hooks):** config is `~/.codex/hooks.json` (user level) OR
+  inline `[hooks]` in config.toml; a layer with both is merged and warned. We write **`~/.codex/hooks.json`**
+  (separate file, cleaner to add/remove than editing config.toml twice). Shape:
+  ```json
+  { "description": "...", "hooks": {
+      "SessionStart": [ { "matcher": "startup|resume|clear|compact|fork",
+                          "hooks": [ { "type": "command", "command": "<launcher> hook codex-session-start", "timeout": 10 } ] } ],
+      "UserPromptSubmit": [ { "hooks": [ { "type": "command", "command": "<launcher> hook codex-user-prompt" } ] } ],
+      "PostToolUse": [ { "matcher": "Edit|Write|apply_patch", "hooks": [ { "type": "command", "command": "<launcher> hook codex-post-tool" } ] } ],
+      "Stop": [ { "hooks": [ { "type": "command", "command": "<launcher> hook codex-stop" } ] } ],
+      "SessionEnd": [ { "hooks": [ { "type": "command", "command": "<launcher> hook codex-session-end", "timeout": 3 } ] } ]
+  } }
+  ```
+  Event names are **PascalCase** (`SessionStart`, `UserPromptSubmit`, `PostToolUse`, `Stop`,
+  `SessionEnd`). `matcher` is a regex; `UserPromptSubmit` and `Stop` **ignore** any matcher.
+  `PostToolUse` matches the tool name — for file edits use `Edit|Write` and `apply_patch` (apply_patch
+  also accepts `Edit`/`Write` matcher values). `SessionEnd`/`Interrupt` default timeout is 1 s, max 3 s.
+- **Hook command stdin fields (VERIFIED):** `session_id`, `transcript_path`, `cwd`, `hook_event_name`,
+  `model`, `permission_mode` (common); `SessionStart` adds `source` (startup/resume/clear/compact/fork);
+  `UserPromptSubmit` adds `prompt` + `turn_id`; `PostToolUse` adds `tool_name`/`tool_input`
+  (`tool_input.file_path` for file tools) + `turn_id`; `SessionEnd` adds `reason` (only `other`).
+  These field names MATCH Claude Code's, so the M5 Zod schemas mirror the M4 ones (session_id, cwd,
+  prompt, tool_input, source, reason) with Codex's extras allowed via `.looseObject`.
+- **Subagents:** Codex fires **separate** `SubagentStart`/`SubagentStop` events (not the main
+  SessionStart/Stop), and subagent hooks report the *parent* `session_id`. `agent_id`/`agent_type`
+  appear on SubagentStop. We register no subagent hooks, so the main hooks never see a subagent; the
+  `isSubagentPayload` guard (agent_id/agent_type present) stays as defence in depth.
+- **Hook TRUST (VERIFIED):** non-managed command hooks must be reviewed and **trusted** before they
+  run; Codex records trust against the hook's current hash, so any later edit re-prompts. The user
+  trusts via the interactive `/hooks` browser in the CLI (there is NO non-interactive `codex hooks`
+  subcommand — `codex` top-level has `mcp`, `plugin`, `app-server`, `doctor`, …, not `hooks`). So:
+  - **setup must tell the human to run `/hooks` and trust the new mcp-parley hooks** (and restart
+    sessions). We print this instruction.
+  - **doctor** cannot query per-hook trust without a running app-server connection (`hooks/list`
+    returns `trustStatus: managed|untrusted|trusted|modified`). Offline, doctor reports
+    `hooksTrusted: null`-equivalent as "unknown — trust them with /hooks" and bases `canWakeIdle`
+    on the config files being present and the app-server being reachable. It never claims trusted.
+- **Idle wake — app-server (VERIFIED method shapes, gated to this protocol):** hooks DON'T fire while
+  a session is idle, so idle wake uses `codex app-server` (stdio JSON-RPC). Handshake: `initialize`
+  with `clientInfo` (→ `InitializeResponse { codexHome, platformFamily, platformOs, userAgent }`).
+  Methods (v2): `turn/start` (`TurnStartParams { threadId, input: UserInput[], … }`) starts a turn on
+  an idle thread; `turn/steer` (`TurnSteerParams { threadId, expectedTurnId, input }`) injects into a
+  **busy** turn — `expectedTurnId` is a required precondition and the call fails with
+  `activeTurnNotSteerable` (for `/review` or `/compact` turns) or a turn-id mismatch. `input` is a
+  `UserInput[]`; the text variant is `{ type: "text", text }`. PLAN says prefer queuing until the
+  turn ends then `turn/start`; we only `turn/steer` at a safe point. **Fail closed:** if the
+  app-server is unreachable or its protocol version doesn't match what we verified (0.154.0 / v2),
+  we DON'T attempt delivery — `outlook` says "queued until the next turn" and we fall back to the
+  hooks + the MCP server's own inbox drain.
+
+### Assumed / needs the human's live two-session test (M5 acceptance)
+
+- **Mapping a Codex native session to a Parley agent id.** We derive `codex@<basename(cwd)>` from the
+  hook payload's `cwd` (same rule as Claude). The app-server's `threadId`/`turnId` (for idle wake)
+  are NOT the same as the hook `session_id`; wiring the live app-server thread id to the agent is the
+  part most likely to need adjustment on the human's real run — until confirmed, idle wake is gated
+  and falls back to "queued until next turn" rather than mis-delivering.
+- **Whether the human's Codex build enables `features.hooks`** (on by default) and trusts our hooks.
+  doctor reports what it can see; the live test confirms a real idle round trip.
+- **Fixtures are synthetic** (`src/adapters/codex/fixtures/*.json`, `_synthetic: true`) until the
+  human captures anonymised real payloads, exactly as for Claude Code.
+- Concord's `docs/codex.md` / `src/relay/codex-client.ts` were a conceptual reference only; no code
+  copied. PLAN's Concord-derived note (`turn/start` / `turn/steer` with `expectedTurnId`) matched the
+  generated schema's method shapes and is now verified against 0.154.0.

@@ -1,0 +1,9 @@
+{
+  "base_rev": "49eda01246b4e6e99a48d9f361de01284b60c839",
+  "started_at": "2026-11-07T20:52:59+00:00",
+  "preexisting": {
+    "docs/PROGRESS.md": "b30048f0bd2207b940117a73d9d11a46ccd98e35",
+    "docs/harness-notes.md": "e91e023dd0124f06862ca05084fc0d7c331db838"
+  },
+  "status": "in_progress"
+}

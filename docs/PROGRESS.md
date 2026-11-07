@@ -1,5 +1,114 @@
 # Progress
 
+## M5 — Codex adapter (plan, session kiro-M5, 2026-11-07)
+
+**Goal (PLAN section 6 "Codex" + M5):** build `src/adapters/codex` — user-level MCP registration in
+`~/.codex/config.toml [mcp_servers.mcp-parley]` (merged with `smol-toml`, keeping comments + other
+tables), Codex lifecycle hooks in `~/.codex/hooks.json`, and an app-server idle-wake client
+(`turn/start` / `turn/steer`) gated to the verified protocol and fail-closed. Idempotent install,
+byte-for-byte uninstall, a `doctor` that reports untrusted hooks. Reuse the M4 patterns the live
+test proved (absolute launcher, MCP key `mcp-parley`, never touch foreign entries, identity bound to
+the harness session, monitor/drain lines carrying the message id + reply hint, heartbeat per poll).
+
+**Verified facts** are in `docs/harness-notes.md` (M5 section): codex 0.154.0, config/hook paths,
+hook payload fields, hook trust via `/hooks`, and the app-server method shapes from the generated
+schema. Tests use a temp HOME + fake runners/sockets; the real `~/.codex` is never touched and no
+codex session is started.
+
+**Plan (work items):**
+1. Add `smol-toml` (PLAN-allowed) pinned; config.toml merge helper (round-trips comments + tables).
+2. `src/adapters/codex/config-files.ts` — the MCP entry, `hooks.json`, the hook-command names.
+3. `src/adapters/codex/install.ts` — install/uninstall/doctor (merge-not-overwrite, exact undo,
+   foreign-entry guard, launcher reuse).
+4. `src/adapters/codex/app-server.ts` — `initialize` handshake + `turn/start`/`turn/steer` request
+   builders, gated to the verified version, fail-closed.
+5. `src/cli/commands/hook-events.ts` (or a Codex sibling) — the five Codex hook handlers reusing the
+   M4 logic; wire `hook codex-*` subcommands.
+6. `src/adapters/codex/index.ts` + register in `src/adapters/index.ts`.
+7. Synthetic fixtures + replay tests; install/uninstall/doctor/app-server tests.
+8. Exact (H) live-test steps for Claude <-> Codex in this file; update state.json; `wb handoff`.
+
+**Status:** built. `pnpm check` passes (36 files / 193 tests). `wb verify` pending.
+
+### What was built
+
+- **`src/adapters/codex/config-files.ts`** — the managed `[mcp_servers.mcp-parley]` TOML block
+  (fenced with begin/end markers, `command` = the absolute launcher, `args=["serve"]`, nested
+  `env.PARLEY_HARNESS="codex"`) and the `hooks.json` object (SessionStart/UserPromptSubmit/
+  PostToolUse/Stop/SessionEnd, PascalCase, handlers invoking `<launcher> hook codex-*`).
+- **`src/adapters/codex/toml-merge.ts`** — surgical, comment-preserving config.toml merge:
+  `smol-toml.parse` only INSPECTS (detect our/foreign entry); install APPENDS the fenced block;
+  uninstall excises exactly it so the rest is byte-for-byte. Foreign-entry guard (`isOurEntry` =
+  command ends with `/.mcp-parley/bin/mcp-parley`).
+- **`src/adapters/codex/hooks-merge.ts`** — JSON merge of hooks.json: keeps the user's groups, adds
+  ours (idempotent, ours replaced not duplicated); uninstall removes only our groups and deletes the
+  file only when nothing of theirs remains.
+- **`src/adapters/codex/app-server.ts`** — `initialize`/`turn/start`/`turn/steer` request builders
+  against the generated v2 schema, `planWake` (idle→turn/start, busy→turn/steer with expectedTurnId,
+  else fail-closed fallback), and a version gate (`gateOpenForVersion`) + offline reachability probe.
+- **`src/adapters/codex/install.ts`** — install/uninstall/doctor; doctor reports each check and
+  `hooksTrusted: null` (never falsely trusted; the human trusts via `/hooks`). setup prints the
+  trust instruction.
+- **Hooks reuse:** `src/cli/commands/hook-events.ts` was generalized (injectable `agentIdForCwd` +
+  `editTools`); Codex wires `codex@<folder>` + `apply_patch`. `src/cli/hook-commands.ts` (new) holds
+  the Claude + Codex `hook` subcommand registration (split out of cli/index.ts for the 400-line cap).
+- **Fixtures** `src/adapters/codex/fixtures/*.json` (synthetic, `_synthetic:true`) + the two vendored
+  app-server schema files under `fixtures/schema/`; replay + app-server + install tests.
+- **Dependency:** `smol-toml@1.4.2` (PLAN-allowed, exact-pinned).
+
+### (H) Human live two-session test — exact steps (Claude ↔ Codex)
+
+M5's acceptance is marked **(H)**: it needs a real Claude Code session and a real Codex session in
+one repo, with Codex idle. The build cannot run `codex` itself; automated tests use a temp HOME and
+fake sockets. Use `Project Parley/parley-test` as the shared repo (two folders, e.g. `api`, `web`).
+
+1. **Build and run setup from this repo.**
+   ```sh
+   cd "/Users/inanccan/Desktop/Project Parley/parley-mcp"
+   pnpm build
+   node dist/cli/bin.js doctor                 # shows claude-code + codex rows
+   node dist/cli/bin.js setup --harness codex
+   ```
+   setup writes the launcher `~/.mcp-parley/bin/mcp-parley`, merges
+   `[mcp_servers.mcp-parley]` into `~/.codex/config.toml` (keeping your comments and other tables),
+   writes/merges `~/.codex/hooks.json`, and prints the **trust the hooks via /hooks** instruction.
+   It never runs `npx`.
+2. **Trust the hooks.** Open Codex and run `/hooks`; review and TRUST the mcp-parley SessionStart /
+   UserPromptSubmit / PostToolUse / Stop / SessionEnd hooks (Codex records trust against each hook's
+   hash). Then `node dist/cli/bin.js doctor` should show codex: wired + hooks present (it reports
+   hooks-trust as unknown — Codex exposes trust only in the interactive `/hooks`).
+3. **Confirm the MCP server loads:** `codex mcp list` (or `codex mcp get mcp-parley`) shows
+   `mcp-parley` → the launcher with `args=["serve"]` and `PARLEY_HARNESS=codex`. Restart any open
+   Codex session so the server + hooks load.
+4. **Open two sessions in one repo, different folders** — Claude Code in `<repo>/web` (idle target or
+   sender) and Codex in `<repo>/api`. Each registers as `claude@web` / `codex@api` on SessionStart.
+   `node dist/cli/bin.js who` (run in the repo) lists both alive.
+5. **Idle Codex round trip.** Leave the Codex session idle. In the Claude session type
+   `say hi to codex@api`. Expect the idle Codex session to answer **within 5 s with no typing**: the
+   MCP server's `talk` queues the message; the app-server idle-wake (`turn/start`) delivers it. If
+   the app-server is unavailable, `outlook` says "queued until the next turn" and the message is
+   delivered on Codex's next turn (the fail-closed fallback) — note which path fired.
+6. **Reverse leg:** from Codex, reply (the monitor/inbox line carries the message id + a reply hint);
+   confirm receipts move via `node dist/cli/bin.js log --thread <id>`: delivered ✓✓, then read / replied.
+7. **doctor reports untrusted hooks.** Before step 2 (or after editing a hook so its hash changes),
+   `doctor` + Codex `/hooks` should show the hooks as untrusted/needing review; after trusting, they
+   run. Record what `/hooks` showed.
+8. **Capture fixtures:** log the real Codex hook payloads (SessionStart, UserPromptSubmit with a
+   message id, PostToolUse apply_patch, SessionEnd), anonymise paths/ids, replace the synthetic
+   `src/adapters/codex/fixtures/*.json` (drop `_synthetic` or set it false), and keep the replay
+   tests green. Also capture one real `turn/start`/`turn/steer` exchange to confirm the builders.
+9. **Uninstall check:** `node dist/cli/bin.js uninstall`, then confirm `~/.codex/config.toml` is
+   restored byte-for-byte (your comments + other tables + any foreign `mcp-parley` entry intact),
+   `~/.codex/hooks.json` keeps any non-mcp-parley hooks (or is gone if it held only ours), and the
+   launcher is removed.
+
+If step 5 fails within 5 s, check (assumptions in `docs/harness-notes.md` M5): whether the
+app-server exposes the recipient session's live `threadId`/active `turnId` to us (the gated, deferred
+wiring), whether `features.hooks` is on and our hooks are trusted, and the `codex@<folder>` id
+derivation.
+
+---
+
 ## M4: live test, 2026-11-07 (Claude, with the human)
 
 **First run:** setup installed the plugin; the idle web session woke ~1 s after api sent "Hi". Bugs found
