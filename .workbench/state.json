@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "active_task_id": "M4",
-  "summary": "M4 live test in progress: real setup installed the plugin (parley@parley enabled; doctor: can wake idle). Throwaway repo Project Parley/parley-test (api, web) is ready. Automated part reviewed (round 3 pass 7/10) and verified (157 tests).",
+  "summary": "M4: first live test showed the idle wake works (~1 s); its bugs are fixed (commit a7a14c9: session-bound identity, mcp-parley MCP key that never overwrites foreign entries, monitor heartbeat, reply hint, manifest warnings). Reinstalled: plugin enabled, doctor can-wake-idle. 162 tests, wb verify passes. Review of the fix round running.",
   "assumptions": [
     "M1 (recorded 2026-11-07, fix session): The secret-scan regex thresholds are builder-chosen minimum length heuristics (AWS AKIA +16 chars; ghp_/github_pat_/sk- at 20+ chars; Slack xox*- tokens at 10+ chars; .env SECRET=TOKEN=PASSWORD=API_KEY lines with values of 12+ chars). They may need tightening after real-world false negative/positive feedback; none may ever be relaxed to log the secret value.",
     "M1 (recorded 2026-11-07, fix session): everyone fan-out derives per-recipient idempotency keys as <base key>::<toAgent>; the double-colon separator is a builder choice, and changing it changes which retries dedupe.",
@@ -46,11 +46,11 @@
   ],
   "blockers": [
     "GitHub Actions blocked by the account billing lock (human-only fix).",
-    "M4 live two-session test needs the human (it installs into the real ~/.claude and needs two interactive Claude Code sessions)."
+    "Human: close the two old Claude test tabs (old code); then the re-test can run."
   ],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "Human: open two NEW Claude Code sessions in parley-test/api and parley-test/web, leave web idle, type `say hi to claude@web` in api, and see web answer within 5 s. Then receipts, requeue-on-close, uninstall. M4 closes after that. Follow-up: validate --strict warnings bug.",
+  "next_action": "Human closes the two old test tabs (they run old code); then Claude re-runs the live test (fresh claude session in parley-test/web, headless sender from parley-test/api) and checks reply + receipts. Then offer to restore research Parley's `parley` MCP entry that the old setup overwrote. M4 closes after the re-test passes.",
   "updated_at": "2026-11-07T21:20:00+00:00",
   "last_mode": "checkpoints",
   "last_mode_notes": "M4 fix round 3 (Kiro): monitor-delivery requeue via SessionStart/SessionEnd, stale-doc refresh, build smoke test. wb verify PASS. Next: the human's live two-session test closes M4."
