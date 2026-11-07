@@ -32,7 +32,7 @@ Grouped as on the design page. Treat this table as the spec.
 ### Install and discovery
 | Topic | Decision |
 |---|---|
-| Install | `npx parley-mcp setup` (package name to be confirmed by the human, see M12) |
+| Install | `npx mcp-parley setup`. The npm name `mcp-parley` belongs to an unrelated package; the human chose `mcp-parley` (2026-11-07). Installed configs never call `npx`: setup writes the absolute path to this install's CLI |
 | Setup scope | **User-level config only.** Nothing written into any repository |
 | Launch harnesses | **Claude Code, Codex, Cursor, Grok Build**, each one working fully |
 | Integration form | Native plugin or hooks per harness, plus the MCP server |
@@ -74,7 +74,7 @@ Grouped as on the design page. Treat this table as the spec.
 ### The human stays in control
 | Topic | Decision |
 |---|---|
-| Viewer | Local web page on `127.0.0.1`, opened with `parley-mcp viewer` |
+| Viewer | Local web page on `127.0.0.1`, opened with `mcp-parley viewer` |
 | Notifications | OS notification for agreements, conflicts and paused threads |
 | Human posting | The human posts into threads as participant `you` |
 | Stop controls | Pause or resume per thread, plus a stop-all switch |
@@ -89,7 +89,7 @@ Grouped as on the design page. Treat this table as the spec.
 | Topic | Decision |
 |---|---|
 | Language | TypeScript on Node ≥ 20 |
-| Storage | One SQLite file per machine: `~/.parley-mcp/hub.db` |
+| Storage | One SQLite file per machine: `~/.mcp-parley/hub.db` |
 | Adapters | One folder per harness with a manifest; outsiders add new harnesses in one PR |
 | Adapter tests | Against recorded harness sessions (fixtures of real hook payloads and outputs) |
 | MCP tools | Three: `talk`, `inbox`, `agree` |
@@ -102,10 +102,10 @@ Grouped as on the design page. Treat this table as the spec.
  Claude Code ─┐                                   ┌─ viewer (127.0.0.1, SSE)
  Codex ───────┤  MCP server (stdio, per session)   │       ▲
  Cursor ──────┼─► talk · inbox · agree ──► core ──► store ─┘
- Grok Build ──┘        ▲                      (pure)  (SQLite ~/.parley-mcp/hub.db)
+ Grok Build ──┘        ▲                      (pure)  (SQLite ~/.mcp-parley/hub.db)
                        │
      adapters: hooks, monitors and IPC that WAKE a session and DELIVER messages
-     (they call `parley-mcp inbox drain` / `inbox watch`, which read the same store)
+     (they call `mcp-parley inbox drain` / `inbox watch`, which read the same store)
 ```
 
 There is **no always-running daemon**. Every process (the MCP server for each session, hook
@@ -115,7 +115,7 @@ commands, monitors, the viewer) opens the same SQLite file in WAL mode, with a b
 ### Repository layout
 
 ```
-parley-mcp/
+parley-mcp/   (repo folder; the package and CLI are named mcp-parley)
   src/
     store/       connection.ts, schema.ts, migrations, one repository file per table, row schemas (Zod)
     core/        identity.ts, messages.ts (state machine), threads.ts, agreements.ts, claims.ts,
@@ -205,7 +205,7 @@ in the last hour. Migrations are numbered, run at startup and tested.
 ### 4.5 Claims and overlap
 
 - `agree` with `action: "claim"` records a path glob for 2 hours. Renewing extends it; `release` ends it.
-- Post-edit hooks call `parley-mcp hook edit` with the edited path. It stores the edit and checks it
+- Post-edit hooks call `mcp-parley hook edit` with the edited path. It stores the edit and checks it
   against active claims by other agents and edits of the same file by another agent in the last 30
   minutes. On a conflict, both agents get a system message in a thread named after the file, and the
   human gets a notification. Nothing is blocked.
@@ -278,10 +278,10 @@ you found in `docs/harness-notes.md`. Concord's code for each harness is a usefu
 `docs/grok-build.md` (Grok).
 
 ### Claude Code
-- MCP server registered at user level (`claude mcp add --scope user parley -- npx parley-mcp serve`,
+- MCP server registered at user level (`claude mcp add --scope user parley -- npx mcp-parley serve`,
   or the equivalent config entry).
 - A Claude Code **plugin** with:
-  - a **monitor** (`monitors.json`): a script that runs `parley-mcp inbox drain --format monitor`
+  - a **monitor** (`monitors.json`): a script that runs `mcp-parley inbox drain --format monitor`
     every 2 s for the life of the session and prints one line per message. Each printed line becomes a
     notification and **wakes an idle session**. The script must exit when its parent harness process
     is gone, and exit at once in folders with no Parley agents.
@@ -305,7 +305,7 @@ you found in `docs/harness-notes.md`. Concord's code for each harness is a usefu
 - MCP server in `~/.cursor/mcp.json` (user level); use MCP roots to learn the open folder.
 - Hooks in `~/.cursor/hooks.json` (merge). On `sessionStart`, register the agent and return context
   that tells the agent to start **one Cursor-owned background shell task** running
-  `parley-mcp inbox watch --agent <id> --once`. That command waits silently, prints one message and
+  `mcp-parley inbox watch --agent <id> --once`. That command waits silently, prints one message and
   exits, and its completion resumes the agent. The agent then answers and starts a new watch.
 - On `stop`, drain queued messages through Cursor's `followup_message`.
 - Cursor and Grok are the two adapters that need a little instruction text, because the agent itself
@@ -315,7 +315,7 @@ you found in `docs/harness-notes.md`. Concord's code for each harness is a usefu
 - MCP server and a Grok plugin (Grok's plugin format resembles Claude Code's) with `SessionStart`,
   `PostToolUse` and `Stop` hooks.
 - Idle wake: Grok's persistent `monitor` tool running
-  `parley-mcp inbox watch --agent <id> --provider grok`. The agent has to start it itself, and the
+  `mcp-parley inbox watch --agent <id> --provider grok`. The agent has to start it itself, and the
   monitor doesn't get the session id, so pass `--agent` explicitly. If a turn ends with no monitor
   running, the `Stop` hook keeps the turn open **once** and gives the agent the exact command.
 - "Grok Bot" on grok.com (the hosted agent) can't run local hooks. It is out of scope for v1; note
@@ -329,16 +329,16 @@ personal data.
 ## 7. CLI
 
 ```
-parley-mcp setup [--harness <name>] [--dry-run]   detect harnesses, install adapters, print the first sentence to try
-parley-mcp uninstall                             remove exactly what setup added
-parley-mcp serve                                 the MCP server (stdio), started by harnesses
-parley-mcp who                                   agents in this repo, alive or idle
-parley-mcp log [--thread <id>]                   print a conversation
-parley-mcp export --format md|jsonl              export this repo's conversations and decisions
-parley-mcp viewer [--port N]                     start the viewer and open the browser
-parley-mcp doctor                                per-harness: installed? hooks trusted? can wake idle?
-parley-mcp inbox drain|watch|register ...        used by adapters
-parley-mcp hook <event>                          used by adapters
+mcp-parley setup [--harness <name>] [--dry-run]   detect harnesses, install adapters, print the first sentence to try
+mcp-parley uninstall                             remove exactly what setup added
+mcp-parley serve                                 the MCP server (stdio), started by harnesses
+mcp-parley who                                   agents in this repo, alive or idle
+mcp-parley log [--thread <id>]                   print a conversation
+mcp-parley export --format md|jsonl              export this repo's conversations and decisions
+mcp-parley viewer [--port N]                     start the viewer and open the browser
+mcp-parley doctor                                per-harness: installed? hooks trusted? can wake idle?
+mcp-parley inbox drain|watch|register ...        used by adapters
+mcp-parley hook <event>                          used by adapters
 ```
 `setup` prints exactly which files it changed. `--dry-run` changes nothing.
 
@@ -427,11 +427,11 @@ needs a server, and the project has no hosted service. Add only a `settings.tele
 tagline that names the four harnesses; a one-command install; `docs/adding-a-harness.md`; 10
 "good first issue" drafts (for example adapters for Gemini CLI, OpenCode, Copilot CLI, Goose);
 CHANGELOG; version 0.1.0.
-*(H):* the human picks the npm name (check that `parley-mcp` is free), then publishes.
+*(H):* the human publishes as `mcp-parley` (chosen 2026-11-07; re-check it is still free first).
 
 ## 11. Done when
 
-- A new user goes from `npx parley-mcp setup` to two agents greeting each other in under 2 minutes.
+- A new user goes from `npx mcp-parley setup` to two agents greeting each other in under 2 minutes.
 - A message to an idle agent on each of the four harnesses is delivered within 5 seconds.
 - Two agents reach an accepted agreement, and the human sees it and can veto it in the viewer.
 - Two agents editing the same file are both warned.
