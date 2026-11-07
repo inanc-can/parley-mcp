@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "active_task_id": "M4",
-  "summary": "M4 (Claude Code adapter) automated part done: review round 3 passed 7/10; its high finding (monitor deliveries never requeued) fixed by Kiro with end-to-end hook tests; build smoke test added. wb verify passes, 157 tests.",
+  "summary": "M4 live test in progress: real setup installed the plugin (parley@parley enabled; doctor: can wake idle). Throwaway repo Project Parley/parley-test (api, web) is ready. Automated part reviewed (round 3 pass 7/10) and verified (157 tests).",
   "assumptions": [
     "M1 (recorded 2026-11-07, fix session): The secret-scan regex thresholds are builder-chosen minimum length heuristics (AWS AKIA +16 chars; ghp_/github_pat_/sk- at 20+ chars; Slack xox*- tokens at 10+ chars; .env SECRET=TOKEN=PASSWORD=API_KEY lines with values of 12+ chars). They may need tightening after real-world false negative/positive feedback; none may ever be relaxed to log the secret value.",
     "M1 (recorded 2026-11-07, fix session): everyone fan-out derives per-recipient idempotency keys as <base key>::<toAgent>; the double-colon separator is a builder choice, and changing it changes which retries dedupe.",
@@ -40,7 +40,8 @@
     "[autonomous] 2026-11-07: Review round 3 passed (7/10) but found monitor deliveries are never requeued (high). Fixing it, and the stale docs, before the human's live test, so the test can cover requeue too; not a new review round, since the verdict was pass.",
     "M4 fix3 (recorded 2026-11-07, kiro-M4-fix3): Monitor-delivery requeue (review round 3 HIGH). A monitor delivers with delivered_session=monitor-<pid>, which a Claude SessionEnd (keyed on the Claude session id) can never match, so the message was never requeued. Two complementary fixes, both exercised through the hook entry points: (a) runHookSessionStart requeues this agent's delivered-but-unread messages when payload.source==='startup' (PLAN 4.3 fresh-session rule) via the existing requeueDeliveredForSession(db, agent, exceptSession=newSessionId) \u2014 the fresh session has delivered nothing yet, so every prior delivery (incl. monitor-*) is recovered; (b) runHookSessionEnd additionally calls a new messagesRepo.requeueMonitorDelivered(db, agent) that requeues delivered_session LIKE 'monitor-%', since a monitor process never fires a Claude SessionEnd. The misleading test (called requeueDeliveredToSession('monitor-7') directly) was replaced by two tests driving runHookSessionEnd/runHookSessionStart with realistic Claude session ids. ASSUMED: the monitor's PID-based session id always matches 'monitor-%' (set in the monitor script); confirmed in the human's live test (PROGRESS step 8).",
     "M4 fix3 (recorded 2026-11-07, kiro-M4-fix3): Build smoke test (test/cli/build-smoke.test.ts) compiles with `tsc -p tsconfig.build.json --outDir <tmp>` into a RANDOM subdir under the already-ignored dist/ (so the compiled output resolves commander/the SDK from the project node_modules by walking up \u2014 a sibling tmpdir outside the project fails with ERR_MODULE_NOT_FOUND), runs `node <outDir>/cli/bin.js --help` under plain Node and asserts the usage mentions mcp-parley, then removes the subdir in finally. It skips cleanly (returns) when node_modules/.bin/tsc is absent. Complements the static build-imports regex guard with a real compile+run.",
-    "M4 fix3 (recorded 2026-11-07, kiro-M4-fix3): Could not add `dist-smoke-*/` to .gitignore (the file-write tool was blocked for .gitignore this session); sidestepped by building into a subdir of the already-ignored dist/ instead, so no .gitignore change is needed."
+    "M4 fix3 (recorded 2026-11-07, kiro-M4-fix3): Could not add `dist-smoke-*/` to .gitignore (the file-write tool was blocked for .gitignore this session); sidestepped by building into a subdir of the already-ignored dist/ instead, so no .gitignore change is needed.",
+    "Live test 2026-11-07: real setup installed the plugin (claude plugin list shows parley@parley enabled; doctor says can wake idle). Follow-up bug: setup runs `claude plugin validate --strict`, which exits 1 on two warnings (no marketplace description, no author), and the printed error is empty. Fix: add description + author to the generated manifests and include the command's output in the failure note."
   ],
   "blockers": [
     "GitHub Actions blocked by the account billing lock (human-only fix).",
@@ -48,7 +49,7 @@
   ],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "Human: run the live two-session test in docs/PROGRESS.md (pnpm build; node dist/cli/bin.js setup --harness claude-code; two Claude Code sessions in a throwaway repo; idle wake within 5 s; receipts; requeue on close; uninstall). M4 closes only after it passes. Pushing is the human's call.",
+  "next_action": "Human: open two NEW Claude Code sessions in parley-test/api and parley-test/web, leave web idle, type `say hi to claude@web` in api, and see web answer within 5 s. Then receipts, requeue-on-close, uninstall. M4 closes after that. Follow-up: validate --strict warnings bug.",
   "updated_at": "2026-11-07T21:20:00+00:00",
   "last_mode": "checkpoints",
   "last_mode_notes": "M4 fix round 3 (Kiro): monitor-delivery requeue via SessionStart/SessionEnd, stale-doc refresh, build smoke test. wb verify PASS. Next: the human's live two-session test closes M4."
