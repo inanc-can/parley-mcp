@@ -2,46 +2,53 @@
   "task_id": "M4",
   "items": [
     {
-      "id": "fix-safe-remove",
-      "change": "Add src/adapters/fs-ops.ts: a shared, well-tested helper set for user-level config edits — removeFileIfPresent (delete only a file install created) and removeDirIfEmpty (remove a directory only if it is now empty; never recursive). Rewrite src/adapters/fake/index.ts uninstall to use removeDirIfEmpty instead of rmSync(dirname, { recursive, force }). The fake adapter remembers it owns the .parley-fake dir; a dir that holds other files survives.",
-      "proof": "test/adapters/fs-ops.test.ts covers removeDirIfEmpty on an empty vs non-empty dir; test/cli/setup.test.ts adds a case where the fake config's parent dir already holds an unrelated file and asserts both the file and the dir survive uninstall.",
-      "evidence": ["src/adapters/fs-ops.ts", "src/adapters/fake/index.ts", "test/adapters/fs-ops.test.ts", "test/cli/setup.test.ts"],
+      "id": "fix-identity-env",
+      "change": "Give the MCP server entry in src/adapters/claude-code/plugin-files.ts an `env: { PARLEY_HARNESS: \"claude\" }` so the per-session MCP server resolves `claude@<folder>` — the same agent id the hooks and monitor use. No src/mcp change needed (the server already honours PARLEY_HARNESS).",
+      "proof": "claude-code.test.ts asserts the installed mcpServers.parley entry carries env.PARLEY_HARNESS=claude; a new test proves resolveAgentId(undefined, cwd) with PARLEY_HARNESS=claude equals the hook's claudeAgentId(cwd).",
+      "evidence": ["src/adapters/claude-code/plugin-files.ts", "test/adapters/claude-code.test.ts"],
       "depends_on": []
     },
     {
-      "id": "m3-followups",
-      "change": "Fold the remaining M3 follow-ups: (a) a buildProgram/commander test running `setup --dry-run` against a temp HOME asserting nothing is written; (b) make an unknown --format error instead of silently defaulting (parseDrainFormat/parseExportFormat throw on an unrecognised value; commander reports it); (c) extend/confirm the transport.onclose close-path test; (d) add `hooksTrusted?` to DoctorReport and record the Adapter-interface deviation (env/dryRun/fake) in docs; (e) confirm overlap.ts trailing newline.",
-      "proof": "test/cli/program.test.ts drives buildProgram for setup --dry-run and an unknown --format; DoctorReport gains hooksTrusted; pnpm check passes.",
-      "evidence": ["src/cli/index.ts", "src/adapters/types.ts", "test/cli/program.test.ts", "docs/harness-notes.md"],
-      "depends_on": ["fix-safe-remove"]
+      "id": "fix-plugin-loading",
+      "change": "Install via a local marketplace at ~/.parley-mcp/claude-marketplace/ (.claude-plugin/marketplace.json + plugins/parley/). Run `claude plugin validate`, `marketplace add --scope user`, `install parley@<mkt> --scope user` through an injectable command runner (default spawns claude; tests pass a fake). Uninstall runs `plugin uninstall` + `marketplace remove`, then removes only files install created. doctor runs `claude plugin list --json` (defensive Zod) and checks monitor files before canWakeIdle.",
+      "proof": "claude-code.test.ts uses a fake runner: install records the three claude commands and writes marketplace files; uninstall records uninstall+remove and deletes only created files; doctor with fake list-json reports installed+enabled; a doctor test with monitor.sh missing asserts canWakeIdle=false.",
+      "evidence": ["src/adapters/claude-code/install.ts", "src/adapters/claude-code/runner.ts", "src/adapters/claude-code/plugin-files.ts", "test/adapters/claude-code.test.ts"],
+      "depends_on": ["fix-identity-env"]
     },
     {
-      "id": "hook-handlers",
-      "change": "Add src/cli/commands/hook-payloads.ts (Zod schemas for the five Claude Code hook payloads + a isSubagentPayload guard on agent_type/agent_id) and hook handler functions in src/cli/commands/hook.ts: runHookSessionStart (register+heartbeat), runHookUserPrompt (read-evidence: mark read any delivered message to the agent whose id appears in the prompt), runHookStop (drain + read-evidence from last_assistant_message), runHookPostTool (drain; record edit for Edit/Write via existing runHookEdit), runHookSessionEnd (requeue unread delivered for the session). Each ignores subagent payloads. Wire them into src/cli/index.ts as `hook session-start|user-prompt|stop|post-tool|session-end`, reading JSON from stdin.",
-      "proof": "test/cli/hook.test.ts: a subagent payload is ignored by every handler; a UserPromptSubmit payload whose prompt contains a delivered message id marks it read; session-start registers; session-end requeues unread.",
-      "evidence": ["src/cli/commands/hook-payloads.ts", "src/cli/commands/hook.ts", "src/cli/index.ts", "test/cli/hook.test.ts"],
-      "depends_on": ["m3-followups"]
+      "id": "fix-posttool-once",
+      "change": "Register PostToolUse once (single entry with matcher Edit|Write|MultiEdit removed in favour of one unmatched entry, or keep a single matched entry) so edits/drain run once per tool use.",
+      "proof": "claude-code.test.ts asserts hooks.PostToolUse has exactly one entry.",
+      "evidence": ["src/adapters/claude-code/plugin-files.ts", "test/adapters/claude-code.test.ts"],
+      "depends_on": ["fix-identity-env"]
     },
     {
-      "id": "claude-adapter",
-      "change": "Add src/adapters/claude-code/: plugin-files.ts (constants generating .claude-plugin/plugin.json, hooks/hooks.json, monitors/monitors.json and the per-event + monitor scripts), install.ts (merge mcpServers.parley into ~/.claude.json; write the plugin dir under ~/.claude/plugins/parley; idempotent, merge-not-overwrite; uninstall removes exactly what it created using fs-ops; doctor reports installed/mcp-wired/plugin-present/can-wake-idle), and index.ts exporting the Adapter. Register it in src/adapters/index.ts.",
-      "proof": "test/adapters/claude-code.test.ts against a temp HOME: install writes the mcpServers.parley entry and the plugin files; install twice is byte-for-byte; uninstall restores pre-existing ~/.claude.json keys and leaves pre-existing unrelated files/dirs intact; doctor reports each check.",
-      "evidence": ["src/adapters/claude-code/plugin-files.ts", "src/adapters/claude-code/install.ts", "src/adapters/claude-code/index.ts", "src/adapters/index.ts", "test/adapters/claude-code.test.ts"],
-      "depends_on": ["hook-handlers"]
+      "id": "fix-session-end-scope",
+      "change": "session-end requeues only messages delivered to the ending session: pass payload.session_id (not null) to requeueDeliveredForSession... use the delivered_session match. Requeue where delivered_session = ending session.",
+      "proof": "hook.test.ts: two sessions of one agent; a message delivered to session A, session B ends -> not requeued; session A ends -> requeued.",
+      "evidence": ["src/cli/commands/hook-events.ts", "src/store/repos/messages-repo.ts", "test/cli/hook.test.ts"],
+      "depends_on": ["fix-identity-env"]
     },
     {
-      "id": "fixtures-replay",
-      "change": "Add src/adapters/claude-code/fixtures/*.json synthetic hook payloads (marked _synthetic: true) for SessionStart, UserPromptSubmit (with a message id), PostToolUse Edit, Stop, SessionEnd, and a subagent variant. A replay test feeds each fixture through the matching hook handler and asserts the effect (and that the subagent one is ignored).",
-      "proof": "test/adapters/claude-code-fixtures.test.ts replays each synthetic fixture through its handler; pnpm check passes.",
-      "evidence": ["src/adapters/claude-code/fixtures/", "test/adapters/claude-code-fixtures.test.ts"],
-      "depends_on": ["claude-adapter"]
+      "id": "fix-monitor-retry",
+      "change": "monitor.sh retries until the agent is registered (or registers itself) rather than exiting for good on the SessionStart race. Hooks print nothing to stdout except deliveries Claude should see (route status lines to stderr).",
+      "proof": "claude-code.test.ts asserts the monitor script loops/retries rather than `exit 0` on not-registered; hook.test.ts asserts status lines go to stderr-only writer and stdout carries only deliveries.",
+      "evidence": ["src/adapters/claude-code/plugin-files.ts", "src/cli/commands/hook-events.ts", "src/cli/index.ts", "test/adapters/claude-code.test.ts", "test/cli/hook.test.ts"],
+      "depends_on": ["fix-identity-env"]
+    },
+    {
+      "id": "fix-production-adapters",
+      "change": "Remove fakeAdapter from the production ADAPTERS list in src/adapters/index.ts (keep it importable for tests). Record (or remove) the Stop-hook last_assistant_message read-evidence assumption (beyond PLAN 4.3) in state.json/docs.",
+      "proof": "setup.test.ts / doctor behaviour no longer writes ~/.parley-fake during a real run; existing fake-adapter tests import fakeAdapter directly.",
+      "evidence": ["src/adapters/index.ts", "test/**", "docs/harness-notes.md"],
+      "depends_on": ["fix-identity-env"]
     },
     {
       "id": "verify-handoff",
-      "change": "Run pnpm check and wb verify; update docs/PROGRESS.md with the exact human two-session live-test steps; add M4 assumptions to state.json (keep existing); update summary/next_action/blockers; commit each task with conventional messages; wb handoff; stop.",
-      "proof": "pnpm check and wb verify PASS; PROGRESS.md and state.json updated; state claims only what is tested.",
+      "change": "Run pnpm check + wb verify; update docs/PROGRESS.md live-test steps (incl. a `claude plugin list` check); keep existing state.json assumptions and only add; commit each fix (conventional), never push; wb handoff; stop.",
+      "proof": "pnpm check and wb verify PASS; PROGRESS.md + state.json updated.",
       "evidence": ["wb verify verdict", "docs/PROGRESS.md", ".workbench/state.json"],
-      "depends_on": ["fixtures-replay"]
+      "depends_on": ["fix-plugin-loading", "fix-posttool-once", "fix-session-end-scope", "fix-monitor-retry", "fix-production-adapters"]
     }
   ]
 }

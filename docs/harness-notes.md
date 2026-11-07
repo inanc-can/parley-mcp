@@ -86,3 +86,39 @@ Source pages: `/en/hooks` (hooks reference), `/en/plugins-reference` (plugin man
   captures during the human-assisted test, then keep the replay tests.
 - Concord (`github.com/Get-Concord-AI/concord-mcp`, MIT) was used only as a conceptual reference for
   the monitor-wakes-idle mechanism. No code was copied.
+
+### M4 fix round (2026-11-07, kiro-M4-fix): plugin loading + identity corrected
+
+Superseding details from the first M4 build, after the review and
+`.workbench/tasks/M4/plugin-loading.md` (official docs, local CLI Claude Code 2.1.303):
+
+- **A folder under `~/.claude/plugins/<name>` does NOT load.** That root only holds `cache/`,
+  `marketplaces/`, `installed_plugins.json`, `known_marketplaces.json`. The documented install path
+  is a local directory **marketplace** at a stable (non-temp) path, then `claude plugin
+  validate` / `marketplace add --scope user` / `install <plugin>@<marketplace> --scope user`;
+  `claude plugin list --json` verifies. We write the marketplace at
+  `~/.parley-mcp/claude-marketplace/` with `.claude-plugin/marketplace.json`
+  (`{name, owner, plugins:[{name, source:"./plugins/parley"}]}`) and the plugin under
+  `plugins/parley/`. These `claude` commands run through an **injectable runner**
+  (`src/adapters/claude-code/runner.ts`); tests use a fake and never call the real `claude`.
+- **Uninstall** runs `claude plugin uninstall parley@parley --scope user` then
+  `claude plugin marketplace remove parley --scope user`, then removes only the files install wrote.
+- **`doctor`** runs `claude plugin list --json` and requires the plugin present AND enabled, plus the
+  MCP server wired and the monitor files present, before reporting `canWakeIdle`. The exact
+  `plugin list --json` shape is still unverified, so it is parsed defensively (accepts `name`/
+  `plugin`, `enabled`/`disabled`/`status`, array or `{plugins:[…]}`); if the CLI can't be reached
+  doctor reports "could not run `claude plugin list --json`" rather than a false positive.
+- **`monitors.json` is a JSON array** of `{name, command, description}` (confirmed in
+  plugins/components.md; unknown keys are an error) — not an object.
+- **Identity env (the review's HIGH finding).** The MCP server entry in `~/.claude.json` now carries
+  `env: { PARLEY_HARNESS: "claude" }`. Without it the per-session MCP server resolved `mcp@<folder>`
+  while the hooks/monitor used `claude@<folder>`, splitting the agent across two inboxes. With it,
+  `talk`/`inbox`/`agree` and the hooks resolve to the same `claude@<folder>` id.
+- **Monitor race.** The monitor now runs `parley-mcp inbox register --agent "$AGENT"` (idempotent)
+  and keeps polling, instead of exiting for good if SessionStart hasn't registered the agent yet.
+- **Hook stdout.** Hook handlers write diagnostics to stderr only; a Claude Code hook's stdout
+  becomes model context, so only genuine deliveries (the monitor's job) belong on stdout.
+- **Stop-hook read evidence removed.** The first build marked messages read from
+  `last_assistant_message`; that is the assistant's *output*, outside PLAN 4.3's definition of read
+  evidence (model *input*, an `inbox` call, or a reply). It has been removed, so the Stop hook only
+  drains at turn end. (Previously recorded as an assumption; now resolved by removal.)

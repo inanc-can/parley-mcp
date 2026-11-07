@@ -1,5 +1,78 @@
 # Progress
 
+## M4 — fix round (session kiro-M4-fix, 2026-11-07)
+
+Applied the independent review (`.workbench/tasks/M4/review.json`) and the confirmed plugin-loading
+findings (`.workbench/tasks/M4/plugin-loading.md`) before the human's live test.
+
+**Fixes**
+1. **Identity split (HIGH).** The MCP server entry now carries `env: { PARLEY_HARNESS: "claude" }`,
+   so the per-session MCP server resolves `claude@<folder>` — the same agent id the hooks and
+   monitor use — and `talk`/`inbox`/`agree` share the hooks' inbox. Test proves the installed entry
+   carries the env and that `resolveAgentId(undefined, cwd)` with `PARLEY_HARNESS=claude` equals the
+   hooks' `claudeAgentId(cwd)`.
+2. **Plugin loading.** A folder under `~/.claude/plugins` does not load. Install now writes a local
+   directory marketplace at `~/.parley-mcp/claude-marketplace/` (`.claude-plugin/marketplace.json` +
+   `plugins/parley/`) and runs — through an **injectable command runner** — `claude plugin validate`,
+   `claude plugin marketplace add <path> --scope user`, `claude plugin install parley@parley --scope
+   user`. Uninstall runs `claude plugin uninstall` + `marketplace remove`, then removes only the
+   files install created. `doctor` runs `claude plugin list --json` (parsed defensively) and checks
+   the monitor files before reporting `canWakeIdle`; a test with `monitor.sh` missing asserts
+   `canWakeIdle === false`. All adapter tests use a fake runner and never call the real `claude`.
+   `monitors.json` is a JSON array of `{name, command, description}`.
+3. **PostToolUse once.** Registered a single `PostToolUse` entry (was two: matched + catch-all),
+   so edits/drain run once per tool use.
+4. **SessionEnd requeue scope.** New `requeueDeliveredToSession` requeues only messages delivered to
+   the ending `session_id`, not every delivered message across the agent's other live sessions.
+   Two-session test added.
+5. **Monitor race + hook stdout.** `monitor.sh` registers its agent itself (idempotent) and keeps
+   polling instead of exiting on the SessionStart race. All hook diagnostics go to a stderr `status`
+   channel so only genuine deliveries reach Claude Code's hook stdout (which becomes model context).
+6. **Fake adapter.** Removed from the production `ADAPTERS` list (kept importable for tests);
+   `setup`/`uninstall`/`doctor` take an injectable adapters list.
+7. **Stop-hook read evidence.** Dropped `last_assistant_message` as read evidence — it went beyond
+   PLAN 4.3 (read = model input, an `inbox` call, or a reply; the assistant's own output is not).
+
+**Result:** `pnpm check` (eslint strict + tsc --noEmit + vitest) — **passed, 30 files / 147 tests**.
+`wb verify` PASS.
+
+### (H) Human live two-session test — exact steps (updated this round)
+
+This is M4's acceptance check (PLAN marks it **(H)**). The build cannot run `claude` itself and the
+automated tests use a temporary HOME + a fake runner; a real run needs two Claude Code sessions.
+
+1. **Make `parley-mcp` runnable.** No published package yet (M12), so run the CLI via a local shim so
+   the plugin scripts' `npx parley-mcp …` resolve to this repo. Confirm `parley-mcp doctor` runs.
+2. **Install into your real user config:** `parley-mcp setup --harness claude-code`. It prints the
+   files it changed: `~/.claude.json` (merged `mcpServers.parley`, including `env.PARLEY_HARNESS=
+   claude`) and the marketplace tree under `~/.parley-mcp/claude-marketplace/`. It also runs
+   `claude plugin validate | marketplace add | install` — watch for any error it reports.
+3. **Verify the plugin actually loaded:** run `claude plugin list --json` and confirm `parley` is
+   present and enabled. Then run `parley-mcp doctor`: it should say **can wake idle** (it checks the
+   same `claude plugin list --json` plus the monitor files). If doctor says the plugin is not
+   installed/enabled, re-run `claude plugin install parley@parley --scope user` and restart Claude.
+4. **Restart any open session** so the new MCP server and plugin load. Monitors are experimental —
+   ensure your Claude Code is recent enough (`docs/harness-notes.md` records the version floor).
+5. **Open two sessions in one repo, different folders** (A in `<repo>/api`, B in `<repo>/web`). Each
+   registers as `claude@api` / `claude@web` on SessionStart. `parley-mcp who` (in the repo) should
+   list both as alive.
+6. **Leave session B idle.** In session A type `say hi to claude@web`. Expect B's monitor to surface
+   the message and the idle agent to answer **within 5 s with no typing in B**. Because the MCP tools
+   now share the hooks' id, A's `talk` and B's hooks/monitor use one inbox.
+7. **Confirm read receipts:** once B's reply (or its next prompt echoing the message id) lands,
+   `parley-mcp log` / the viewer (M6) should show read ✓✓ / replied ↩.
+8. **Capture fixtures:** save the real hook payloads Claude Code sends, anonymise paths/ids, replace
+   the synthetic `src/adapters/claude-code/fixtures/*.json`, and keep the replay tests green.
+9. **Uninstall check:** `parley-mcp uninstall`, then confirm `claude plugin list --json` no longer
+   shows `parley`, `~/.claude.json` keeps your other keys, and `~/.parley-mcp/claude-marketplace/`
+   is gone.
+
+If step 6 fails within 5 s, check (assumptions in `docs/harness-notes.md`): the monitor's agent-id
+derivation (`claude@$(basename "$PWD")`), whether the monitor's stdout reaches Claude as a
+notification on your version, the parent-pid exit guard, and whether the plugin is enabled.
+
+---
+
 ## M4 — Claude Code adapter (completed build 2026-11-07, session kiro-M4)
 
 **Goal (PLAN section 6 "Claude Code" + section 7 + M4):** build `src/adapters/claude-code` — a
