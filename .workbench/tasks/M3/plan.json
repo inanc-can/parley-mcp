@@ -1,0 +1,78 @@
+{
+  "task_id": "M3",
+  "items": [
+    {
+      "id": "m2-followups",
+      "change": "Fold in the four M2 review follow-ups: (1) serve() sets transport.onclose and stdin end/close handlers BEFORE server.connect, closing the db once, with a corrected comment; (2) new store/integration test where a third agent is a thread participant but not the agreement recipient and is refused; (3) fold offered_to TEXT NOT NULL into migration 1 and drop migration 2 so SQL and the Zod row schema agree; (4) remove trailing blank lines in src/core/overlap.ts and close the serve test's db/stream handles deterministically.",
+      "proof": "test/mcp/serve.test.ts asserts the db is closed after transport close; test/store/agreements.test.ts adds the participant-not-recipient case; pnpm check passes.",
+      "evidence": [
+        "src/mcp/server.ts",
+        "src/store/migrations.ts",
+        "src/store/schema.ts",
+        "src/core/overlap.ts",
+        "test/mcp/serve.test.ts",
+        "test/store/agreements.test.ts"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "cli-scaffold",
+      "change": "Add commander (allowed dep). Create src/cli/index.ts (commander program, version, subcommand registration) and src/cli/context.ts (resolve repo root via git top-level with cwd fallback; resolve hub db path under ~/.parley-mcp/hub.db or PARLEY_DB_PATH). Add a bin entry to package.json.",
+      "proof": "pnpm check passes; the program parses --help without throwing (unit test invokes the program with a captured writer).",
+      "evidence": ["src/cli/index.ts", "src/cli/context.ts", "package.json"],
+      "depends_on": ["m2-followups"]
+    },
+    {
+      "id": "cli-serve",
+      "change": "src/cli/commands/serve.ts wires `parley-mcp serve` to the M2 serve() entry point (passing env/repo-root/db-path), so a harness can start the MCP server over stdio.",
+      "proof": "unit test asserts the serve command calls serve() with resolved options (serve injected/mocked); pnpm check passes.",
+      "evidence": ["src/cli/commands/serve.ts", "test/cli/commands.test.ts"],
+      "depends_on": ["cli-scaffold"]
+    },
+    {
+      "id": "cli-read-commands",
+      "change": "src/cli/commands/who.ts (agents in this repo, alive/idle via core isAlive), log.ts (print a thread or list threads), export.ts (--format md|jsonl of this repo's threads, messages and decisions). Each takes an injected db for tests and writes to an injected writer. Reuse store repos and core helpers; no new logic in store.",
+      "proof": "test/cli/commands.test.ts seeds an in-memory db, runs who/log/export md+jsonl, asserts output; pnpm check passes.",
+      "evidence": [
+        "src/cli/commands/who.ts",
+        "src/cli/commands/log.ts",
+        "src/cli/commands/export.ts",
+        "test/cli/commands.test.ts"
+      ],
+      "depends_on": ["cli-scaffold"]
+    },
+    {
+      "id": "cli-adapter-commands",
+      "change": "src/cli/commands/inbox.ts (drain|watch|register used by adapters: drain prints pending messages for an agent in --format monitor|json and marks delivered; watch waits for one message then prints and exits (--once); register upserts the agent) and src/cli/commands/hook.ts (hook edit stores an edit and reports overlap conflicts via core detectOverlap). All take injected db/writer.",
+      "proof": "test/cli/commands.test.ts covers drain (monitor + json), watch --once, register, and hook edit overlap; pnpm check passes.",
+      "evidence": [
+        "src/cli/commands/inbox.ts",
+        "src/cli/commands/hook.ts",
+        "test/cli/commands.test.ts"
+      ],
+      "depends_on": ["cli-read-commands"]
+    },
+    {
+      "id": "adapter-framework",
+      "change": "src/adapters/types.ts (Adapter interface + InstallReport/DoctorReport types from PLAN section 6) and a fake adapter (src/adapters/fake/index.ts) whose install() writes one user-level JSON file under HOME, uninstall() removes exactly what it added, detect() reports installed, doctor() reports readiness. src/cli/commands/setup.ts, uninstall.ts, doctor.ts drive adapters: setup --dry-run lists changes and writes nothing; setup is idempotent (merge never overwrite); uninstall restores byte for byte; doctor prints per-adapter readiness. A viewer.ts stub reports that the viewer arrives in M6.",
+      "proof": "test/cli/setup.test.ts against a temp HOME: --dry-run lists changes and writes nothing; setup twice is a no-op the second time; uninstall restores files byte for byte; doctor prints readiness. pnpm check passes.",
+      "evidence": [
+        "src/adapters/types.ts",
+        "src/adapters/fake/index.ts",
+        "src/cli/commands/setup.ts",
+        "src/cli/commands/uninstall.ts",
+        "src/cli/commands/doctor.ts",
+        "src/cli/commands/viewer.ts",
+        "test/cli/setup.test.ts"
+      ],
+      "depends_on": ["cli-adapter-commands"]
+    },
+    {
+      "id": "verify-handoff",
+      "change": "Run pnpm check and wb verify; update docs/PROGRESS.md and docs/harness-notes.md; add M3 assumptions to state.json (keep existing); commit each task with conventional messages; wb handoff; stop.",
+      "proof": "pnpm check and wb verify PASS; state.json claims only what is tested.",
+      "evidence": ["wb verify verdict", "docs/PROGRESS.md", ".workbench/state.json"],
+      "depends_on": ["adapter-framework"]
+    }
+  ]
+}

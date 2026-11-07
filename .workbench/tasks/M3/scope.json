@@ -1,0 +1,28 @@
+{
+  "task_id": "M3",
+  "goal": "Implement PLAN.md section 7 / M3: the parley-mcp CLI (commander) with serve (wire the M2 MCP server), who, log, export, inbox drain|watch|register, hook edit, and the setup/uninstall/doctor frameworks driven by a fake adapter and the Adapter interface. Fold in the four M2 review follow-ups: (1) serve() close handling set before server.connect, closing the db on stdin end/close, with a close-path test and a corrected comment; (2) a recipient-guard test where a third agent is a thread participant but not the recipient; (3) resolve offered_to nullable-vs-required by folding offered_to NOT NULL into the initial schema; (4) tidy overlap.ts blank lines and the serve test's leaked db handle.",
+  "allowed_files": [
+    "src/cli/**",
+    "src/adapters/**",
+    "src/mcp/**",
+    "src/store/**",
+    "src/core/**",
+    "test/**",
+    "package.json",
+    "pnpm-lock.yaml",
+    "docs/PROGRESS.md",
+    "docs/harness-notes.md",
+    ".workbench/**"
+  ],
+  "forbidden_files": ["src/viewer/**", "src/notify/**"],
+  "acceptance": [
+    "pnpm check",
+    "pnpm exec vitest run test/cli/setup.test.ts",
+    "pnpm exec vitest run test/cli/commands.test.ts",
+    "pnpm exec vitest run test/mcp/serve.test.ts",
+    "pnpm exec vitest run test/store/agreements.test.ts"
+  ],
+  "approvals": ["new-dependency"],
+  "rollback_plan": "Revert the M3 commits on the local branch (git revert or reset by the human) and remove the added src/cli, src/adapters and test/cli files plus the commander dependency entry; no external services, published packages, or production data are affected. The schema change (offered_to folded into migration 1) only affects fresh databases; no production hub.db exists yet.",
+  "human_approved_exceptions": []
+}
