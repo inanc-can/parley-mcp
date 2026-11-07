@@ -12,21 +12,7 @@ import {
   runInboxWatchOnce,
   type DrainFormat,
 } from "./commands/inbox.js";
-import { runHookEdit } from "./commands/hook.js";
-import {
-  runHookSessionStart,
-  runHookUserPrompt,
-  runHookStop,
-  runHookPostTool,
-  runHookSessionEnd,
-} from "./commands/hook-events.js";
-import {
-  sessionStartPayloadSchema,
-  userPromptPayloadSchema,
-  stopPayloadSchema,
-  postToolPayloadSchema,
-  sessionEndPayloadSchema,
-} from "./commands/hook-payloads.js";
+import { registerHookCommands } from "./hook-commands.js";
 import { runSetup } from "./commands/setup.js";
 import { runUninstall } from "./commands/uninstall.js";
 import { runDoctor } from "./commands/doctor.js";
@@ -227,84 +213,11 @@ function registerAdapterCommands(program: Command, deps: CliDeps): void {
       });
     });
 
-  const hook = program.command("hook").description("Used by adapters: record harness events.");
-
-  hook
-    .command("edit")
-    .requiredOption("--agent <id>", "the editing agent")
-    .requiredOption("--path <path>", "the edited path")
-    .action((options: { agent: string; path: string }) => {
-      const status = statusWriter(deps);
-      withDb(deps, (db, repoRoot) => {
-        runHookEdit({ db, repoRoot, status }, options.agent, options.path);
-      });
-    });
-
-  registerClaudeHookCommands(hook, deps);
-}
-
-/**
- * The Claude Code hook events (PLAN section 6). Each reads its JSON payload from
- * stdin, Zod-parses it at the boundary, ignores subagent payloads, and runs the
- * matching handler. The plugin's tiny scripts pipe their stdin here. All
- * diagnostic output goes to stderr (the `status` channel): a Claude Code hook's
- * stdout becomes model context, so only real deliveries belong there.
- */
-function registerClaudeHookCommands(hook: Command, deps: CliDeps): void {
-  hook
-    .command("session-start")
-    .description("Claude Code SessionStart: register the agent.")
-    .action(async () => {
-      const status = statusWriter(deps);
-      const payload = sessionStartPayloadSchema.parse(await readStdinJson(deps));
-      withDb(deps, (db, repoRoot) => {
-        runHookSessionStart({ db, repoRoot, status }, payload);
-      });
-    });
-
-  hook
-    .command("user-prompt")
-    .description("Claude Code UserPromptSubmit: read-evidence + heartbeat.")
-    .action(async () => {
-      const status = statusWriter(deps);
-      const payload = userPromptPayloadSchema.parse(await readStdinJson(deps));
-      withDb(deps, (db, repoRoot) => {
-        runHookUserPrompt({ db, repoRoot, status }, payload);
-      });
-    });
-
-  hook
-    .command("stop")
-    .description("Claude Code Stop: drain queued messages at turn end.")
-    .action(async () => {
-      const status = statusWriter(deps);
-      const payload = stopPayloadSchema.parse(await readStdinJson(deps));
-      withDb(deps, (db, repoRoot) => {
-        runHookStop({ db, repoRoot, status }, payload);
-      });
-    });
-
-  hook
-    .command("post-tool")
-    .description("Claude Code PostToolUse: drain at a safe point + record edits.")
-    .action(async () => {
-      const status = statusWriter(deps);
-      const payload = postToolPayloadSchema.parse(await readStdinJson(deps));
-      withDb(deps, (db, repoRoot) => {
-        runHookPostTool({ db, repoRoot, status }, payload);
-      });
-    });
-
-  hook
-    .command("session-end")
-    .description("Claude Code SessionEnd: requeue unread delivered messages.")
-    .action(async () => {
-      const status = statusWriter(deps);
-      const payload = sessionEndPayloadSchema.parse(await readStdinJson(deps));
-      withDb(deps, (db, repoRoot) => {
-        runHookSessionEnd({ db, repoRoot, status }, payload);
-      });
-    });
+  registerHookCommands(program, {
+    withDb: (run) => withDb(deps, run),
+    status: () => statusWriter(deps),
+    readStdinJson: () => readStdinJson(deps),
+  });
 }
 
 /** Read all of stdin and parse it as JSON (the hook payload). */

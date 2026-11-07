@@ -28,19 +28,41 @@ export interface HookEventDeps {
    */
   status: (line: string) => void;
   now?: number;
+  /**
+   * How to derive this harness's agent id from the payload's cwd when no agent
+   * is registered for the session_id yet. Defaults to Claude Code's
+   * `claude@<folder>`; the Codex adapter injects `codex@<folder>`. (PLAN 4.1:
+   * the id is `<harness>@<folder>`.)
+   */
+  agentIdForCwd?: (cwd: string) => string;
+  /**
+   * The tool names that count as a file edit for this harness. Defaults to
+   * Claude's Edit/Write/MultiEdit; Codex adds `apply_patch` (verified hook
+   * PostToolUse tool names, docs/harness-notes.md M5).
+   */
+  editTools?: ReadonlySet<string>;
 }
 
 const EDIT_TOOLS = new Set(["Edit", "Write", "MultiEdit"]);
 
 /**
- * The agent a hook acts as. Identity follows the Claude session: the agent this
- * session registered as at SessionStart, found by session_id. The payload's cwd
- * is only the fallback, because cwd drifts when the session runs `cd` (the live
- * test showed a session that cd'd into another folder taking over that
- * folder's agent).
+ * The agent a hook acts as. Identity follows the harness session: the agent
+ * this session registered as at SessionStart, found by session_id. The
+ * payload's cwd is only the fallback, because cwd drifts when the session runs
+ * `cd` (the live test showed a session that cd'd into another folder taking
+ * over that folder's agent).
  */
-function agentFor(db: Db, payload: { session_id: string; cwd: string }): string {
-  return agentsRepo.findAgentBySession(db, payload.session_id)?.id ?? claudeAgentId(payload.cwd);
+function agentFor(deps: HookEventDeps, payload: { session_id: string; cwd: string }): string {
+  const fromSession = agentsRepo.findAgentBySession(deps.db, payload.session_id)?.id;
+  if (fromSession !== undefined) {
+    return fromSession;
+  }
+  const derive = deps.agentIdForCwd ?? claudeAgentId;
+  return derive(payload.cwd);
+}
+
+function editToolsFor(deps: HookEventDeps): ReadonlySet<string> {
+  return deps.editTools ?? EDIT_TOOLS;
 }
 
 /**
@@ -52,7 +74,7 @@ export function runHookSessionStart(deps: HookEventDeps, payload: SessionStartPa
     return;
   }
   const now = deps.now ?? Date.now();
-  const agentId = agentFor(deps.db, payload);
+  const agentId = agentFor(deps, payload);
   registerAgent(deps.db, agentId, deps.repoRoot, payload.session_id, now);
   deps.status(`registered ${agentId} (session ${payload.session_id})`);
   // PLAN 4.3 fresh-session requeue: a fresh session (source=startup) means any
@@ -88,7 +110,7 @@ export function runHookUserPrompt(deps: HookEventDeps, payload: UserPromptPayloa
     return 0;
   }
   const now = deps.now ?? Date.now();
-  const agentId = agentFor(deps.db, payload);
+  const agentId = agentFor(deps, payload);
   touchHeartbeat(deps.db, agentId, deps.repoRoot, payload.session_id, now);
   const read = markReadByEvidence(deps.db, agentId, payload.prompt, now);
   deps.status(`user-prompt ${agentId}: marked ${String(read)} message(s) read`);
@@ -113,7 +135,7 @@ export function runHookStop(deps: HookEventDeps, payload: StopPayload): void {
     return;
   }
   const now = deps.now ?? Date.now();
-  const agentId = agentFor(deps.db, payload);
+  const agentId = agentFor(deps, payload);
   touchHeartbeat(deps.db, agentId, deps.repoRoot, payload.session_id, now);
   deps.status(`stop ${agentId}: heartbeat (delivery left to the monitor)`);
 }
@@ -131,9 +153,9 @@ export function runHookPostTool(deps: HookEventDeps, payload: PostToolPayload): 
     return;
   }
   const now = deps.now ?? Date.now();
-  const agentId = agentFor(deps.db, payload);
+  const agentId = agentFor(deps, payload);
   touchHeartbeat(deps.db, agentId, deps.repoRoot, payload.session_id, now);
-  if (payload.tool_name !== undefined && EDIT_TOOLS.has(payload.tool_name)) {
+  if (payload.tool_name !== undefined && editToolsFor(deps).has(payload.tool_name)) {
     const path = editedPath(payload.tool_input);
     if (path !== null) {
       runHookEdit({ db: deps.db, repoRoot: deps.repoRoot, status: deps.status, now }, agentId, path);
@@ -151,7 +173,7 @@ export function runHookSessionEnd(deps: HookEventDeps, payload: SessionEndPayloa
   if (ignoreSubagent(deps, payload, "session-end")) {
     return 0;
   }
-  const agentId = agentFor(deps.db, payload);
+  const agentId = agentFor(deps, payload);
   // Requeue only messages delivered to THIS ending session, not every delivered
   // message across the agent's other live sessions (PLAN 4.3 requeue).
   const requeued = messagesRepo.requeueDeliveredToSession(deps.db, agentId, payload.session_id);

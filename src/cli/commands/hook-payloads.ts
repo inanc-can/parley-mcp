@@ -76,3 +76,8 @@ export function basenameOf(dir: string): string {
 export function claudeAgentId(cwd: string): string {
   return `claude@${basenameOf(cwd)}`;
 }
+
+/** The Parley agent id for a Codex session rooted at `cwd`. */
+export function codexAgentId(cwd: string): string {
+  return `codex@${basenameOf(cwd)}`;
+}
