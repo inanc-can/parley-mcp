@@ -14,7 +14,7 @@ export interface LogDeps {
 }
 
 /**
- * `parley-mcp log [--thread <id>]`: print one conversation, or list this
+ * `mcp-parley log [--thread <id>]`: print one conversation, or list this
  * repo's threads when no thread id is given (PLAN section 7).
  */
 export function runLog(deps: LogDeps): void {

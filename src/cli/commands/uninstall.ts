@@ -8,7 +8,7 @@ export interface UninstallDeps {
 }
 
 /**
- * `parley-mcp uninstall`: remove exactly what setup added, leaving no trace
+ * `mcp-parley uninstall`: remove exactly what setup added, leaving no trace
  * (PLAN section 7 / "uninstall restores the files byte for byte").
  */
 export async function runUninstall(deps: UninstallDeps): Promise<void> {

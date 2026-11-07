@@ -10,7 +10,7 @@ export interface ServeCommandDeps {
 }
 
 /**
- * `parley-mcp serve`: start the MCP server over stdio (PLAN section 7).
+ * `mcp-parley serve`: start the MCP server over stdio (PLAN section 7).
  * Harnesses launch this; it resolves the repo root (git top level), the hub db
  * path, and the agent id from the environment, then hands off to the M2
  * `serve()` entry point.

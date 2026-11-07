@@ -9,7 +9,7 @@ export interface WhoDeps {
 }
 
 /**
- * `parley-mcp who`: the agents in this repo, each marked alive (heartbeat in
+ * `mcp-parley who`: the agents in this repo, each marked alive (heartbeat in
  * the last 30 s) or idle (PLAN section 7 / presence).
  */
 export function runWho(deps: WhoDeps): void {

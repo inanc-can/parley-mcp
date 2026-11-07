@@ -2,8 +2,8 @@
   "schema_version": 1,
   "task_id": "M4",
   "passed": true,
-  "created_at": "2026-11-07T19:57:59+00:00",
-  "head": "bbb443495607006d90825227af9d55d16ebd847c",
+  "created_at": "2026-11-07T20:03:39+00:00",
+  "head": "0b2094bd8e5f72abd7e3f03305a582bfcc02f41e",
   "base_rev": "ab9ce3f914ac07e8683d8ec11f67b13cf6d46578",
   "changed_files": [
     "docs/PLAN.md",
@@ -33,8 +33,12 @@
     "src/cli/commands/hook-payloads.ts",
     "src/cli/commands/hook.ts",
     "src/cli/commands/inbox.ts",
+    "src/cli/commands/log.ts",
+    "src/cli/commands/serve.ts",
     "src/cli/commands/setup.ts",
     "src/cli/commands/uninstall.ts",
+    "src/cli/commands/viewer.ts",
+    "src/cli/commands/who.ts",
     "src/cli/context.ts",
     "src/cli/index.ts",
     "src/mcp/server.ts",
@@ -42,11 +46,13 @@
     "test/adapters/claude-code-fixtures.test.ts",
     "test/adapters/claude-code.test.ts",
     "test/adapters/fs-ops.test.ts",
+    "test/cli/build-imports.test.ts",
     "test/cli/commands.test.ts",
     "test/cli/hook.test.ts",
     "test/cli/program.test.ts",
     "test/cli/setup.test.ts",
-    "test/store/messages.test.ts"
+    "test/store/messages.test.ts",
+    "tsconfig.build.json"
   ],
   "checks": [
     {
@@ -60,29 +66,29 @@
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm check` exit=0 in 16099ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:57:35+00:00"
+      "detail": "`pnpm check` exit=0 in 28698ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T20:02:56+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/cli/setup.test.ts` exit=0 in 2393ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:57:51+00:00"
+      "detail": "`pnpm exec vitest run test/cli/setup.test.ts` exit=0 in 4395ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T20:03:24+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/adapters/claude-code.test.ts` exit=0 in 2716ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:57:53+00:00"
+      "detail": "`pnpm exec vitest run test/adapters/claude-code.test.ts` exit=0 in 5662ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T20:03:29+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/cli/hook.test.ts` exit=0 in 2646ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:57:56+00:00"
+      "detail": "`pnpm exec vitest run test/cli/hook.test.ts` exit=0 in 4846ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T20:03:34+00:00"
     },
     {
       "code": "scope_forbidden",

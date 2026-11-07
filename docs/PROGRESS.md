@@ -44,38 +44,38 @@ the name **mcp-parley**.
 This is M4's acceptance check (PLAN marks it **(H)**). The build cannot run `claude` itself and the
 automated tests use a temporary HOME + a fake runner; a real run needs two Claude Code sessions.
 
-1. **Run setup from this repo (no published package yet, M12).** There is no build step yet, so run
-   the CLI through `tsx` from the repo root:
+1. **Build and run setup from this repo (no published package yet, M12).** No `tsx` is needed: the
+   build compiles the CLI with TypeScript (already a dependency) into `dist/`, and the launcher runs
+   the compiled `dist/cli/bin.js` with plain Node.
    ```sh
    cd "/Users/inanccan/Desktop/Project Parley/parley-mcp"
-   pnpm add -D tsx            # one-time, if not already present (dev-only)
-   pnpm exec tsx src/cli/bin.ts doctor      # confirm the CLI runs
-   pnpm exec tsx src/cli/bin.ts setup --harness claude-code
+   pnpm build                                      # compiles src/ -> dist/
+   node dist/cli/bin.js doctor                     # confirm the CLI runs
+   node dist/cli/bin.js setup --harness claude-code
    ```
-   `setup` writes the launcher `~/.mcp-parley/bin/mcp-parley` (which runs this repo via
-   `node --import tsx src/cli/bin.ts`) and points every config at it — no `npx`. If `tsx` is not
-   available as a dev dep yet, that is the one dependency to add (dev-only); otherwise stop and ask.
+   `setup` writes the launcher `~/.mcp-parley/bin/mcp-parley` (plain `node .../dist/cli/bin.js`) and
+   points every config at it, never `npx`. Re-run `pnpm build` after pulling new code.
 2. **Check what setup changed.** It prints `~/.claude.json` (merged `mcpServers.parley`, command =
    the absolute launcher path, `env.PARLEY_HARNESS=claude`), the marketplace tree under
    `~/.mcp-parley/claude-marketplace/`, and any `claude plugin …` errors as `! …` lines.
 3. **Verify the plugin loaded:** `claude plugin list --json` shows `parley` enabled; then
-   `pnpm exec tsx src/cli/bin.ts doctor` should say **can wake idle** (it checks the plugin list, the
+   `node dist/cli/bin.js doctor` should say **can wake idle** (it checks the plugin list, the
    monitor files, and that the MCP command points at this install). If not, re-run
    `claude plugin install parley@parley --scope user` and restart Claude.
 4. **Restart any open session** so the new MCP server and plugin load. Monitors are experimental —
    ensure your Claude Code is recent enough (`docs/harness-notes.md` records the version floor).
 5. **Open two sessions in one repo, different folders** (A in `<repo>/api`, B in `<repo>/web`). Each
    registers as `claude@api` / `claude@web` on SessionStart. `mcp-parley who` (run from the repo via
-   `pnpm exec tsx src/cli/bin.ts who`) should list both as alive.
+   `node dist/cli/bin.js who`) should list both as alive.
 6. **Leave session B idle.** In session A type `say hi to claude@web`. Expect B's monitor to surface
    the message and the idle agent to answer **within 5 s with no typing in B**.
 7. **Confirm receipts without the viewer (M6 not built).** Run
-   `pnpm exec tsx src/cli/bin.ts log --thread <id>` (the thread id is printed by `who`/`log`), or
+   `node dist/cli/bin.js log --thread <id>` (the thread id is printed by `who`/`log`), or
    call the `inbox` MCP tool with `include_sent: true` from session A, and confirm the message shows
    `delivered ✓✓` and, after B's reply or a prompt echoing the id, `read` / `replied`.
 8. **Capture fixtures:** save the real hook payloads Claude Code sends, anonymise paths/ids, replace
    the synthetic `src/adapters/claude-code/fixtures/*.json`, and keep the replay tests green.
-9. **Uninstall check:** `pnpm exec tsx src/cli/bin.ts uninstall`, then confirm
+9. **Uninstall check:** `node dist/cli/bin.js uninstall`, then confirm
    `claude plugin list --json` no longer shows `parley`, `~/.claude.json` keeps your other keys, and
    both `~/.mcp-parley/claude-marketplace/` and `~/.mcp-parley/bin/mcp-parley` are gone.
 

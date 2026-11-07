@@ -3,7 +3,7 @@ export interface ViewerDeps {
 }
 
 /**
- * `parley-mcp viewer`: the local web viewer is built in M6 (PLAN section 8).
+ * `mcp-parley viewer`: the local web viewer is built in M6 (PLAN section 8).
  * Until then this command exists so the CLI surface is complete and reports
  * where the feature is coming.
  */

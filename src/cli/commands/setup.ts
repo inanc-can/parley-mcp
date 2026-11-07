@@ -10,7 +10,7 @@ export interface SetupDeps {
 }
 
 /**
- * `parley-mcp setup [--harness <name>] [--dry-run]`: detect harnesses, install
+ * `mcp-parley setup [--harness <name>] [--dry-run]`: detect harnesses, install
  * their adapters (user-level config only, idempotent, merges never overwrite),
  * and print exactly which files changed. `--dry-run` changes nothing
  * (PLAN section 7). Running setup twice changes nothing the second time.
