@@ -2,8 +2,8 @@
   "schema_version": 1,
   "task_id": "M3",
   "passed": true,
-  "created_at": "2026-11-07T17:53:53+00:00",
-  "head": "0848356840c9410ad3475471a2aa7882d5d6434f",
+  "created_at": "2026-11-07T18:49:52+00:00",
+  "head": "e7dfaba7d0a4089834a2382e09c4e650706b4e7f",
   "base_rev": "b21f0e46136255872ea0c9cf50d126a6744d367e",
   "changed_files": [
     "docs/PROGRESS.md",
@@ -46,36 +46,36 @@
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm check` exit=0 in 32810ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T17:52:56+00:00"
+      "detail": "`pnpm check` exit=0 in 30218ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T18:49:02+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/cli/setup.test.ts` exit=0 in 5437ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T17:53:29+00:00"
+      "detail": "`pnpm exec vitest run test/cli/setup.test.ts` exit=0 in 4721ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T18:49:32+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/cli/commands.test.ts` exit=0 in 6380ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T17:53:34+00:00"
+      "detail": "`pnpm exec vitest run test/cli/commands.test.ts` exit=0 in 5717ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T18:49:37+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/mcp/serve.test.ts` exit=0 in 6362ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T17:53:41+00:00"
+      "detail": "`pnpm exec vitest run test/mcp/serve.test.ts` exit=0 in 4857ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T18:49:43+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/store/agreements.test.ts` exit=0 in 5708ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T17:53:47+00:00"
+      "detail": "`pnpm exec vitest run test/store/agreements.test.ts` exit=0 in 4408ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T18:49:47+00:00"
     },
     {
       "code": "scope_forbidden",

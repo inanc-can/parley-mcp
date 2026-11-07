@@ -1,43 +1,15 @@
 {
   "schema_version": 1,
-  "created_at": "2026-11-07T17:16:51+00:00",
-  "task_id": "M3",
-  "head": "d9c65792e0622fe8b6a3f1633f314dd5eb105be0",
+  "created_at": "2026-11-07T18:50:25+00:00",
+  "task_id": "",
+  "head": "e7dfaba7d0a4089834a2382e09c4e650706b4e7f",
   "mode": "checkpoints",
   "mode_notes": "M3 CLI basics + four M2 review follow-ups; pnpm check and wb verify PASS; 107 tests.",
   "autonomous_decisions": [
     "[autonomous] 2026-11-07: GLM-5.3-Flash free and DeepSeek/MiMo free hit OpenCode's free usage limit mid-M2 (GLM resets in ~9.7 h). M2 continued in the same OpenCode session on opencode/nemotron-3.5-super-vl-free, the free model that still answered, instead of waiting or paying. Reversible: all work is in git. (Re-added by Claude: the builder's state rewrite dropped it.)"
   ],
-  "summary": "M3 (CLI basics) closed: wb verify PASS (107 tests). Added the parley-mcp commander CLI \u2014 serve (wiring the M2 MCP server over stdio), who, log, export (md/jsonl), inbox drain|watch|register, hook edit \u2014 plus the Adapter interface and a fake adapter driving setup (--dry-run + idempotent) / uninstall (byte-for-byte restore) / doctor, and a viewer stub for M6. Folded in the four M2 review follow-ups (serve close handling before connect + stdin end/close + ServeHandle; participant-not-recipient agreement guard test; offered_to NOT NULL folded into migration 1 with migration 2 dropped; overlap.ts and serve-test tidy). Built by Kiro.",
-  "changed_files": [
-    "docs/PROGRESS.md",
-    "docs/harness-notes.md",
-    "package.json",
-    "pnpm-lock.yaml",
-    "src/adapters/fake/index.ts",
-    "src/adapters/index.ts",
-    "src/adapters/types.ts",
-    "src/cli/bin.ts",
-    "src/cli/commands/doctor.ts",
-    "src/cli/commands/export.ts",
-    "src/cli/commands/hook.ts",
-    "src/cli/commands/inbox.ts",
-    "src/cli/commands/log.ts",
-    "src/cli/commands/serve.ts",
-    "src/cli/commands/setup.ts",
-    "src/cli/commands/uninstall.ts",
-    "src/cli/commands/viewer.ts",
-    "src/cli/commands/who.ts",
-    "src/cli/context.ts",
-    "src/cli/index.ts",
-    "src/core/overlap.ts",
-    "src/mcp/server.ts",
-    "src/store/migrations.ts",
-    "test/cli/commands.test.ts",
-    "test/cli/setup.test.ts",
-    "test/mcp/serve.test.ts",
-    "test/store/agreements.test.ts"
-  ],
+  "summary": "M3 (CLI basics) closed: wb verify passes (107 tests); independent review passed 8/10 on the first completed round. Built by kiro-cli (scoped parley-builder agent).",
+  "changed_files": [],
   "commands_run": [
     {
       "argv": [
@@ -171,6 +143,170 @@
       ],
       "exit_code": 0,
       "duration_ms": 2240
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 0,
+      "duration_ms": 13104
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/cli/setup.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2057
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/cli/commands.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2262
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/mcp/serve.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2257
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/store/agreements.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2043
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 0,
+      "duration_ms": 32810
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/cli/setup.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 5437
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/cli/commands.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 6380
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/mcp/serve.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 6362
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/store/agreements.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 5708
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 0,
+      "duration_ms": 30218
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/cli/setup.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 4721
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/cli/commands.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 5717
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/mcp/serve.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 4857
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/store/agreements.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 4408
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 0,
+      "duration_ms": 31911
     }
   ],
   "failed_attempts": [
@@ -179,11 +315,11 @@
   "open_risks": [
     "blocker: GitHub Actions won't start any job: 'The job was not started because your account is locked due to a billing issue.' (seen 2026-11-07, even after making the repo public). Only the human can fix it, at github.com/settings/billing."
   ],
-  "next_action": "M3 (CLI basics) is done and committed locally (not pushed). Next: M4 (Claude Code adapter) using the Adapter interface in src/adapters/types.ts and the fake adapter in src/adapters/fake as the pattern, OR M3b (the work harness adapter) once docs/harness-notes.md names the work harness \u2014 PLAN says build the work harness adapter first, before M4. Both need (H) steps: trusting hooks, restarting a harness, and testing two real agent sessions (idle session answers within 5 s). The adapter-facing CLI commands (inbox drain|watch|register, hook edit) and the serve wiring are ready for an adapter to call. Reminder: `pnpm run format` churns the whole repo; don't run it repo-wide. CI is still blocked by the GitHub billing lock (human-only fix).",
+  "next_action": "Next: M3b (work harness adapter, once the human names it) or M4 (Claude Code adapter); both need the human for two-session testing. FIRST, before any real adapter: fix the fake adapter's uninstall (it recursively deletes its parent dir; must only remove what install created, and a dir only if install created it and it is empty), since real adapters will copy it into ~/.claude etc. Also fold in: a test through buildProgram/commander for setup --dry-run asserting the temp HOME is untouched; error on unknown --format; test the transport.onclose close path; record the Adapter interface deviation (env, dryRun, fake) and add 'hooks trusted?' to DoctorReport; trailing newline in overlap.ts.",
   "verdict_pointer": {
-    "verification": ".workbench/tasks/M3/verification.json",
+    "verification": ".workbench/verification.json",
     "verification_passed": true,
-    "verification_stale": true,
+    "verification_stale": false,
     "review": ""
   },
   "missing": []

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "active_task_id": "M3",
+  "active_task_id": "",
   "summary": "M3 (CLI basics) closed: wb verify passes (107 tests); independent review passed 8/10 on the first completed round. Built by kiro-cli (scoped parley-builder agent).",
   "assumptions": [
     "M1 (recorded 2026-11-07, fix session): The secret-scan regex thresholds are builder-chosen minimum length heuristics (AWS AKIA +16 chars; ghp_/github_pat_/sk- at 20+ chars; Slack xox*- tokens at 10+ chars; .env SECRET=TOKEN=PASSWORD=API_KEY lines with values of 12+ chars). They may need tightening after real-world false negative/positive feedback; none may ever be relaxed to log the secret value.",
@@ -27,7 +27,7 @@
   "open_risks": [],
   "failed_attempts": [],
   "next_action": "Next: M3b (work harness adapter, once the human names it) or M4 (Claude Code adapter); both need the human for two-session testing. FIRST, before any real adapter: fix the fake adapter's uninstall (it recursively deletes its parent dir; must only remove what install created, and a dir only if install created it and it is empty), since real adapters will copy it into ~/.claude etc. Also fold in: a test through buildProgram/commander for setup --dry-run asserting the temp HOME is untouched; error on unknown --format; test the transport.onclose close path; record the Adapter interface deviation (env, dryRun, fake) and add 'hooks trusted?' to DoctorReport; trailing newline in overlap.ts.",
-  "updated_at": "2026-11-07T18:20:00+00:00",
+  "updated_at": "2026-11-07T18:49:52+00:00",
   "last_mode": "checkpoints",
   "last_mode_notes": "M3 CLI basics + four M2 review follow-ups; pnpm check and wb verify PASS; 107 tests."
 }
