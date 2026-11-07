@@ -2,10 +2,12 @@
   "schema_version": 1,
   "task_id": "M3",
   "passed": true,
-  "created_at": "2026-11-07T17:15:17+00:00",
-  "head": "a05049633e3a464408e3204a1268f3ef3d1d3030",
+  "created_at": "2026-11-07T17:53:53+00:00",
+  "head": "0848356840c9410ad3475471a2aa7882d5d6434f",
   "base_rev": "b21f0e46136255872ea0c9cf50d126a6744d367e",
   "changed_files": [
+    "docs/PROGRESS.md",
+    "docs/harness-notes.md",
     "package.json",
     "pnpm-lock.yaml",
     "src/adapters/fake/index.ts",
@@ -44,36 +46,36 @@
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm check` exit=0 in 14852ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T17:14:52+00:00"
+      "detail": "`pnpm check` exit=0 in 32810ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T17:52:56+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/cli/setup.test.ts` exit=0 in 2358ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T17:15:07+00:00"
+      "detail": "`pnpm exec vitest run test/cli/setup.test.ts` exit=0 in 5437ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T17:53:29+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/cli/commands.test.ts` exit=0 in 2742ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T17:15:09+00:00"
+      "detail": "`pnpm exec vitest run test/cli/commands.test.ts` exit=0 in 6380ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T17:53:34+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/mcp/serve.test.ts` exit=0 in 2451ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T17:15:12+00:00"
+      "detail": "`pnpm exec vitest run test/mcp/serve.test.ts` exit=0 in 6362ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T17:53:41+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/store/agreements.test.ts` exit=0 in 2240ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T17:15:14+00:00"
+      "detail": "`pnpm exec vitest run test/store/agreements.test.ts` exit=0 in 5708ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T17:53:47+00:00"
     },
     {
       "code": "scope_forbidden",
