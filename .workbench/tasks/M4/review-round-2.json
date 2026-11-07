@@ -1,0 +1,45 @@
+{
+ "task_id": "M4",
+ "round": 2,
+ "verdict": "soft_fail",
+ "total": 6,
+ "dimensions": {
+  "problem_fit": 1,
+  "scope_discipline": 2,
+  "assumptions": 1,
+  "verification_quality": 1,
+  "handoff_readiness": 1
+ },
+ "weakest_check": {
+  "command": "pnpm exec vitest run test/adapters/claude-code.test.ts",
+  "mutation": "monitor loop exits on first failed drain",
+  "expected": "should fail; monitor test only checks substrings"
+ },
+ "findings": [
+  {
+   "severity": "high",
+   "detail": "npm name collision (confirmed by Claude): `parley-mcp` on npm is an unrelated package (v0.7.0, maintainer gentlespree, repo parleyrobinhood/Parley). The MCP entry and every hook/monitor run `npx parley-mcp ...`, which would download and run that third-party package. Use an absolute path to this repo's CLI written at setup time; pick a non-colliding npm name for M12.",
+   "citation": "src/adapters/claude-code/plugin-files.ts:41-42"
+  },
+  {
+   "severity": "high",
+   "detail": "PostToolUse and Stop hooks mark sent->delivered but print nothing; the monitor only drains status='sent', so messages arriving mid-turn are swallowed and never shown. Surface bodies from hooks (additionalContext) or leave delivery to the monitor.",
+   "citation": "src/cli/commands/hook-events.ts:104"
+  },
+  {
+   "severity": "medium",
+   "detail": "installClaudeCode/uninstallClaudeCode drop the failures from claude plugin commands, so setup reports success when claude is missing or a command fails.",
+   "citation": "src/adapters/claude-code/install.ts:83"
+  },
+  {
+   "severity": "medium",
+   "detail": "Monitor drains pass no --session, so delivered_session is NULL and the session-scoped requeue never requeues them.",
+   "citation": "src/store/repos/messages-repo.ts:186-193"
+  },
+  {
+   "severity": "low",
+   "detail": "Monitor registers an agent in every folder (PLAN 6 deviation, unrecorded); readPluginState permissive defaults; monitor test only checks substrings; live-test step 1 lacks an exact command; step 7 refers to the unbuilt viewer.",
+   "citation": "src/adapters/claude-code/plugin-files.ts:139"
+  }
+ ]
+}

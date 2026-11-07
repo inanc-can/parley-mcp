@@ -1,21 +1,21 @@
-# Handoff 2026-11-07T19:27:41+00:00
+# Handoff 2026-11-07T19:35:05+00:00
 
 - Task: M4
-- HEAD: `9380417ccc96`
+- HEAD: `04dd67bc4c08`
 - Verification: PASS `.workbench/tasks/M4/verification.json`
 - Review: `.workbench/tasks/M4/review.json`
 
 - Mode: checkpoints
 
 ## Summary
-M4 fix round (kiro-M4-fix) applied the independent review (.workbench/tasks/M4/review.json) and the plugin-loading findings before the human's live test: (1) identity split fixed — MCP entry carries env PARLEY_HARNESS=claude so MCP tools and hooks share claude@<folder>; (2) plugin now installs via a local marketplace at ~/.parley-mcp/claude-marketplace/ and `claude plugin validate|marketplace add|install` run through an injectable runner (tests use a fake, never the real claude); doctor checks `claude plugin list --json` + monitor files before canWakeIdle; monitors.json is a JSON array; (3) PostToolUse registered once; (4) SessionEnd requeues only the ending session (new requeueDeliveredToSession, two-session test); (5) monitor registers itself and retries instead of exiting on the SessionStart race, and hook diagnostics go to stderr so only deliveries reach Claude's hook stdout; (6) fake adapter removed from the production ADAPTERS list (kept for tests); (7) Stop-hook last_assistant_message read evidence removed (beyond PLAN 4.3). pnpm check passes (30 files / 147 tests); wb verify PASS. Three local commits, not pushed.
+M4 review round 2: soft_fail 6/10. Two high findings: (1) the npm name parley-mcp belongs to an unrelated third-party package, and every installed hook/monitor/MCP entry runs `npx parley-mcp`, which would execute it; (2) hooks swallow messages that arrive mid-turn. Stopped per the workbench rule; nothing installed into the real ~/.claude.
 
 ## Decisions made without asking (review these)
 - [autonomous] 2026-11-07: GLM-5.3-Flash free and DeepSeek/MiMo free hit OpenCode's free usage limit mid-M2 (GLM resets in ~9.7 h). M2 continued in the same OpenCode session on opencode/nemotron-3.5-super-vl-free, the free model that still answered, instead of waiting or paying. Reversible: all work is in git. (Re-added by Claude: the builder's state rewrite dropped it.)
 - [autonomous] 2026-11-07: The M4 plugin-loading fix is held until the round-1 reviewer finishes, so the reviewer reads a stable tree; then plugin loading and the review findings go to the builder as one fix.
 
 ## Next action
-M4 fixes complete and verified (pnpm check + wb verify PASS). Hand the human the updated live two-session test steps in docs/PROGRESS.md (now including a `claude plugin list --json` check and the marketplace install). M4 closes only after that human live test passes and real anonymised hook fixtures replace the synthetic ones. Pushing/publishing is the human's call.
+After the human picks the npm name: a builder switches all installed commands to an absolute path to this repo's CLI (written at setup time), fixes hook message swallowing, reports claude command failures from setup/uninstall, passes --session from the monitor, records the monitor-registers-everywhere deviation, strengthens the monitor test, fixes live-test steps 1 and 7; then verify and review round 3; then the human's live test.
 
 ## Changed files
 - `docs/PROGRESS.md`
@@ -53,7 +53,8 @@ M4 fixes complete and verified (pnpm check + wb verify PASS). Hand the human the
 - `test/store/messages.test.ts`
 
 ## Open risks
-- blocker: GitHub Actions won't start any job: 'The job was not started because your account is locked due to a billing issue.' (seen 2026-11-07, even after making the repo public). Only the human can fix it, at github.com/settings/billing.
+- blocker: Human decision: the npm package name (parley-mcp is taken by an unrelated package). Until decided, adapters must call this repo's CLI by absolute path, never `npx parley-mcp`.
+- blocker: GitHub Actions blocked by the account billing lock (human-only fix).
 
 ## Failed attempts
 - pnpm exec vitest run test/adapters/fs-ops.test.ts test/adapters/claude-code.test.ts test/cli/hook.test.ts test/cli/program.test.ts test/cli/setup.test.ts (exit 1)
@@ -62,8 +63,6 @@ M4 fixes complete and verified (pnpm check + wb verify PASS). Hand the human the
 - pnpm exec eslint . (exit 1)
 
 ## Commands (last 30)
-- `pnpm exec tsc --noEmit` exit 0 (4103ms)
-- `pnpm exec tsc --noEmit` exit 0 (2234ms)
 - `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (2266ms)
 - `pnpm exec vitest run test/adapters/fs-ops.test.ts test/adapters/claude-code.test.ts test/cli/hook.test.ts test/cli/program.test.ts test/cli/setup.test.ts` exit 1 (2979ms)
 - `pnpm check` exit 1 (11497ms)
@@ -90,3 +89,7 @@ M4 fixes complete and verified (pnpm check + wb verify PASS). Hand the human the
 - `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (2490ms)
 - `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (2901ms)
 - `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (2778ms)
+- `pnpm check` exit 0 (37959ms)
+- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (5867ms)
+- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (5420ms)
+- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (5207ms)
