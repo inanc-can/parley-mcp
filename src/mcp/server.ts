@@ -19,7 +19,7 @@ type InboxArgs = z.output<z.ZodObject<typeof inboxArgsShape>>;
 type AgreeArgs = z.output<z.ZodObject<typeof agreeArgsShape>>;
 
 const DEFAULT_REPO_ROOT = process.cwd();
-const DEFAULT_DB_PATH = join(homedir(), ".parley-mcp", "hub.db");
+const DEFAULT_DB_PATH = join(homedir(), ".mcp-parley", "hub.db");
 
 /**
  * Options for `serve`. `dbPath`, `stdin` and `stdout` default to the production
@@ -42,7 +42,7 @@ export interface ServeOptions {
  */
 export function createServer(ctx: ToolContext): McpServer {
   const server = new McpServer({
-    name: "parley-mcp",
+    name: "mcp-parley",
     version: "0.0.0",
   });
 
@@ -93,7 +93,7 @@ export interface ServeHandle {
 }
 
 /**
- * Entry point for `parley-mcp serve` over stdio. Opens the shared SQLite hub
+ * Entry point for `mcp-parley serve` over stdio. Opens the shared SQLite hub
  * (WAL, busy timeout), runs retention, registers the calling agent, then
  * connects the SDK server to stdio. Called by each harness adapter. Resolves
  * with a handle once the transport is wired up; the hub db stays open until

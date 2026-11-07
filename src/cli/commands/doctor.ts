@@ -8,7 +8,7 @@ export interface DoctorDeps {
 }
 
 /**
- * `parley-mcp doctor`: per-harness readiness — installed? can it wake an idle
+ * `mcp-parley doctor`: per-harness readiness — installed? can it wake an idle
  * session right now, and if not, why not? (PLAN section 7).
  */
 export async function runDoctor(deps: DoctorDeps): Promise<void> {

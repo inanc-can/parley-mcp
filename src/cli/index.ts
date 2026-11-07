@@ -94,7 +94,7 @@ function parseExportFormat(value: string): ExportFormat {
 export function buildProgram(deps: CliDeps = defaultDeps()): Command {
   const program = new Command();
   program
-    .name("parley-mcp")
+    .name("mcp-parley")
     .description("Let coding agents find each other, message each other, and settle agreements.")
     .version(CLI_VERSION);
 

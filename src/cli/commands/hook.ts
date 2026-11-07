@@ -11,7 +11,7 @@ export interface HookEditDeps {
 }
 
 /**
- * `parley-mcp hook edit --agent <id> --path <path>`: used by post-edit hooks.
+ * `mcp-parley hook edit --agent <id> --path <path>`: used by post-edit hooks.
  * Records the edit, then warns (never blocks, PLAN 4.5) about overlap with
  * other agents' active claims and their edits of the same file in the last
  * 30 minutes. Returns the number of conflicts found.

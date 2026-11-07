@@ -2,7 +2,7 @@
 import { buildProgram } from "./index.js";
 
 /**
- * The `parley-mcp` executable entry point. Packaging (the compiled bin path and
+ * The `mcp-parley` executable entry point. Packaging (the compiled bin path and
  * the package.json `bin` field) is finalised in M12; this file is the source of
  * truth for the program's startup.
  */

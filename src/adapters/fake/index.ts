@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { z } from "zod";
+import { launcherPath } from "../cli-path.js";
 import { removeDirIfEmpty, removeFileIfPresent } from "../fs-ops.js";
 import type {
   Adapter,
@@ -17,12 +18,14 @@ const CONFIG_REL = join(".parley-fake", "config.json");
 /** The one key the adapter manages inside that file; other keys are left alone. */
 const PARLEY_KEY = "parley";
 
-const PARLEY_ENTRY = {
-  command: "npx",
-  args: ["parley-mcp", "serve"],
-} as const;
-
 const configSchema = z.record(z.string(), z.unknown());
+
+/** The managed entry: the absolute launcher path (never `npx`), like real adapters.
+ *  The fake adapter does not write the launcher file (it is a framework stand-in);
+ *  it only needs a non-`npx`, this-install command string to keep configs clean. */
+function parleyEntry(launcher: string): { command: string; args: string[] } {
+  return { command: launcher, args: ["serve"] };
+}
 
 /**
  * A stand-in harness adapter used to exercise the setup / uninstall / doctor
@@ -40,6 +43,7 @@ export const fakeAdapter: Adapter = {
 
   install(env: AdapterEnv, dryRun: boolean): Promise<InstallReport> {
     const path = configPath(env);
+    const launcher = launcherPath(env.home);
     const existed = existsSync(path);
     const current = existed ? readConfig(path) : {};
     const alreadyWired = isWired(current);
@@ -49,7 +53,7 @@ export const fakeAdapter: Adapter = {
       : [{ path, action: existed ? "merge" : "create" }];
 
     if (!dryRun && !alreadyWired) {
-      const next = { ...current, [PARLEY_KEY]: { ...PARLEY_ENTRY } };
+      const next = { ...current, [PARLEY_KEY]: parleyEntry(launcher) };
       writeConfig(path, next);
     }
     return Promise.resolve({ harness: "fake", changes, dryRun });

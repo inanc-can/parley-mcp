@@ -56,13 +56,16 @@ export function unregisterPlugin(runner: CommandRunner): string[] {
 
 /**
  * One entry in `claude plugin list --json`. We parse defensively: the exact
- * shape is unverified (docs/harness-notes.md), so we accept several likely key
- * spellings and ignore everything else. A plugin counts as ready when its name
- * matches and it is enabled.
+ * shape is unverified (docs/harness-notes.md records the assumed shape), so we
+ * accept several likely key spellings and ignore everything else. A plugin
+ * counts as ready ONLY when its name/id matches AND it is explicitly enabled —
+ * never by the mere absence of an "enabled"/"disabled"/"status" field (review
+ * finding: the permissive default could report a disabled plugin as ready).
  */
 const pluginListEntrySchema = z.looseObject({
   name: z.string().optional(),
   plugin: z.string().optional(),
+  id: z.string().optional(),
   enabled: z.boolean().optional(),
   disabled: z.boolean().optional(),
   marketplace: z.string().optional(),
@@ -103,13 +106,20 @@ export function readPluginState(runner: CommandRunner): PluginListState {
   }
   const entries = Array.isArray(list.data) ? list.data : list.data.plugins;
   const installedAndEnabled = entries.some((entry) => {
-    const name = entry.name ?? entry.plugin;
+    // Match by id, name or the plugin@marketplace ref — require a real match.
+    const name = entry.id ?? entry.name ?? entry.plugin;
     if (name !== PLUGIN_NAME && name !== PLUGIN_REF) {
       return false;
     }
-    const enabled = entry.enabled ?? (entry.disabled === undefined ? undefined : !entry.disabled);
-    const byStatus = entry.status === "enabled";
-    return enabled === true || byStatus || (enabled === undefined && entry.status === undefined);
+    // Require EXPLICIT enabled evidence. A missing enabled/disabled/status is
+    // NOT treated as enabled (strict: a disabled plugin must never read ready).
+    if (entry.enabled === true) {
+      return true;
+    }
+    if (entry.disabled === false && entry.enabled !== false) {
+      return true;
+    }
+    return entry.status === "enabled";
   });
   return { available: true, installedAndEnabled };
 }

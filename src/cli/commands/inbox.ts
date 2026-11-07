@@ -18,7 +18,7 @@ export interface InboxDeps {
 }
 
 /**
- * `parley-mcp inbox drain --agent <id> [--format monitor|json]`: used by
+ * `mcp-parley inbox drain --agent <id> [--format monitor|json]`: used by
  * adapters. Reads the agent's pending (sent, unexpired) messages, marks each
  * `delivered` (stamping a delivered event + the delivering session), and
  * prints one line per message. Delivery alone never marks a message `read`;
@@ -71,7 +71,7 @@ function formatDrainLine(message: MessageRow, format: DrainFormat): string {
 }
 
 /**
- * `parley-mcp inbox register --agent <id> [--session <native>]`: used by
+ * `mcp-parley inbox register --agent <id> [--session <native>]`: used by
  * adapters on session start to create/refresh the agent and stamp a heartbeat.
  */
 export function runInboxRegister(deps: InboxDeps, agentId: string, session: string | null): void {
@@ -97,7 +97,7 @@ export interface WatchResult {
 }
 
 /**
- * One pass of `parley-mcp inbox watch --agent <id> --once`: the adapters use a
+ * One pass of `mcp-parley inbox watch --agent <id> --once`: the adapters use a
  * long-running watcher that waits for a single message, prints it and exits so
  * the harness resumes the agent (PLAN section 6, Cursor/Grok). This core step
  * drains at most one message and reports whether one was found; the loop and

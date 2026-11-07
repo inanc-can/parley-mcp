@@ -18,7 +18,7 @@ export interface ExportDeps {
 }
 
 /**
- * `parley-mcp export --format md|jsonl`: export this repo's conversations and
+ * `mcp-parley export --format md|jsonl`: export this repo's conversations and
  * accepted decisions (PLAN section 7 / "Export: Markdown and JSONL").
  */
 export function runExport(deps: ExportDeps): void {

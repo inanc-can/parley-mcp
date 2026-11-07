@@ -7,7 +7,7 @@ export const DB_PATH_ENV = "PARLEY_DB_PATH";
 
 /**
  * The hub database path. Defaults to the one machine-wide file
- * `~/.parley-mcp/hub.db` (PLAN section 2); `PARLEY_DB_PATH` overrides it so a
+ * `~/.mcp-parley/hub.db` (PLAN section 2); `PARLEY_DB_PATH` overrides it so a
  * harness or a test can point the CLI at a scratch database.
  */
 export function resolveDbPath(env: NodeJS.ProcessEnv = process.env): string {
@@ -16,7 +16,7 @@ export function resolveDbPath(env: NodeJS.ProcessEnv = process.env): string {
     return override;
   }
   const home = env["HOME"] ?? homedir();
-  return join(home, ".parley-mcp", "hub.db");
+  return join(home, ".mcp-parley", "hub.db");
 }
 
 /**
