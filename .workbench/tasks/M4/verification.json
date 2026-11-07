@@ -2,12 +2,14 @@
   "schema_version": 1,
   "task_id": "M4",
   "passed": true,
-  "created_at": "2026-11-07T19:29:03+00:00",
-  "head": "254133dea790d7472931505b8ab53dfff8244344",
+  "created_at": "2026-11-07T19:57:59+00:00",
+  "head": "bbb443495607006d90825227af9d55d16ebd847c",
   "base_rev": "ab9ce3f914ac07e8683d8ec11f67b13cf6d46578",
   "changed_files": [
+    "docs/PLAN.md",
     "docs/PROGRESS.md",
     "docs/harness-notes.md",
+    "package.json",
     "src/adapters/claude-code/fixtures/post-tool-edit.json",
     "src/adapters/claude-code/fixtures/session-end.json",
     "src/adapters/claude-code/fixtures/session-start.json",
@@ -19,17 +21,23 @@
     "src/adapters/claude-code/plugin-commands.ts",
     "src/adapters/claude-code/plugin-files.ts",
     "src/adapters/claude-code/runner.ts",
+    "src/adapters/cli-path.ts",
     "src/adapters/fake/index.ts",
     "src/adapters/fs-ops.ts",
     "src/adapters/index.ts",
     "src/adapters/types.ts",
+    "src/cli/bin.ts",
     "src/cli/commands/doctor.ts",
+    "src/cli/commands/export.ts",
     "src/cli/commands/hook-events.ts",
     "src/cli/commands/hook-payloads.ts",
     "src/cli/commands/hook.ts",
+    "src/cli/commands/inbox.ts",
     "src/cli/commands/setup.ts",
     "src/cli/commands/uninstall.ts",
+    "src/cli/context.ts",
     "src/cli/index.ts",
+    "src/mcp/server.ts",
     "src/store/repos/messages-repo.ts",
     "test/adapters/claude-code-fixtures.test.ts",
     "test/adapters/claude-code.test.ts",
@@ -52,29 +60,29 @@
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm check` exit=0 in 37959ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:28:09+00:00"
+      "detail": "`pnpm check` exit=0 in 16099ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:57:35+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/cli/setup.test.ts` exit=0 in 5867ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:28:47+00:00"
+      "detail": "`pnpm exec vitest run test/cli/setup.test.ts` exit=0 in 2393ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:57:51+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/adapters/claude-code.test.ts` exit=0 in 5420ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:28:52+00:00"
+      "detail": "`pnpm exec vitest run test/adapters/claude-code.test.ts` exit=0 in 2716ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:57:53+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/cli/hook.test.ts` exit=0 in 5207ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:28:58+00:00"
+      "detail": "`pnpm exec vitest run test/cli/hook.test.ts` exit=0 in 2646ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T19:57:56+00:00"
     },
     {
       "code": "scope_forbidden",
@@ -88,6 +96,13 @@
       "status": "pass",
       "severity": "block",
       "detail": "ok",
+      "artifact": ""
+    },
+    {
+      "code": "dependency_approval",
+      "status": "pass",
+      "severity": "block",
+      "detail": "dependency manifests changed: ['package.json']",
       "artifact": ""
     }
   ],
