@@ -14,8 +14,14 @@ export async function runDoctor(deps: DoctorDeps): Promise<void> {
   for (const adapter of ADAPTERS) {
     const report = await adapter.doctor(deps.env);
     const wake = report.canWakeIdle ? "can wake idle" : "cannot wake idle";
+    const trust =
+      report.hooksTrusted === undefined || report.hooksTrusted === null
+        ? ""
+        : report.hooksTrusted
+          ? ", hooks trusted"
+          : ", hooks NOT trusted";
     deps.write(
-      `- ${report.harness}: ${report.installed ? "installed" : "not installed"}, ${wake} — ${report.detail}`,
+      `- ${report.harness}: ${report.installed ? "installed" : "not installed"}, ${wake}${trust} — ${report.detail}`,
     );
   }
 }

@@ -26,6 +26,12 @@ export interface DoctorReport {
   installed: boolean;
   /** Can this harness wake an idle session right now? */
   canWakeIdle: boolean;
+  /**
+   * Whether the harness has trusted Parley's hooks. `null` when the harness has
+   * no such concept (e.g. Claude Code plugins/monitors don't need per-hook
+   * trust) — only Codex gates new hooks behind a trust prompt (PLAN section 6).
+   */
+  hooksTrusted?: boolean | null;
   /** One line explaining the readiness state (why it can or cannot wake idle). */
   detail: string;
 }
@@ -39,6 +45,14 @@ export interface AdapterEnv {
  * A harness adapter: user-level config only, idempotent, merges never
  * overwrites (PLAN section 6). M3 ships only a fake adapter; the real
  * Claude Code / Codex / Cursor / Grok adapters are M4+.
+ *
+ * Deviation from PLAN section 6's signature sketch: `install` takes an explicit
+ * `AdapterEnv` (the HOME to target) and a `dryRun` flag, and the other methods
+ * take `AdapterEnv`, so every method is pure with respect to its inputs and a
+ * test can point an adapter at a temporary HOME without touching the real one.
+ * PLAN's sketch wrote them as zero-arg methods; this is a testability-driven
+ * widening, not a behaviour change. `HarnessName` also includes `fake` for the
+ * framework tests.
  */
 export interface Adapter {
   harness: HarnessName;

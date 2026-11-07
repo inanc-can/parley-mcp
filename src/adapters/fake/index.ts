@@ -1,6 +1,7 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { z } from "zod";
+import { removeDirIfEmpty, removeFileIfPresent } from "../fs-ops.js";
 import type {
   Adapter,
   AdapterEnv,
@@ -65,10 +66,11 @@ export const fakeAdapter: Adapter = {
     }
     const otherKeys = Object.keys(current).filter((key) => key !== PARLEY_KEY);
     if (otherKeys.length === 0) {
-      // We created the file (it holds only our key): remove it entirely so the
-      // tree is byte-for-byte what it was before install.
-      rmSync(path);
-      rmSync(dirname(path), { recursive: true, force: true });
+      // We created the file (it holds only our key): remove it, then remove the
+      // directory only if it is now empty. A directory that still holds other
+      // files (anything the user put there) must survive — never recurse.
+      removeFileIfPresent(path);
+      removeDirIfEmpty(dirname(path));
       return Promise.resolve({
         harness: "fake",
         changes: [{ path, action: "create" }],

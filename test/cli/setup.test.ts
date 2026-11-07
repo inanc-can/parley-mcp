@@ -93,6 +93,24 @@ describe("uninstall", () => {
     // The unrelated keys are preserved exactly; only our key is removed.
     expect(restored).toBe(original);
   });
+
+  it("leaves a pre-existing unrelated file in the config's parent dir intact", async () => {
+    // The fake adapter created the config, but the .parley-fake dir also holds
+    // an unrelated file the user put there. Uninstall must remove only our file
+    // and must NOT recursively delete the directory (the M3 review must-fix).
+    const sibling = join(dirname(configFile()), "notes.txt");
+    mkdirSync(dirname(configFile()), { recursive: true });
+    writeFileSync(sibling, "user data", "utf8");
+
+    await runSetup({ env: env(), write: () => undefined });
+    expect(existsSync(configFile())).toBe(true);
+
+    await runUninstall({ env: env(), write: () => undefined });
+    // Our config is gone, but the sibling file and its directory survive.
+    expect(existsSync(configFile())).toBe(false);
+    expect(existsSync(sibling)).toBe(true);
+    expect(readFileSync(sibling, "utf8")).toBe("user data");
+  });
 });
 
 describe("doctor", () => {
