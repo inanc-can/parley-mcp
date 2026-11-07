@@ -135,4 +135,54 @@ describe("30-day retention", () => {
     expect(agreementsRepo.listAgreementsByRepo(db, "/repo")).toHaveLength(1);
     db.close();
   });
+
+  it("succeeds when a message older than the cutoff has a newer event", () => {
+    const db = openMemoryDb();
+    const now = 100 * 24 * 60 * 60 * 1000;
+    const cutoff = retentionCutoff(now);
+    const old = cutoff - 1;
+    const recent = cutoff + 10_000;
+
+    const threadId = randomUUID();
+    threadsRepo.createThread(db, {
+      id: threadId,
+      repoRoot: "/repo",
+      title: null,
+      status: "open",
+      messageCap: 20,
+      createdAt: old,
+    });
+    const oldMsg = randomUUID();
+    messagesRepo.insertMessage(db, {
+      id: oldMsg,
+      threadId,
+      fromAgent: "a@r",
+      toAgent: "b@r",
+      kind: "text",
+      body: "old but recently touched",
+      payloadJson: null,
+      replyTo: null,
+      status: "sent",
+      sentAt: old,
+      expiresAt: recent,
+      idempotencyKey: randomUUID(),
+      estTokens: 1,
+    });
+    // Event newer than the cutoff (e.g. an expiry event) on a message older
+    // than the cutoff; retention must still delete both.
+    messageEventsRepo.insertMessageEvent(db, {
+      id: randomUUID(),
+      messageId: oldMsg,
+      event: "expired",
+      at: recent,
+      detailJson: null,
+    });
+
+    const result = applyRetention(db, cutoff);
+    expect(result.messages).toBe(1);
+    expect(result.events).toBe(1);
+    expect(messagesRepo.findMessage(db, oldMsg)).toBeUndefined();
+    expect(messageEventsRepo.listMessageEvents(db, oldMsg)).toHaveLength(0);
+    db.close();
+  });
 });

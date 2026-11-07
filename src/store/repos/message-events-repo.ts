@@ -24,7 +24,15 @@ export function listMessageEvents(db: Db, messageId: string): MessageEventRow[] 
   return parseRows(messageEventRowSchema, rows);
 }
 
-export function deleteEventsOlderThan(db: Db, before: number): number {
-  const info = db.prepare("DELETE FROM message_events WHERE at < ?").run(before);
+export function deleteEventsOfMessagesSentBefore(db: Db, before: number): number {
+  // Delete every event of messages being removed, including events that are
+  // newer than the cutoff (e.g. a recent expiry event on an old message);
+  // otherwise the FK to the deleted message breaks during retention.
+  const info = db
+    .prepare(
+      `DELETE FROM message_events
+       WHERE message_id IN (SELECT id FROM messages WHERE sent_at < ?)`,
+    )
+    .run(before);
   return info.changes;
 }
