@@ -11,33 +11,48 @@ import { z } from "zod";
 import { removeDirIfEmpty, removeFileIfPresent } from "../fs-ops.js";
 import type { AdapterEnv, DoctorReport, FileChange, InstallReport } from "../types.js";
 import {
+  readPluginState,
+  registerPlugin,
+  unregisterPlugin,
+} from "./plugin-commands.js";
+import {
   CLAUDE_JSON_REL,
+  MARKETPLACE_DIR_REL,
   MCP_SERVER_ENTRY,
   MCP_SERVER_KEY,
-  PLUGIN_DIR_REL,
+  MONITOR_SCRIPT_REL,
   pluginFiles,
   type PluginFile,
 } from "./plugin-files.js";
+import { defaultClaudeRunner, type CommandRunner } from "./runner.js";
 
 const claudeJsonSchema = z.record(z.string(), z.unknown());
 
 interface Paths {
   claudeJson: string;
-  pluginDir: string;
+  marketplaceDir: string;
 }
 
 function paths(env: AdapterEnv): Paths {
   return {
     claudeJson: join(env.home, CLAUDE_JSON_REL),
-    pluginDir: join(env.home, PLUGIN_DIR_REL),
+    marketplaceDir: join(env.home, MARKETPLACE_DIR_REL),
   };
 }
 
 /**
- * Install the Claude Code integration: merge the MCP server into ~/.claude.json
- * and write the plugin files. User-level only, idempotent, merge-not-overwrite.
+ * Install the Claude Code integration: merge the MCP server into ~/.claude.json,
+ * write the local marketplace (marketplace manifest + plugin) under
+ * ~/.parley-mcp/claude-marketplace, then register and install the plugin
+ * through the injectable `runner` (`claude plugin validate|marketplace add|
+ * install`). User-level only, idempotent, merge-not-overwrite. A dry run writes
+ * nothing and runs no commands.
  */
-export function installClaudeCode(env: AdapterEnv, dryRun: boolean): InstallReport {
+export function installClaudeCode(
+  env: AdapterEnv,
+  dryRun: boolean,
+  runner: CommandRunner = defaultClaudeRunner,
+): InstallReport {
   const p = paths(env);
   const changes: FileChange[] = [];
 
@@ -50,7 +65,7 @@ export function installClaudeCode(env: AdapterEnv, dryRun: boolean): InstallRepo
   }
 
   for (const file of pluginFiles()) {
-    const target = join(p.pluginDir, file.rel);
+    const target = join(p.marketplaceDir, file.rel);
     const change = planFileChange(target, file);
     if (change === null) {
       continue;
@@ -61,25 +76,38 @@ export function installClaudeCode(env: AdapterEnv, dryRun: boolean): InstallRepo
     }
   }
 
+  if (!dryRun) {
+    // Register the marketplace and install the plugin every time: these are
+    // idempotent in Claude Code (re-adding/re-installing is a no-op) and ensure
+    // the plugin is enabled even if the files were already present.
+    registerPlugin(runner, p.marketplaceDir);
+  }
+
   return { harness: "claude-code", changes, dryRun };
 }
 
 /**
- * Uninstall: remove exactly what install created — the plugin files, then any
- * now-empty plugin directories, then the `parley` key from ~/.claude.json
- * (removing that file only if it existed solely for us and is now empty).
+ * Uninstall: unregister the plugin and marketplace through the runner, then
+ * remove exactly the files install created (marketplace tree) and the `parley`
+ * key from ~/.claude.json (removing that file only if it existed solely for us
+ * and is now empty). Never a recursive delete of anything install did not make.
  */
-export function uninstallClaudeCode(env: AdapterEnv): InstallReport {
+export function uninstallClaudeCode(
+  env: AdapterEnv,
+  runner: CommandRunner = defaultClaudeRunner,
+): InstallReport {
   const p = paths(env);
   const changes: FileChange[] = [];
 
+  unregisterPlugin(runner);
+
   for (const file of pluginFiles()) {
-    const target = join(p.pluginDir, file.rel);
+    const target = join(p.marketplaceDir, file.rel);
     if (removeFileIfPresent(target)) {
       changes.push({ path: target, action: "create" });
     }
   }
-  pruneEmptyPluginDirs(p.pluginDir, env.home);
+  pruneEmptyPluginDirs(p.marketplaceDir, env.home);
 
   const mcpChange = removeMcpEntry(p.claudeJson);
   if (mcpChange !== null) {
@@ -89,31 +117,57 @@ export function uninstallClaudeCode(env: AdapterEnv): InstallReport {
   return { harness: "claude-code", changes, dryRun: false };
 }
 
-export function doctorClaudeCode(env: AdapterEnv): DoctorReport {
+/**
+ * doctor: we can wake an idle session only when (a) the MCP server is wired in
+ * ~/.claude.json, (b) the marketplace files (including the monitor script)
+ * exist, and (c) `claude plugin list --json` shows our plugin installed AND
+ * enabled. If the CLI can't be reached we report cannot-wake-idle with a reason
+ * rather than a false positive from file existence alone.
+ */
+export function doctorClaudeCode(
+  env: AdapterEnv,
+  runner: CommandRunner = defaultClaudeRunner,
+): DoctorReport {
   const p = paths(env);
   const mcpWired = isMcpWired(p.claudeJson);
-  const pluginPresent = pluginFiles().every((file) => existsSync(join(p.pluginDir, file.rel)));
-  const canWakeIdle = mcpWired && pluginPresent;
+  const filesPresent = pluginFiles().every((file) => existsSync(join(p.marketplaceDir, file.rel)));
+  const monitorPresent = existsSync(join(p.marketplaceDir, MONITOR_SCRIPT_REL));
+  const pluginState = readPluginState(runner);
+  const canWakeIdle =
+    mcpWired && filesPresent && monitorPresent && pluginState.installedAndEnabled;
   return {
     harness: "claude-code",
-    installed: mcpWired || pluginPresent,
+    installed: mcpWired || filesPresent,
     canWakeIdle,
     // Claude Code plugins/monitors don't need per-hook trust (unlike Codex).
     hooksTrusted: null,
-    detail: detailLine(mcpWired, pluginPresent),
+    detail: detailLine(mcpWired, filesPresent, monitorPresent, pluginState),
   };
 }
 
-function detailLine(mcpWired: boolean, pluginPresent: boolean): string {
-  if (mcpWired && pluginPresent) {
-    return "MCP server wired in ~/.claude.json and plugin installed; monitor wakes idle sessions.";
+function detailLine(
+  mcpWired: boolean,
+  filesPresent: boolean,
+  monitorPresent: boolean,
+  pluginState: { available: boolean; installedAndEnabled: boolean },
+): string {
+  if (mcpWired && filesPresent && monitorPresent && pluginState.installedAndEnabled) {
+    return "MCP server wired, plugin installed and enabled; monitor wakes idle sessions.";
   }
   const missing: string[] = [];
   if (!mcpWired) {
     missing.push("MCP server not in ~/.claude.json");
   }
-  if (!pluginPresent) {
-    missing.push("plugin files missing");
+  if (!filesPresent) {
+    missing.push("marketplace/plugin files missing");
+  }
+  if (!monitorPresent) {
+    missing.push("monitor script missing");
+  }
+  if (!pluginState.available) {
+    missing.push("could not run `claude plugin list --json`");
+  } else if (!pluginState.installedAndEnabled) {
+    missing.push("plugin not installed or not enabled in Claude Code");
   }
   return `${missing.join("; ")}; run setup.`;
 }
@@ -210,14 +264,14 @@ function writePluginFile(target: string, file: PluginFile): void {
 }
 
 /**
- * Remove now-empty directories from the deepest plugin subdirectory up to (and
- * including) the plugin root, but never above it: `~/.claude` and
- * `~/.claude/plugins` are only removed if they too are empty and sit below HOME.
+ * Remove now-empty directories from the deepest marketplace subdirectory up to
+ * (and including) the marketplace root, but never above it. A directory that
+ * still holds files install did not create is left untouched.
  */
-function pruneEmptyPluginDirs(pluginDir: string, home: string): void {
+function pruneEmptyPluginDirs(marketplaceDir: string, home: string): void {
   const dirs = new Set<string>();
   for (const file of pluginFiles()) {
-    let dir = dirname(join(pluginDir, file.rel));
+    let dir = dirname(join(marketplaceDir, file.rel));
     while (isUnder(dir, home) && dir !== home) {
       dirs.add(dir);
       const parent = dirname(dir);
