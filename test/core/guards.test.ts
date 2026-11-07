@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { scanSecret } from "../../src/core/guards.js";
+import { checkStopAll, scanSecret } from "../../src/core/guards.js";
+
+describe("stop-all guard", () => {
+  it("blocks every talk call while stop_all is on", () => {
+    expect(checkStopAll(true)).toEqual({ ok: false, code: "stop_all" });
+  });
+
+  it("allows talk when stop_all is off", () => {
+    expect(checkStopAll(false)).toEqual({ ok: true });
+  });
+});
 
 describe("secret scan", () => {
   it("allows normal text", () => {

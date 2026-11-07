@@ -1,4 +1,6 @@
 import type { Db } from "../db.js";
+import { checkStopAll } from "../../core/guards.js";
+import type { StopAllCheck } from "../../core/guards.js";
 import { parseOptionalRow } from "../parse.js";
 import { settingRowSchema } from "../schema.js";
 
@@ -20,4 +22,12 @@ export function getStopAll(db: Db): boolean {
 
 export function setStopAll(db: Db, value: boolean): void {
   setSetting(db, "stop_all", value ? "true" : "false");
+}
+
+/**
+ * Whether `talk` is presently blocked by the human's stop-all switch. Composes
+ * the stored setting with the pure core guard decision.
+ */
+export function checkStopAllActive(db: Db): StopAllCheck {
+  return checkStopAll(getStopAll(db));
 }

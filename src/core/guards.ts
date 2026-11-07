@@ -32,6 +32,16 @@ export function scanSecret(text: string): SecretMatch | null {
   return null;
 }
 
-export function isStopAll(stopAll: boolean): boolean {
-  return stopAll;
+export type StopAllCheck = { ok: true } | { ok: false; code: "stop_all" };
+
+/**
+ * Global stop control: when the human flipped stop_all, every `talk` call is
+ * blocked until they turn it off again (PLAN 4.4). Pure decision over the
+ * stored setting; the store reads the setting, callers compose the two.
+ */
+export function checkStopAll(stopAll: boolean): StopAllCheck {
+  if (stopAll) {
+    return { ok: false, code: "stop_all" };
+  }
+  return { ok: true };
 }
