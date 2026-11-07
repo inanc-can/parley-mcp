@@ -28,6 +28,31 @@ const claudeJsonSchema = z.record(z.string(), z.unknown());
 /** The shape of our MCP entry we read back to confirm its `command`. */
 const mcpEntrySchema = z.looseObject({ command: z.string() });
 
+/** Our launcher's path suffix: an entry whose command ends with it is ours. */
+const OUR_LAUNCHER_SUFFIX = "/.mcp-parley/bin/mcp-parley";
+
+/**
+ * True when the MCP entry under our key was written by an mcp-parley setup
+ * (its command is an mcp-parley launcher). Setup never overwrites, and
+ * uninstall never removes, an entry under that key that someone else made.
+ */
+function isOurEntry(entry: unknown): boolean {
+  const parsed = mcpEntrySchema.safeParse(entry);
+  return parsed.success && parsed.data.command.endsWith(OUR_LAUNCHER_SUFFIX);
+}
+
+function foreignEntryPresent(path: string): boolean {
+  const config = readClaudeJson(path);
+  if (config === null) {
+    return false;
+  }
+  const servers = mcpServers(config);
+  return (
+    Object.prototype.hasOwnProperty.call(servers, MCP_SERVER_KEY) &&
+    !isOurEntry(servers[MCP_SERVER_KEY])
+  );
+}
+
 interface Paths {
   claudeJson: string;
   marketplaceDir: string;
@@ -71,7 +96,12 @@ export function installClaudeCode(
     ensureLauncher(env.home);
   }
 
-  const mcpChange = planMcpChange(p.claudeJson, launcher);
+  const mcpChange = foreignEntryPresent(p.claudeJson) ? null : planMcpChange(p.claudeJson, launcher);
+  if (foreignEntryPresent(p.claudeJson)) {
+    notes.push(
+      `~/.claude.json already has an "${MCP_SERVER_KEY}" MCP server that mcp-parley did not create; left it untouched`,
+    );
+  }
   if (mcpChange !== null) {
     changes.push(mcpChange);
     if (!dryRun) {
@@ -267,6 +297,10 @@ function removeMcpEntry(path: string): FileChange | null {
   }
   const servers = mcpServers(config);
   if (!Object.prototype.hasOwnProperty.call(servers, MCP_SERVER_KEY)) {
+    return null;
+  }
+  if (!isOurEntry(servers[MCP_SERVER_KEY])) {
+    // Someone else's server under our key: never remove what we did not add.
     return null;
   }
   const nextServers: Record<string, unknown> = {};

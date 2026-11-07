@@ -22,6 +22,8 @@ export async function runServe(deps: ServeCommandDeps = {}): Promise<ServeHandle
   const options: ServeOptions = {
     agentIdEnv: env[AGENT_ID_ENV],
     repoRoot: resolveRepoRoot(cwd),
+    cwd,
+    sessionId: env["CLAUDE_CODE_SESSION_ID"],
     dbPath: resolveDbPath(env),
   };
   return start(options);

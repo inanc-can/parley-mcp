@@ -7,6 +7,7 @@ import { z } from "zod";
 import { retentionCutoff } from "../core/retention.js";
 import { applyRetention } from "../store/retention.js";
 import { openDb } from "../store/db.js";
+import { agentsRepo } from "../store/index.js";
 import { resolveAgentId, registerCaller } from "./identity.js";
 import { handleTalk, talkArgsShape } from "./tools/talk.js";
 import { handleInbox, inboxArgsShape } from "./tools/inbox.js";
@@ -29,6 +30,10 @@ const DEFAULT_DB_PATH = join(homedir(), ".mcp-parley", "hub.db");
 export interface ServeOptions {
   agentIdEnv?: string | undefined;
   repoRoot?: string | undefined;
+  /** The harness session's own folder; names the agent (default: process.cwd()). */
+  cwd?: string | undefined;
+  /** The harness's native session id (Claude Code: CLAUDE_CODE_SESSION_ID). */
+  sessionId?: string | undefined;
   dbPath?: string | undefined;
   stdin?: Readable | undefined;
   stdout?: Writable | undefined;
@@ -50,7 +55,8 @@ export function createServer(ctx: ToolContext): McpServer {
     description:
       "Send a message to another agent in this repo, or broadcast to everyone. " +
       "Returns message_id, thread_id, status and an honest outlook sentence. " +
-      "Blocked by stop-all, secret scan, thread cap, and closed threads.",
+      "Blocked by stop-all, secret scan, thread cap, and closed threads. " +
+      "When another agent messages you, answer it here (reply_to its message id).",
     inputSchema: z.object(talkArgsShape),
   }, async (args: TalkArgs) => {
     const outcome = await handleTalk(ctx, args);
@@ -101,8 +107,18 @@ export interface ServeHandle {
  */
 export async function serve(options: ServeOptions = {}): Promise<ServeHandle> {
   const repoRoot = options.repoRoot ?? DEFAULT_REPO_ROOT;
-  const agentId = resolveAgentId(options.agentIdEnv, repoRoot);
+  const sessionId = options.sessionId !== undefined && options.sessionId.length > 0 ? options.sessionId : null;
   const db = openDb({ path: options.dbPath ?? DEFAULT_DB_PATH });
+  // Identity: an explicit PARLEY_AGENT_ID wins; then the agent this harness
+  // session already registered as (its SessionStart hook ran first); else
+  // harness@<the session's folder>. Never the repo root's name: the live test
+  // showed the server naming itself after the repo root, so a session in
+  // repo/api sent messages as claude@repo instead of claude@api.
+  const agentId =
+    options.agentIdEnv !== undefined && options.agentIdEnv.length > 0
+      ? resolveAgentId(options.agentIdEnv, options.cwd ?? process.cwd())
+      : (sessionId === null ? undefined : agentsRepo.findAgentBySession(db, sessionId)?.id) ??
+        resolveAgentId(undefined, options.cwd ?? process.cwd());
   let closed = false;
   const closeDb = (): void => {
     if (closed) {
@@ -115,9 +131,9 @@ export async function serve(options: ServeOptions = {}): Promise<ServeHandle> {
     // Retention on every MCP server start (PLAN 4.7).
     applyRetention(db, retentionCutoff(Date.now()));
     // Register the caller and stamp a heartbeat.
-    registerCaller(db, agentId, repoRoot, null, Date.now());
+    registerCaller(db, agentId, repoRoot, sessionId, Date.now());
 
-    const ctx: ToolContext = { db, agentId, repoRoot, nativeSession: null, rulesTextSent: false };
+    const ctx: ToolContext = { db, agentId, repoRoot, nativeSession: sessionId, rulesTextSent: false };
     const server = createServer(ctx);
     const stdin = options.stdin ?? process.stdin;
     const transport = new StdioServerTransport(stdin, options.stdout ?? process.stdout);

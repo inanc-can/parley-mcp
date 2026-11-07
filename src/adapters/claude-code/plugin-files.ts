@@ -21,19 +21,23 @@ import { DATA_DIR_REL } from "../cli-path.js";
 export const MARKETPLACE_DIR_REL = join(DATA_DIR_REL, "claude-marketplace");
 
 /** The marketplace name Claude Code registers it under. */
-export const MARKETPLACE_NAME = "parley";
+export const MARKETPLACE_NAME = "mcp-parley";
 
-/** The plugin name inside the marketplace (install target is parley@parley). */
-export const PLUGIN_NAME = "parley";
+/** The plugin name inside the marketplace (install target is mcp-parley@mcp-parley). */
+export const PLUGIN_NAME = "mcp-parley";
 
 /** The plugin's location inside the marketplace (relative source path). */
-export const PLUGIN_SUBDIR = join("plugins", "parley");
+export const PLUGIN_SUBDIR = join("plugins", "mcp-parley");
 
 /** The user-level MCP config file Claude Code reads for user-scope servers. */
 export const CLAUDE_JSON_REL = ".claude.json";
 
-/** The key Parley manages inside ~/.claude.json's mcpServers object. */
-export const MCP_SERVER_KEY = "parley";
+/**
+ * The key Parley manages inside ~/.claude.json's mcpServers object. Not "parley":
+ * that name is used by other tools (the Parley research platform registers its
+ * own `parley` server), and the live test showed setup overwriting it.
+ */
+export const MCP_SERVER_KEY = "mcp-parley";
 
 /**
  * The MCP server entry. `command` is the absolute launcher path (never `npx`).
@@ -85,6 +89,7 @@ function hookScript(launcherPath: string, event: string): string {
 const MARKETPLACE_MANIFEST = {
   name: MARKETPLACE_NAME,
   owner: { name: "mcp-parley" },
+  description: "Local marketplace written by mcp-parley setup for the mcp-parley plugin.",
   plugins: [
     {
       name: PLUGIN_NAME,
@@ -97,6 +102,7 @@ const MARKETPLACE_MANIFEST = {
 const PLUGIN_MANIFEST = {
   name: PLUGIN_NAME,
   version: "0.1.0",
+  author: { name: "mcp-parley" },
   description: "Parley: let your coding agents message each other and settle agreements.",
   experimental: {
     monitors: "./monitors/monitors.json",
@@ -170,7 +176,7 @@ function monitorScript(launcherPath: string): string {
 
 const MONITORS_JSON = [
   {
-    name: "parley-inbox",
+    name: "mcp-parley-inbox",
     command: `"${PLUGIN_ROOT}/scripts/monitor.sh"`,
     description: "Parley messages from other agents",
   },

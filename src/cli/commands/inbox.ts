@@ -31,6 +31,10 @@ export function runInboxDrain(
   session: string | null,
 ): number {
   const now = deps.now ?? Date.now();
+  // A drain is the monitor polling every 2 s for the life of the session, so it
+  // doubles as the liveness heartbeat (the live test showed active sessions
+  // listed as idle because only hooks and tool calls stamped a heartbeat).
+  agentsRepo.touchLiveness(deps.db, agentId, now);
   const pending = messagesRepo.listUndeliveredForRecipient(deps.db, agentId, now);
   for (const message of pending) {
     deliverMessage(deps.db, message, now, session);
@@ -66,8 +70,14 @@ function formatDrainLine(message: MessageRow, format: DrainFormat): string {
       body: message.body,
     });
   }
-  // monitor: one short, notification-friendly line (PLAN section 6).
-  return `parley: ${message.from_agent} — ${message.body}`;
+  // monitor: one notification line (PLAN section 6). It carries the message id,
+  // so a prompt that echoes it counts as read evidence, and it says how to
+  // answer: in the live test the woken agent asked its human instead of
+  // replying, because nothing told it a peer was waiting.
+  return (
+    `mcp-parley message from ${message.from_agent} (id ${message.id}): ${message.body}` +
+    ` [reply with the talk tool: to ${message.from_agent}, reply_to ${message.id}]`
+  );
 }
 
 /**

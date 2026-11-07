@@ -33,6 +33,17 @@ export interface HookEventDeps {
 const EDIT_TOOLS = new Set(["Edit", "Write", "MultiEdit"]);
 
 /**
+ * The agent a hook acts as. Identity follows the Claude session: the agent this
+ * session registered as at SessionStart, found by session_id. The payload's cwd
+ * is only the fallback, because cwd drifts when the session runs `cd` (the live
+ * test showed a session that cd'd into another folder taking over that
+ * folder's agent).
+ */
+function agentFor(db: Db, payload: { session_id: string; cwd: string }): string {
+  return agentsRepo.findAgentBySession(db, payload.session_id)?.id ?? claudeAgentId(payload.cwd);
+}
+
+/**
  * `hook session-start`: register the agent and stamp a heartbeat (PLAN
  * section 6, Claude Code SessionStart). Subagent payloads are ignored.
  */
@@ -41,7 +52,7 @@ export function runHookSessionStart(deps: HookEventDeps, payload: SessionStartPa
     return;
   }
   const now = deps.now ?? Date.now();
-  const agentId = claudeAgentId(payload.cwd);
+  const agentId = agentFor(deps.db, payload);
   registerAgent(deps.db, agentId, deps.repoRoot, payload.session_id, now);
   deps.status(`registered ${agentId} (session ${payload.session_id})`);
   // PLAN 4.3 fresh-session requeue: a fresh session (source=startup) means any
@@ -77,7 +88,7 @@ export function runHookUserPrompt(deps: HookEventDeps, payload: UserPromptPayloa
     return 0;
   }
   const now = deps.now ?? Date.now();
-  const agentId = claudeAgentId(payload.cwd);
+  const agentId = agentFor(deps.db, payload);
   touchHeartbeat(deps.db, agentId, deps.repoRoot, payload.session_id, now);
   const read = markReadByEvidence(deps.db, agentId, payload.prompt, now);
   deps.status(`user-prompt ${agentId}: marked ${String(read)} message(s) read`);
@@ -102,7 +113,7 @@ export function runHookStop(deps: HookEventDeps, payload: StopPayload): void {
     return;
   }
   const now = deps.now ?? Date.now();
-  const agentId = claudeAgentId(payload.cwd);
+  const agentId = agentFor(deps.db, payload);
   touchHeartbeat(deps.db, agentId, deps.repoRoot, payload.session_id, now);
   deps.status(`stop ${agentId}: heartbeat (delivery left to the monitor)`);
 }
@@ -120,7 +131,7 @@ export function runHookPostTool(deps: HookEventDeps, payload: PostToolPayload): 
     return;
   }
   const now = deps.now ?? Date.now();
-  const agentId = claudeAgentId(payload.cwd);
+  const agentId = agentFor(deps.db, payload);
   touchHeartbeat(deps.db, agentId, deps.repoRoot, payload.session_id, now);
   if (payload.tool_name !== undefined && EDIT_TOOLS.has(payload.tool_name)) {
     const path = editedPath(payload.tool_input);
@@ -140,7 +151,7 @@ export function runHookSessionEnd(deps: HookEventDeps, payload: SessionEndPayloa
   if (ignoreSubagent(deps, payload, "session-end")) {
     return 0;
   }
-  const agentId = claudeAgentId(payload.cwd);
+  const agentId = agentFor(deps.db, payload);
   // Requeue only messages delivered to THIS ending session, not every delivered
   // message across the agent's other live sessions (PLAN 4.3 requeue).
   const requeued = messagesRepo.requeueDeliveredToSession(deps.db, agentId, payload.session_id);

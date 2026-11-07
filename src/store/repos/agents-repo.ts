@@ -57,3 +57,22 @@ export function updateHeartbeat(
     "UPDATE agents SET last_heartbeat = ?, native_session = ? WHERE id = ?",
   ).run(heartbeat, nativeSession, id);
 }
+
+/**
+ * The agent a harness session registered as (latest heartbeat wins). Identity
+ * follows the session, not the current folder: a session that `cd`s elsewhere
+ * keeps the agent id it registered with at SessionStart.
+ */
+export function findAgentBySession(db: Db, nativeSession: string): AgentRow | undefined {
+  const row = db
+    .prepare(
+      "SELECT * FROM agents WHERE native_session = ? ORDER BY last_heartbeat DESC LIMIT 1",
+    )
+    .get(nativeSession);
+  return parseOptionalRow(agentRowSchema, row);
+}
+
+/** Refresh liveness only, leaving the owning session untouched (monitor polls). */
+export function touchLiveness(db: Db, id: string, heartbeat: number): void {
+  db.prepare("UPDATE agents SET last_heartbeat = ? WHERE id = ?").run(heartbeat, id);
+}

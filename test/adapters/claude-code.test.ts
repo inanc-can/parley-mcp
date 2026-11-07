@@ -113,7 +113,7 @@ describe("claude-code install", () => {
     const servers = jsonObject.parse(config["mcpServers"]);
     // The MCP command is the absolute launcher path (never `npx`), with the
     // identity env so the MCP tools act as claude@<folder>.
-    expect(servers["parley"]).toEqual({
+    expect(servers["mcp-parley"]).toEqual({
       command: launcher,
       args: ["serve"],
       env: { PARLEY_HARNESS: "claude" },
@@ -144,7 +144,7 @@ describe("claude-code install", () => {
     installClaudeCode(env(), false, runner);
     expect(runner.sawSubcommand("plugin", "validate")).toBe(true);
     expect(runner.sawSubcommand("plugin", "marketplace", "add")).toBe(true);
-    expect(runner.sawSubcommand("plugin", "install", "parley@parley")).toBe(true);
+    expect(runner.sawSubcommand("plugin", "install", "mcp-parley@mcp-parley")).toBe(true);
   });
 
   it("reports a non-zero `claude` step in the install report notes", () => {
@@ -244,20 +244,39 @@ describe("claude-code install merges into existing ~/.claude.json", () => {
     const servers = jsonObject.parse(config["mcpServers"]);
     expect(config["numStartups"]).toBe(7);
     expect(servers["other"]).toEqual({ command: "x", args: [] });
-    expect(servers["parley"]).toBeDefined();
+    expect(servers["mcp-parley"]).toBeDefined();
   });
 
-  it("rewrites a stale `npx` parley entry from an older install", () => {
-    const stale = {
-      mcpServers: { parley: { command: "npx", args: ["parley-mcp", "serve"] } },
-    };
-    writeFileSync(claudeJson(), `${JSON.stringify(stale, null, 2)}\n`, "utf8");
-
+  it("leaves another tool's `parley` server untouched through install and uninstall", () => {
+    // The live test: the Parley research platform registers its own `parley`
+    // server, and an earlier setup overwrote it. Ours lives under `mcp-parley`.
+    const research = { command: "uv", args: ["run", "parley", "mcp"] };
+    writeFileSync(
+      claudeJson(),
+      `${JSON.stringify({ mcpServers: { parley: research } }, null, 2)}\n`,
+      "utf8",
+    );
     installClaudeCode(env(), false, new FakeRunner());
-    const servers = jsonObject.parse(readJson(claudeJson())["mcpServers"]);
-    const entry = jsonObject.parse(servers["parley"]);
-    expect(entry["command"]).toBe(launcherPath(home));
-    expect(JSON.stringify(servers)).not.toContain("npx");
+    const afterInstall = jsonObject.parse(readJson(claudeJson())["mcpServers"]);
+    expect(afterInstall["parley"]).toEqual(research);
+    expect(jsonObject.parse(afterInstall["mcp-parley"])["command"]).toBe(launcherPath(home));
+    uninstallClaudeCode(env(), new FakeRunner());
+    const afterUninstall = jsonObject.parse(readJson(claudeJson())["mcpServers"]);
+    expect(afterUninstall).toEqual({ parley: research });
+  });
+
+  it("never overwrites or removes an `mcp-parley` entry it did not create", () => {
+    const foreign = { command: "npx", args: ["mcp-parley", "serve"] };
+    writeFileSync(
+      claudeJson(),
+      `${JSON.stringify({ mcpServers: { "mcp-parley": foreign } }, null, 2)}\n`,
+      "utf8",
+    );
+    const report = installClaudeCode(env(), false, new FakeRunner());
+    expect(jsonObject.parse(readJson(claudeJson())["mcpServers"])["mcp-parley"]).toEqual(foreign);
+    expect((report.notes ?? []).join("\n")).toContain("did not create");
+    uninstallClaudeCode(env(), new FakeRunner());
+    expect(jsonObject.parse(readJson(claudeJson())["mcpServers"])["mcp-parley"]).toEqual(foreign);
   });
 });
 
@@ -269,8 +288,8 @@ describe("claude-code uninstall", () => {
 
     const runner = new FakeRunner();
     uninstallClaudeCode(env(), runner);
-    expect(runner.sawSubcommand("plugin", "uninstall", "parley@parley")).toBe(true);
-    expect(runner.sawSubcommand("plugin", "marketplace", "remove", "parley")).toBe(true);
+    expect(runner.sawSubcommand("plugin", "uninstall", "mcp-parley@mcp-parley")).toBe(true);
+    expect(runner.sawSubcommand("plugin", "marketplace", "remove", "mcp-parley")).toBe(true);
     expect(existsSync(claudeJson())).toBe(false);
     expect(existsSync(join(home, MARKETPLACE_DIR_REL))).toBe(false);
     expect(existsSync(launcherPath(home))).toBe(false);
@@ -330,18 +349,18 @@ describe("claude-code doctor", () => {
     expect(doctorClaudeCode(env(), empty).canWakeIdle).toBe(false);
 
     const ready = new FakeRunner();
-    ready.listJson = JSON.stringify([{ name: "parley", enabled: true }]);
+    ready.listJson = JSON.stringify([{ name: "mcp-parley", enabled: true }]);
     expect(doctorClaudeCode(env(), ready).canWakeIdle).toBe(true);
   });
 
   it("reports cannot-wake-idle when the MCP command does not point at this install", () => {
     const ready = new FakeRunner();
-    ready.listJson = JSON.stringify([{ name: "parley", enabled: true }]);
+    ready.listJson = JSON.stringify([{ name: "mcp-parley", enabled: true }]);
     installClaudeCode(env(), false, ready);
-    // Simulate a stale `npx` command left in ~/.claude.json.
+    // Simulate an entry from another install (a different launcher path).
     const config = readJson(claudeJson());
     const servers = jsonObject.parse(config["mcpServers"]);
-    servers["parley"] = { command: "npx", args: ["parley-mcp", "serve"] };
+    servers["mcp-parley"] = { command: "/somewhere/else/.mcp-parley/bin/mcp-parley", args: ["serve"] };
     writeFileSync(
       claudeJson(),
       `${JSON.stringify({ ...config, mcpServers: servers }, null, 2)}\n`,
@@ -354,7 +373,7 @@ describe("claude-code doctor", () => {
 
   it("reports cannot-wake-idle when the monitor script is missing", () => {
     const ready = new FakeRunner();
-    ready.listJson = JSON.stringify([{ name: "parley", enabled: true }]);
+    ready.listJson = JSON.stringify([{ name: "mcp-parley", enabled: true }]);
     installClaudeCode(env(), false, ready);
     rmSync(join(home, MARKETPLACE_DIR_REL, MONITOR_SCRIPT_REL));
     const report = doctorClaudeCode(env(), ready);

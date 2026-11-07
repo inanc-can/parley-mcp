@@ -25,7 +25,9 @@ export function registerPlugin(runner: CommandRunner, marketplaceDir: string): s
   for (const step of steps) {
     const result = runner.run(step.args);
     if (result.code !== 0) {
-      failures.push(`claude ${step.label} failed (exit ${String(result.code)}): ${result.stderr.trim()}`);
+      failures.push(
+        `claude ${step.label} failed (exit ${String(result.code)}): ${(result.stderr.trim() || result.stdout.trim()).slice(0, 500)}`,
+      );
     }
   }
   return failures;
@@ -48,7 +50,9 @@ export function unregisterPlugin(runner: CommandRunner): string[] {
   for (const step of steps) {
     const result = runner.run(step.args);
     if (result.code !== 0) {
-      failures.push(`claude ${step.label} failed (exit ${String(result.code)}): ${result.stderr.trim()}`);
+      failures.push(
+        `claude ${step.label} failed (exit ${String(result.code)}): ${(result.stderr.trim() || result.stdout.trim()).slice(0, 500)}`,
+      );
     }
   }
   return failures;

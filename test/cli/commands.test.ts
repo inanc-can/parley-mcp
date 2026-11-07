@@ -184,7 +184,8 @@ describe("cli inbox (adapter commands)", () => {
       "sess-1",
     );
     expect(count).toBe(1);
-    expect(monitor.lines[0]).toContain("parley: a@repo");
+    expect(monitor.lines[0]).toContain("mcp-parley message from a@repo");
+    expect(monitor.lines[0]).toContain("reply_to");
     const after = messagesRepo.getMessage(db, msgId);
     expect(after.status).toBe("delivered");
     expect(after.delivered_session).toBe("sess-1");
