@@ -1,14 +1,15 @@
 {
   "schema_version": 1,
-  "created_at": "2026-11-07T13:53:07+00:00",
+  "created_at": "2026-11-07T14:09:22+00:00",
   "task_id": "M1",
-  "head": "dca972eb901bcdb991d74c2dc1744c008945a930",
+  "head": "12044657a8527a973c68a4b75769c27e4d6bc265",
   "mode": "checkpoints",
-  "mode_notes": "M1 only: store and core. Stopped at end of milestone with passing verification.",
+  "mode_notes": "checkpoints mode recorded for session opencode-M1-fix (wb mode checkpoints); stop at end of milestone reached: wb verify PASS, handoff done.",
   "autonomous_decisions": [],
-  "summary": "M1 (store and core) complete: SQLite store/migrations/repos with Zod parsing plus pure core (identity, message state machine/guards, threads cap, agreements, claims, overlap, retention, cost, secret scan). All M1 acceptance tests added; pnpm check and wb verify pass.",
+  "summary": "M1 clear: all 7 acceptance commands and pnpm check pass (55 tests), wb verify PASS (round 2). Independent review round 1 (soft_fail) addressed: retention FK-safe with old-message/newer-event test, enforceMessageCap composes count+cap+pause with mutation-checked test asserting DEFAULT_MESSAGE_CAP=20, real stop-all guard with tests, agreement lifecycle tests, delivered->replied stamps read_at per PLAN 4.3, assumptions recorded, pnpm-workspace.yaml change explained in docs/PROGRESS.md.",
   "changed_files": [
     "docs/PROGRESS.md",
+    "opencode.json",
     "package.json",
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
@@ -36,61 +37,31 @@
     "src/store/repos/threads-repo.ts",
     "src/store/retention.ts",
     "src/store/schema.ts",
+    "test/core/agreements.test.ts",
     "test/core/claims.test.ts",
     "test/core/cost.test.ts",
     "test/core/fanout-and-cap.test.ts",
     "test/core/guards.test.ts",
     "test/core/identity.test.ts",
     "test/core/overlap.test.ts",
+    "test/store/agreements.test.ts",
     "test/store/claims.test.ts",
     "test/store/db.test.ts",
     "test/store/messages.test.ts",
-    "test/store/retention.test.ts"
+    "test/store/retention.test.ts",
+    "test/store/stop-all.test.ts"
   ],
   "commands_run": [
     {
       "argv": [
         "pnpm",
-        "check"
-      ],
-      "exit_code": 0,
-      "duration_ms": 10486
-    },
-    {
-      "argv": [
-        "sh",
-        "-c",
-        "rm -f \".git/index.lock\""
-      ],
-      "exit_code": 0,
-      "duration_ms": 12
-    },
-    {
-      "argv": [
-        "pnpm",
+        "exec",
+        "vitest",
         "run",
-        "typecheck"
+        "test/core/overlap.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 1878
-    },
-    {
-      "argv": [
-        "pnpm",
-        "run",
-        "test"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2791
-    },
-    {
-      "argv": [
-        "pnpm",
-        "run",
-        "test"
-      ],
-      "exit_code": 1,
-      "duration_ms": 3043
+      "duration_ms": 2880
     },
     {
       "argv": [
@@ -98,60 +69,10 @@
         "exec",
         "vitest",
         "run",
-        "test/store/messages.test.ts",
-        "-t",
-        "guarded updates are no-ops"
-      ],
-      "exit_code": 1,
-      "duration_ms": 2233
-    },
-    {
-      "argv": [
-        "pnpm",
-        "run",
-        "typecheck"
-      ],
-      "exit_code": 2,
-      "duration_ms": 2032
-    },
-    {
-      "argv": [
-        "pnpm",
-        "exec",
-        "vitest",
-        "run",
-        "test/store/messages.test.ts",
-        "-t",
-        "guarded updates are no-ops"
+        "test/store/retention.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 2505
-    },
-    {
-      "argv": [
-        "pnpm",
-        "run",
-        "typecheck"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2734
-    },
-    {
-      "argv": [
-        "pnpm",
-        "run",
-        "test"
-      ],
-      "exit_code": 0,
-      "duration_ms": 2852
-    },
-    {
-      "argv": [
-        "pnpm",
-        "check"
-      ],
-      "exit_code": 1,
-      "duration_ms": 5906
+      "duration_ms": 3146
     },
     {
       "argv": [
@@ -159,148 +80,7 @@
         "check"
       ],
       "exit_code": 0,
-      "duration_ms": 9627
-    },
-    {
-      "argv": [
-        "sh",
-        "-c",
-        "rm -f \".git/index.lock\""
-      ],
-      "exit_code": 0,
-      "duration_ms": 16
-    },
-    {
-      "argv": [
-        "pnpm",
-        "check",
-        "passes",
-        "(lint",
-        "+",
-        "typecheck",
-        "+",
-        "test)",
-        "with",
-        "strict",
-        "rules"
-      ],
-      "exit_code": 1,
-      "duration_ms": 8095
-    },
-    {
-      "argv": [
-        "Unit",
-        "tests",
-        "cover",
-        "every",
-        "status",
-        "move",
-        "including",
-        "guarded",
-        "no-ops,",
-        "requeue",
-        "and",
-        "expiry"
-      ],
-      "exit_code": 127,
-      "duration_ms": 10
-    },
-    {
-      "argv": [
-        "Unit",
-        "tests",
-        "cover",
-        "idempotent",
-        "sends"
-      ],
-      "exit_code": 127,
-      "duration_ms": 3
-    },
-    {
-      "argv": [
-        "Unit",
-        "tests",
-        "cover",
-        "everyone",
-        "fan-out"
-      ],
-      "exit_code": 127,
-      "duration_ms": 3
-    },
-    {
-      "argv": [
-        "Unit",
-        "tests",
-        "cover",
-        "cap",
-        "->",
-        "paused"
-      ],
-      "exit_code": 127,
-      "duration_ms": 3
-    },
-    {
-      "argv": [
-        "Unit",
-        "tests",
-        "cover",
-        "secret",
-        "blocking",
-        "for",
-        "each",
-        "pattern"
-      ],
-      "exit_code": 127,
-      "duration_ms": 3
-    },
-    {
-      "argv": [
-        "Unit",
-        "tests",
-        "cover",
-        "claim",
-        "expiry"
-      ],
-      "exit_code": 127,
-      "duration_ms": 3
-    },
-    {
-      "argv": [
-        "Unit",
-        "tests",
-        "cover",
-        "overlap",
-        "detection"
-      ],
-      "exit_code": 127,
-      "duration_ms": 2
-    },
-    {
-      "argv": [
-        "Unit",
-        "tests",
-        "cover",
-        "30-day",
-        "retention"
-      ],
-      "exit_code": 127,
-      "duration_ms": 2
-    },
-    {
-      "argv": [
-        "pnpm",
-        "check"
-      ],
-      "exit_code": 0,
-      "duration_ms": 9477
-    },
-    {
-      "argv": [
-        "pnpm",
-        "check"
-      ],
-      "exit_code": 0,
-      "duration_ms": 11732
+      "duration_ms": 12198
     },
     {
       "argv": [
@@ -311,7 +91,7 @@
         "test/store/messages.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 2772
+      "duration_ms": 2525
     },
     {
       "argv": [
@@ -322,7 +102,7 @@
         "test/core/fanout-and-cap.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 2448
+      "duration_ms": 2818
     },
     {
       "argv": [
@@ -333,7 +113,7 @@
         "test/core/guards.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 2267
+      "duration_ms": 2588
     },
     {
       "argv": [
@@ -345,7 +125,7 @@
         "test/store/claims.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 3185
+      "duration_ms": 2923
     },
     {
       "argv": [
@@ -356,7 +136,7 @@
         "test/core/overlap.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 2423
+      "duration_ms": 2745
     },
     {
       "argv": [
@@ -367,28 +147,253 @@
         "test/store/retention.test.ts"
       ],
       "exit_code": 0,
-      "duration_ms": 3056
+      "duration_ms": 3301
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/store/retention.test.ts",
+        "test/core/fanout-and-cap.test.ts",
+        "test/core/guards.test.ts",
+        "test/store/stop-all.test.ts",
+        "test/core/agreements.test.ts",
+        "test/store/agreements.test.ts",
+        "test/store/messages.test.ts"
+      ],
+      "exit_code": 1,
+      "duration_ms": 3220
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/store/stop-all.test.ts"
+      ],
+      "exit_code": 1,
+      "duration_ms": 2229
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/store/stop-all.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2762
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 0,
+      "duration_ms": 12174
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/core/fanout-and-cap.test.ts"
+      ],
+      "exit_code": 1,
+      "duration_ms": 2645
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/core/fanout-and-cap.test.ts"
+      ],
+      "exit_code": 1,
+      "duration_ms": 3140
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/core/fanout-and-cap.test.ts",
+        "test/store/stop-all.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2603
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 0,
+      "duration_ms": 11514
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/store/messages.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2221
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/core/fanout-and-cap.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2223
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/core/guards.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2168
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/core/claims.test.ts",
+        "test/store/claims.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2468
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/core/overlap.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2060
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/store/retention.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 3195
+    },
+    {
+      "argv": [
+        "pnpm",
+        "check"
+      ],
+      "exit_code": 0,
+      "duration_ms": 14022
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/store/messages.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 3439
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/core/fanout-and-cap.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 3171
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/core/guards.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 2914
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/core/claims.test.ts",
+        "test/store/claims.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 3685
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/core/overlap.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 3337
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/store/retention.test.ts"
+      ],
+      "exit_code": 0,
+      "duration_ms": 3452
     }
   ],
   "failed_attempts": [
-    "pnpm check (exit 1)",
-    "pnpm check passes (lint + typecheck + test) with strict rules (exit 1)",
-    "Unit tests cover every status move including guarded no-ops, requeue and expiry (exit 127)",
-    "Unit tests cover idempotent sends (exit 127)",
-    "Unit tests cover everyone fan-out (exit 127)",
-    "Unit tests cover cap -> paused (exit 127)",
-    "Unit tests cover secret blocking for each pattern (exit 127)",
-    "Unit tests cover claim expiry (exit 127)",
-    "Unit tests cover overlap detection (exit 127)",
-    "Unit tests cover 30-day retention (exit 127)"
+    "pnpm exec vitest run test/store/retention.test.ts test/core/fanout-and-cap.test.ts test/core/guards.test.ts test/store/stop-all.test.ts test/core/agreements.test.ts test/store/agreements.test.ts test/store/messages.test.ts (exit 1)",
+    "pnpm exec vitest run test/store/stop-all.test.ts (exit 1)",
+    "pnpm exec vitest run test/core/fanout-and-cap.test.ts (exit 1)",
+    "pnpm exec vitest run test/core/fanout-and-cap.test.ts (exit 1)"
   ],
   "open_risks": [],
-  "next_action": "Start M2 (MCP server: serve with talk/inbox/agree over stdio) in a new session after framing; build M3b first if/when the work harness is named (per PLAN).",
+  "next_action": "Run the independent reviewer on the review-fixes commits (a94c981..719bd91 + docs). If it passes, start M2 (MCP server `serve` with `talk`, `inbox`, `agree` over stdio); also confirm the opencode.json human_approved_exceptions entry captured on the user's spoken request. All M1 work is committed; nothing to push (never push).",
   "verdict_pointer": {
     "verification": ".workbench/tasks/M1/verification.json",
     "verification_passed": true,
-    "verification_stale": true,
-    "review": ""
+    "verification_stale": false,
+    "review": ".workbench/tasks/M1/review.json"
   },
   "missing": []
 }

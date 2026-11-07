@@ -2,8 +2,8 @@
   "schema_version": 1,
   "task_id": "M1",
   "passed": true,
-  "created_at": "2026-11-07T13:58:05+00:00",
-  "head": "36704619395a621c486d4c84e2bb4849ce0fec58",
+  "created_at": "2026-11-07T14:09:19+00:00",
+  "head": "12044657a8527a973c68a4b75769c27e4d6bc265",
   "base_rev": "43514c918619b9cb7c6cf170505da69b376bd842",
   "changed_files": [
     "docs/PROGRESS.md",
@@ -35,16 +35,19 @@
     "src/store/repos/threads-repo.ts",
     "src/store/retention.ts",
     "src/store/schema.ts",
+    "test/core/agreements.test.ts",
     "test/core/claims.test.ts",
     "test/core/cost.test.ts",
     "test/core/fanout-and-cap.test.ts",
     "test/core/guards.test.ts",
     "test/core/identity.test.ts",
     "test/core/overlap.test.ts",
+    "test/store/agreements.test.ts",
     "test/store/claims.test.ts",
     "test/store/db.test.ts",
     "test/store/messages.test.ts",
-    "test/store/retention.test.ts"
+    "test/store/retention.test.ts",
+    "test/store/stop-all.test.ts"
   ],
   "checks": [
     {
@@ -58,50 +61,50 @@
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm check` exit=0 in 12198ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:57:36+00:00"
+      "detail": "`pnpm check` exit=0 in 14022ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T14:08:45+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/store/messages.test.ts` exit=0 in 2525ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:57:48+00:00"
+      "detail": "`pnpm exec vitest run test/store/messages.test.ts` exit=0 in 3439ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T14:08:59+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/core/fanout-and-cap.test.ts` exit=0 in 2818ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:57:51+00:00"
+      "detail": "`pnpm exec vitest run test/core/fanout-and-cap.test.ts` exit=0 in 3171ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T14:09:02+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/core/guards.test.ts` exit=0 in 2588ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:57:53+00:00"
+      "detail": "`pnpm exec vitest run test/core/guards.test.ts` exit=0 in 2914ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T14:09:05+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/core/claims.test.ts test/store/claims.test.ts` exit=0 in 2923ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:57:56+00:00"
+      "detail": "`pnpm exec vitest run test/core/claims.test.ts test/store/claims.test.ts` exit=0 in 3685ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T14:09:08+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/core/overlap.test.ts` exit=0 in 2745ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:57:59+00:00"
+      "detail": "`pnpm exec vitest run test/core/overlap.test.ts` exit=0 in 3337ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T14:09:12+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/store/retention.test.ts` exit=0 in 3301ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T13:58:02+00:00"
+      "detail": "`pnpm exec vitest run test/store/retention.test.ts` exit=0 in 3452ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T14:09:15+00:00"
     },
     {
       "code": "scope_forbidden",

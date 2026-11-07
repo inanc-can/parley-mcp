@@ -1,23 +1,24 @@
-# Handoff 2026-11-07T13:53:07+00:00
+# Handoff 2026-11-07T14:09:22+00:00
 
 - Task: M1
-- HEAD: `dca972eb901b`
-- Verification: PASS (stale: files changed since) `.workbench/tasks/M1/verification.json`
-- Review: `none`
+- HEAD: `12044657a852`
+- Verification: PASS `.workbench/tasks/M1/verification.json`
+- Review: `.workbench/tasks/M1/review.json`
 
-- Mode: checkpoints (M1 only: store and core. Stopped at end of milestone with passing verification.)
+- Mode: checkpoints (checkpoints mode recorded for session opencode-M1-fix (wb mode checkpoints); stop at end of milestone reached: wb verify PASS, handoff done.)
 
 ## Summary
-M1 (store and core) complete: SQLite store/migrations/repos with Zod parsing plus pure core (identity, message state machine/guards, threads cap, agreements, claims, overlap, retention, cost, secret scan). All M1 acceptance tests added; pnpm check and wb verify pass.
+M1 clear: all 7 acceptance commands and pnpm check pass (55 tests), wb verify PASS (round 2). Independent review round 1 (soft_fail) addressed: retention FK-safe with old-message/newer-event test, enforceMessageCap composes count+cap+pause with mutation-checked test asserting DEFAULT_MESSAGE_CAP=20, real stop-all guard with tests, agreement lifecycle tests, delivered->replied stamps read_at per PLAN 4.3, assumptions recorded, pnpm-workspace.yaml change explained in docs/PROGRESS.md.
 
 ## Decisions made without asking (review these)
 - none
 
 ## Next action
-Start M2 (MCP server: serve with talk/inbox/agree over stdio) in a new session after framing; build M3b first if/when the work harness is named (per PLAN).
+Run the independent reviewer on the review-fixes commits (a94c981..719bd91 + docs). If it passes, start M2 (MCP server `serve` with `talk`, `inbox`, `agree` over stdio); also confirm the opencode.json human_approved_exceptions entry captured on the user's spoken request. All M1 work is committed; nothing to push (never push).
 
 ## Changed files
 - `docs/PROGRESS.md`
+- `opencode.json`
 - `package.json`
 - `pnpm-lock.yaml`
 - `pnpm-workspace.yaml`
@@ -45,60 +46,57 @@ Start M2 (MCP server: serve with talk/inbox/agree over stdio) in a new session a
 - `src/store/repos/threads-repo.ts`
 - `src/store/retention.ts`
 - `src/store/schema.ts`
+- `test/core/agreements.test.ts`
 - `test/core/claims.test.ts`
 - `test/core/cost.test.ts`
 - `test/core/fanout-and-cap.test.ts`
 - `test/core/guards.test.ts`
 - `test/core/identity.test.ts`
 - `test/core/overlap.test.ts`
+- `test/store/agreements.test.ts`
 - `test/store/claims.test.ts`
 - `test/store/db.test.ts`
 - `test/store/messages.test.ts`
 - `test/store/retention.test.ts`
+- `test/store/stop-all.test.ts`
 
 ## Open risks
 - none
 
 ## Failed attempts
-- pnpm check (exit 1)
-- pnpm check passes (lint + typecheck + test) with strict rules (exit 1)
-- Unit tests cover every status move including guarded no-ops, requeue and expiry (exit 127)
-- Unit tests cover idempotent sends (exit 127)
-- Unit tests cover everyone fan-out (exit 127)
-- Unit tests cover cap -> paused (exit 127)
-- Unit tests cover secret blocking for each pattern (exit 127)
-- Unit tests cover claim expiry (exit 127)
-- Unit tests cover overlap detection (exit 127)
-- Unit tests cover 30-day retention (exit 127)
+- pnpm exec vitest run test/store/retention.test.ts test/core/fanout-and-cap.test.ts test/core/guards.test.ts test/store/stop-all.test.ts test/core/agreements.test.ts test/store/agreements.test.ts test/store/messages.test.ts (exit 1)
+- pnpm exec vitest run test/store/stop-all.test.ts (exit 1)
+- pnpm exec vitest run test/core/fanout-and-cap.test.ts (exit 1)
+- pnpm exec vitest run test/core/fanout-and-cap.test.ts (exit 1)
 
 ## Commands (last 30)
-- `pnpm check` exit 0 (10486ms)
-- `sh -c rm -f ".git/index.lock"` exit 0 (12ms)
-- `pnpm run typecheck` exit 0 (1878ms)
-- `pnpm run test` exit 0 (2791ms)
-- `pnpm run test` exit 1 (3043ms)
-- `pnpm exec vitest run test/store/messages.test.ts -t guarded updates are no-ops` exit 1 (2233ms)
-- `pnpm run typecheck` exit 2 (2032ms)
-- `pnpm exec vitest run test/store/messages.test.ts -t guarded updates are no-ops` exit 0 (2505ms)
-- `pnpm run typecheck` exit 0 (2734ms)
-- `pnpm run test` exit 0 (2852ms)
-- `pnpm check` exit 1 (5906ms)
-- `pnpm check` exit 0 (9627ms)
-- `sh -c rm -f ".git/index.lock"` exit 0 (16ms)
-- `pnpm check passes (lint + typecheck + test) with strict rules` exit 1 (8095ms)
-- `Unit tests cover every status move including guarded no-ops, requeue and expiry` exit 127 (10ms)
-- `Unit tests cover idempotent sends` exit 127 (3ms)
-- `Unit tests cover everyone fan-out` exit 127 (3ms)
-- `Unit tests cover cap -> paused` exit 127 (3ms)
-- `Unit tests cover secret blocking for each pattern` exit 127 (3ms)
-- `Unit tests cover claim expiry` exit 127 (3ms)
-- `Unit tests cover overlap detection` exit 127 (2ms)
-- `Unit tests cover 30-day retention` exit 127 (2ms)
-- `pnpm check` exit 0 (9477ms)
-- `pnpm check` exit 0 (11732ms)
-- `pnpm exec vitest run test/store/messages.test.ts` exit 0 (2772ms)
-- `pnpm exec vitest run test/core/fanout-and-cap.test.ts` exit 0 (2448ms)
-- `pnpm exec vitest run test/core/guards.test.ts` exit 0 (2267ms)
-- `pnpm exec vitest run test/core/claims.test.ts test/store/claims.test.ts` exit 0 (3185ms)
-- `pnpm exec vitest run test/core/overlap.test.ts` exit 0 (2423ms)
-- `pnpm exec vitest run test/store/retention.test.ts` exit 0 (3056ms)
+- `pnpm exec vitest run test/core/overlap.test.ts` exit 0 (2880ms)
+- `pnpm exec vitest run test/store/retention.test.ts` exit 0 (3146ms)
+- `pnpm check` exit 0 (12198ms)
+- `pnpm exec vitest run test/store/messages.test.ts` exit 0 (2525ms)
+- `pnpm exec vitest run test/core/fanout-and-cap.test.ts` exit 0 (2818ms)
+- `pnpm exec vitest run test/core/guards.test.ts` exit 0 (2588ms)
+- `pnpm exec vitest run test/core/claims.test.ts test/store/claims.test.ts` exit 0 (2923ms)
+- `pnpm exec vitest run test/core/overlap.test.ts` exit 0 (2745ms)
+- `pnpm exec vitest run test/store/retention.test.ts` exit 0 (3301ms)
+- `pnpm exec vitest run test/store/retention.test.ts test/core/fanout-and-cap.test.ts test/core/guards.test.ts test/store/stop-all.test.ts test/core/agreements.test.ts test/store/agreements.test.ts test/store/messages.test.ts` exit 1 (3220ms)
+- `pnpm exec vitest run test/store/stop-all.test.ts` exit 1 (2229ms)
+- `pnpm exec vitest run test/store/stop-all.test.ts` exit 0 (2762ms)
+- `pnpm check` exit 0 (12174ms)
+- `pnpm exec vitest run test/core/fanout-and-cap.test.ts` exit 1 (2645ms)
+- `pnpm exec vitest run test/core/fanout-and-cap.test.ts` exit 1 (3140ms)
+- `pnpm exec vitest run test/core/fanout-and-cap.test.ts test/store/stop-all.test.ts` exit 0 (2603ms)
+- `pnpm check` exit 0 (11514ms)
+- `pnpm exec vitest run test/store/messages.test.ts` exit 0 (2221ms)
+- `pnpm exec vitest run test/core/fanout-and-cap.test.ts` exit 0 (2223ms)
+- `pnpm exec vitest run test/core/guards.test.ts` exit 0 (2168ms)
+- `pnpm exec vitest run test/core/claims.test.ts test/store/claims.test.ts` exit 0 (2468ms)
+- `pnpm exec vitest run test/core/overlap.test.ts` exit 0 (2060ms)
+- `pnpm exec vitest run test/store/retention.test.ts` exit 0 (3195ms)
+- `pnpm check` exit 0 (14022ms)
+- `pnpm exec vitest run test/store/messages.test.ts` exit 0 (3439ms)
+- `pnpm exec vitest run test/core/fanout-and-cap.test.ts` exit 0 (3171ms)
+- `pnpm exec vitest run test/core/guards.test.ts` exit 0 (2914ms)
+- `pnpm exec vitest run test/core/claims.test.ts test/store/claims.test.ts` exit 0 (3685ms)
+- `pnpm exec vitest run test/core/overlap.test.ts` exit 0 (3337ms)
+- `pnpm exec vitest run test/store/retention.test.ts` exit 0 (3452ms)
