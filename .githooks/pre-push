@@ -1,0 +1,13 @@
+#!/bin/sh
+# Local stand-in for CI: refuse to push unless lint, typecheck and tests pass.
+# Enable once per clone with: git config core.hooksPath .githooks
+# Skip in an emergency with: git push --no-verify
+set -e
+
+echo "pre-push: running pnpm check (lint, typecheck, tests)..."
+if ! pnpm check; then
+  echo ""
+  echo "pre-push: pnpm check failed, so nothing was pushed. Fix the errors above and push again."
+  exit 1
+fi
+echo "pre-push: pnpm check passed."
