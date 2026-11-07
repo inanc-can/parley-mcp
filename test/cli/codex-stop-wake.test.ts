@@ -32,6 +32,15 @@ async function runStop(wakes: string[]): Promise<void> {
       return true;
     },
     notify: silentNotifier,
+    cursor: {
+      withDbAt: (_dir, run) => run(db, REPO),
+      status: () => () => undefined,
+      readStdinJson: () => Promise.resolve({}),
+      write: () => undefined,
+      env: {},
+      launcher: "/l",
+      notify: silentNotifier,
+    },
   };
   const program = new Command();
   registerHookCommands(program, host);

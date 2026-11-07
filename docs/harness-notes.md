@@ -300,3 +300,58 @@ OpenAI is unreachable from that container, so turns start but the model never an
 - Concord's `docs/codex.md` / `src/relay/codex-client.ts` were a conceptual reference only; no code
   copied. PLAN's Concord-derived note (`turn/start` / `turn/steer` with `expectedTurnId`) matched the
   generated schema's method shapes and is now verified against 0.154.0.
+
+## M8 (2026-11-07, Claude, cloud session): Cursor adapter
+
+### Verified against Cursor's official docs (fetched 2026-11-07)
+
+Sources: cursor.com/docs/hooks.md, cursor.com/docs/mcp.md, cursor.com/docs/cli/changelog.md
+(markdown versions of the docs pages; the cloud environment `parley-mcp` allows cursor.com).
+
+- **MCP:** `~/.cursor/mcp.json` = `{ "mcpServers": { "<name>": { "command", "args", "env" } } }`
+  (user level; `.cursor/mcp.json` per project). Cursor supports MCP **roots**. `${workspaceFolder}`
+  resolves only in a project mcp.json, so a user-level server learns the folder through roots.
+- **Hooks file:** `~/.cursor/hooks.json` = `{ "version": 1, "hooks": { "<event>": [ { "command": "…" } ] } }`.
+  Per-script options: `command`, `type`, `timeout`, `loop_limit` (stop/subagentStop, default 5,
+  `null` = no limit), `failClosed` (default false), `matcher`. User hooks run from `~/.cursor/`.
+  Cursor reloads hooks.json on save. No trust step is documented for user hooks (project hooks run
+  in trusted workspaces). All sources' hooks run; for `followup_message` the last response wins.
+- **Common input:** `conversation_id`, `generation_id`, `model`, `hook_event_name`,
+  `cursor_version`, `workspace_roots[]`, `user_email`, `transcript_path`. Env: `CURSOR_PROJECT_DIR`
+  (always), `CURSOR_VERSION`, `CURSOR_TRANSCRIPT_PATH`, `CLAUDE_PROJECT_DIR`.
+- **sessionStart:** input adds `session_id` (= conversation_id), `is_background_agent`,
+  `composer_mode`; output `{ env, additional_context }`; fire-and-forget (cannot block). `env`
+  reaches later hooks in the session.
+- **beforeSubmitPrompt:** input `prompt`, `attachments`; output `{ continue, user_message }`.
+- **afterFileEdit:** input `file_path` (absolute), `edits[]`.
+- **stop:** input `status` (completed|aborted|error), `loop_count`; output `{ followup_message }`,
+  auto-submitted as the next user message; counted per conversation against `loop_limit`.
+- **sessionEnd:** input `session_id`, `reason` (completed|aborted|error|window_close|user_close),
+  `duration_ms`, …; output ignored.
+- **Background tasks wake the agent (CLI changelog):** "Background task follow-ups are back.
+  Completion follow-ups for finished background tasks fire again in interactive and headless
+  sessions." And for ACP: "when the agent starts a background shell that watches for output … the
+  agent wakes up and responds". This is the mechanism PLAN's one-shot `inbox watch --once` relies on.
+
+### Design choices
+
+- Agent id `cursor@<basename(workspace_roots[0])>` (PLAN 4.1); the hook finds the agent by
+  conversation id first. Hooks take the repo from `workspace_roots[0]` (or CURSOR_PROJECT_DIR),
+  because user hooks run from `~/.cursor/`.
+- `stop` installs with `loop_limit: null`, else Cursor would stop delivering after 5 follow-ups per
+  chat. Parley's own guards bound it (20-message thread cap, stop-all, follow-up only when queued).
+- Every `hook cursor-*` prints exactly one JSON reply even on errors (`{continue:true}` for
+  beforeSubmitPrompt), so Parley can never block a prompt. Cloud background agents are ignored.
+- The MCP server (PARLEY_HARNESS=cursor) renames itself after the first `file://` root once the
+  client has initialized.
+
+### Assumed / needs the human's live test
+
+- That the desktop app (not only the CLI) resumes the agent when a Cursor-owned background shell
+  task finishes, and that agents reliably follow the sessionStart instruction to start one watch.
+  Concord documents the same behaviour for Cursor 3.13; unverified here.
+- Whether beforeSubmitPrompt fires for a stop `followup_message` (read evidence for follow-ups).
+  If not, those messages show `delivered` until the agent replies (PLAN 4.3 allows this).
+- Two chats in one folder share `cursor@<folder>` (same known limit as the other adapters).
+- `cursor-agent` could not be run in the cloud (running a downloaded binary was refused, and it
+  needs a Cursor login). Fixtures are synthetic (`_synthetic: true`), built from the documented fields.

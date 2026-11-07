@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Readable, Writable } from "node:stream";
@@ -42,6 +43,13 @@ export interface ServeOptions {
   wakeRecipient?: ((agentId: string, harness: string) => boolean) | undefined;
   /** OS notifications for the human (PLAN section 9). */
   notify?: Notifier | undefined;
+  /**
+   * Learn the open folder from the client's MCP roots (Cursor: a user-level
+   * server may start outside the project). Needs `repoRootFor`.
+   */
+  useRoots?: boolean | undefined;
+  /** Maps a folder to its repo root (git top level); used with `useRoots`. */
+  repoRootFor?: ((dir: string) => string) | undefined;
 }
 
 /**
@@ -164,10 +172,46 @@ export async function serve(options: ServeOptions = {}): Promise<ServeHandle> {
     stdin.on("end", closeDb);
     stdin.on("close", closeDb);
 
+    if (options.useRoots === true && options.repoRootFor !== undefined && options.agentIdEnv === undefined) {
+      const repoRootFor = options.repoRootFor;
+      server.server.oninitialized = () => {
+        void adoptRootFolder(server, ctx, repoRootFor).catch(() => undefined);
+      };
+    }
     await server.connect(transport);
     return { isClosed: () => closed, close: closeDb };
   } catch (error) {
     closeDb();
     throw error;
   }
+}
+
+/**
+ * Name the agent after the first folder the client reports as an MCP root and
+ * move it to that folder's repo (PLAN section 6 Cursor: "use MCP roots to
+ * learn the open folder"). Keeps the startup identity when the client has no
+ * roots or reports none.
+ */
+export async function adoptRootFolder(
+  server: McpServer,
+  ctx: ToolContext,
+  repoRootFor: (dir: string) => string,
+): Promise<void> {
+  if (server.server.getClientCapabilities()?.roots === undefined) {
+    return;
+  }
+  const { roots } = await server.server.listRoots();
+  const first = roots.find((root) => root.uri.startsWith("file://"));
+  if (first === undefined || !ctx.db.open) {
+    return;
+  }
+  const folder = fileURLToPath(first.uri);
+  const agentId = resolveAgentId(undefined, folder);
+  const repoRoot = repoRootFor(folder);
+  if (agentId === ctx.agentId && repoRoot === ctx.repoRoot) {
+    return;
+  }
+  ctx.agentId = agentId;
+  ctx.repoRoot = repoRoot;
+  registerCaller(ctx.db, agentId, repoRoot, ctx.nativeSession, Date.now());
 }

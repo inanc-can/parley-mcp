@@ -1,7 +1,7 @@
 import { dirname, join } from "node:path";
 import { existsSync } from "node:fs";
 import { ensureLauncher, launcherPath } from "../cli-path.js";
-import { removeDirIfEmpty, removeFileIfPresent } from "../fs-ops.js";
+import { pruneEmptyDirsUpTo, removeDirIfEmpty, removeFileIfPresent } from "../fs-ops.js";
 import type { AdapterEnv, DoctorReport, FileChange, InstallReport } from "../types.js";
 import { probeCodexDaemon, type DaemonProbe } from "./daemon-probe.js";
 import { CODEX_DIR_REL, CONFIG_TOML_REL, HOOKS_JSON_REL, MCP_SERVER_KEY } from "./config-files.js";
@@ -130,7 +130,7 @@ export function uninstallCodex(env: AdapterEnv): InstallReport {
   if (removeFileIfPresent(launcher)) {
     changes.push({ path: launcher, action: "create" });
   }
-  pruneLauncherDirs(launcher, env.home);
+  pruneEmptyDirsUpTo(dirname(launcher), env.home);
 
   return { harness: "codex", changes, dryRun: false, notes };
 }
@@ -189,19 +189,4 @@ function detailLine(c: { mcpWired: boolean; commandOk: boolean; hooksPresent: bo
   const trust =
     c.daemon.hooksTrusted === true ? "hooks trusted" : "hook trust unknown (trust them with /hooks)";
   return `MCP server wired, hooks written, app-server daemon running, ${trust}. Restart open Codex sessions so they attach to the daemon.`;
-}
-
-/** Prune the launcher's bin/ and data dir, each only if now empty. */
-function pruneLauncherDirs(launcher: string, home: string): void {
-  let dir = dirname(launcher);
-  while (dir !== home && dir.startsWith(home)) {
-    if (!removeDirIfEmpty(dir)) {
-      return;
-    }
-    const parent = dirname(dir);
-    if (parent === dir) {
-      return;
-    }
-    dir = parent;
-  }
 }

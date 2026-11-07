@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "active_task_id": "M7",
-  "summary": "M7 built by Claude in a cloud session: OS notifications (macOS osascript argv-only, Linux notify-send, Windows none, 60-char previews) for paused threads, accepted agreements and edit conflicts; conflict system messages in a 'conflict: <path>' thread; tool results now include the structured value as JSON text. End-to-end M7 test passes; pnpm check 255 tests. Laptop checks for M5/M6 still open.",
+  "active_task_id": "M8",
+  "summary": "M8 (Cursor adapter) built by Claude in a cloud session from Cursor's official docs: mcp.json + hooks.json merge, cursor-* hooks (sessionStart instruction to keep one background inbox watch, stop followup_message with loop_limit null, prompt read evidence, edits, requeue), MCP roots identity, watch heartbeat. pnpm check 273 tests. Live Cursor test pending on the laptop; M5/M6 laptop checks also open.",
   "assumptions": [
     "M1 (recorded 2026-11-07, fix session): The secret-scan regex thresholds are builder-chosen minimum length heuristics (AWS AKIA +16 chars; ghp_/github_pat_/sk- at 20+ chars; Slack xox*- tokens at 10+ chars; .env SECRET=TOKEN=PASSWORD=API_KEY lines with values of 12+ chars). They may need tightening after real-world false negative/positive feedback; none may ever be relaxed to log the secret value.",
     "M1 (recorded 2026-11-07, fix session): everyone fan-out derives per-recipient idempotency keys as <base key>::<toAgent>; the double-colon separator is a builder choice, and changing it changes which retries dedupe.",
@@ -50,15 +50,16 @@
     "M5 DEFERRED (recorded 2026-11-07, kiro-M5): the live wiring of the recipient session's app-server threadId / active turnId into talk's delivery+outlook is NOT built \u2014 it needs a real Codex app-server connection and session, which is the (H) part. The build ships the gated, fail-closed request builders + planWake decision and the MCP-server inbox/hooks fallback; until the human's live run confirms the thread-id mapping, idle wake falls back to queue-until-next-turn rather than mis-delivering. Fixtures are synthetic (_synthetic:true); two app-server schema files are vendored into src/adapters/codex/fixtures/schema/ so the app-server test is self-contained on CI (which has no codex). smol-toml@1.4.2 added (PLAN-allowed, exact-pinned).",
     "[autonomous] 2026-11-07 (Claude, cloud): Codex idle wake needs the app-server daemon, which needs the official-installer Codex; setup does NOT start the daemon (it would change the user's machine beyond config files); setup and doctor tell the human to run `codex app-server daemon start`. Busy threads are waited on (60 s from talk, 120 s from the Stop hook), never steered. Closed sessions (notLoaded) are never resumed. @types/better-sqlite3 added as a dev dependency (on PLAN's allowed list) because a clean checkout failed typecheck.",
     "[autonomous] 2026-11-07 (Claude, cloud): viewer serves app.js/styles.css without the token (no data in them); posts as `you` fan out to every thread participant and ignore the cap and stop-all (they restrain agents, not the human); resume adds room for 20 more from the current count.",
-    "[autonomous] 2026-11-07 (Claude, cloud): tool results carry a second text block with the JSON value (MCP spec guidance) so clients that show only text still see inbox messages and rules; conflict notices go to a thread titled 'conflict: <path>', reused while not closed."
+    "[autonomous] 2026-11-07 (Claude, cloud): tool results carry a second text block with the JSON value (MCP spec guidance) so clients that show only text still see inbox messages and rules; conflict notices go to a thread titled 'conflict: <path>', reused while not closed.",
+    "[autonomous] 2026-11-07 (Claude, cloud): created personal cloud environment parley-mcp (user approved) allowing cursor.com/docs.cursor.com/downloads.cursor.com with a pnpm install setup script. Cursor stop hook installed with loop_limit null; Parley's caps bound loops. Cursor hooks always print a JSON reply. cursor-agent not run in the cloud (downloaded binary execution refused)."
   ],
   "blockers": [
     "GitHub Actions blocked by the account billing lock (human-only fix)."
   ],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "Human: M5 laptop test, M6 viewer check, optional M7 notification check on macOS. Then M8 (Cursor adapter, needs Cursor on the laptop for its (H) check).",
-  "updated_at": "2026-11-07T22:30:00+00:00",
+  "next_action": "Human: laptop tests for M5 (Codex), M6 (viewer), M8 (Cursor). Then M9 (Grok Build adapter).",
+  "updated_at": "2026-11-07T22:55:00+00:00",
   "last_mode": "checkpoints",
   "last_mode_notes": "M5 review + wake by Claude in a cloud session; user away, laptop off; no wb tool in the cloud, verified with pnpm check and a live Codex run."
 }

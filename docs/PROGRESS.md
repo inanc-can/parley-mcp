@@ -1,5 +1,38 @@
 # Progress
 
+## M8: Cursor adapter (Claude, cloud session, 2026-11-07)
+
+**Built (PLAN section 6 Cursor; facts in docs/harness-notes.md M8):**
+- `src/adapters/cursor/`: `mcp-parley` server in `~/.cursor/mcp.json` (PARLEY_HARNESS=cursor) and
+  five hooks in `~/.cursor/hooks.json` (sessionStart, beforeSubmitPrompt, afterFileEdit, stop with
+  `loop_limit: null`, sessionEnd), all through the absolute launcher. Merge keeps the user's
+  entries; uninstall removes only ours and gives the user's files back unchanged; a foreign
+  `mcp-parley` server is never touched. doctor: hook trust not applicable (null).
+- `hook cursor-*` (src/cli/commands/cursor-hooks.ts, src/cli/cursor-hook-commands.ts): sessionStart
+  registers `cursor@<folder>` and returns `additional_context` telling the agent to keep one
+  Cursor-owned background `inbox watch --once` running; stop hands queued messages over as
+  `followup_message`; beforeSubmitPrompt gives read evidence and always allows the prompt;
+  afterFileEdit records edits (conflict warnings); sessionEnd requeues unread messages.
+- MCP server learns the open folder from MCP roots for Cursor. `inbox watch` now heartbeats while
+  waiting. Shared `pruneEmptyDirsUpTo` replaces copies in the Codex and Cursor adapters.
+- Cloud environment `parley-mcp` (personal) created with the user's approval: allows cursor.com,
+  docs.cursor.com, downloads.cursor.com, plus a setup script running `pnpm install`.
+
+**Checks:** `pnpm check` passes (48 files / 273 tests): install/uninstall/idempotency/foreign
+entry/doctor (`test/adapters/cursor.test.ts`), fixture replay through the real hook commands, the
+watch heartbeat and MCP roots (`test/cli/cursor-hooks.test.ts`).
+
+### (H) Laptop test: Cursor ↔ Claude Code with Cursor idle
+1. `git pull && pnpm build && node dist/cli/bin.js setup` (or `--harness cursor`).
+2. `node dist/cli/bin.js doctor` → cursor: can wake idle.
+3. In the test repo open Cursor on `web` and start a NEW chat. Check Cursor's Hooks output channel:
+   sessionStart ran. Ask the agent "what is your parley agent id?" — it should say `cursor@web`
+   and start one background task running `… inbox watch --agent cursor@web … --once`.
+4. Claude Code in `api`: `say hi to cursor@web`. Leave Cursor idle. Expect the watch to finish,
+   Cursor to resume within a few seconds, answer with the talk tool, and start a new watch.
+5. If Cursor does not resume, note it; the stop-hook fallback delivers on Cursor's next turn.
+6. Optional: capture real hook payloads into `src/adapters/cursor/fixtures/`.
+
 ## M7: notifications, rules file, loop guard end to end (Claude, cloud session, 2026-11-07)
 
 **Built:**

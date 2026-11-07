@@ -1,6 +1,7 @@
 import type { Command } from "commander";
 import type { WakeSpawner } from "../adapters/codex/spawn-wake.js";
 import type { Notifier } from "../notify/os-notify.js";
+import { registerCursorHookCommands, type CursorHookHost } from "./cursor-hook-commands.js";
 import { messagesRepo, type Db } from "../store/index.js";
 import { runHookEdit } from "./commands/hook.js";
 import {
@@ -37,6 +38,8 @@ export interface HookCommandHost {
   wakeCodex: WakeSpawner;
   /** OS notifications for edit conflicts (PLAN section 9). */
   notify: Notifier;
+  /** The Cursor hooks' extra plumbing (repo from the payload, JSON replies on stdout). */
+  cursor: CursorHookHost;
 }
 
 /** How long a Stop-started wake waits for the ending turn to go idle. */
@@ -65,6 +68,7 @@ export function registerHookCommands(program: Command, host: HookCommandHost): v
 
   registerClaudeHookCommands(hook, host);
   registerCodexHookCommands(hook, host);
+  registerCursorHookCommands(hook, host.cursor);
 }
 
 /**

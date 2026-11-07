@@ -33,6 +33,8 @@ export async function runServe(deps: ServeCommandDeps = {}): Promise<ServeHandle
     dbPath: resolveDbPath(env),
     wakeRecipient: codexWaker(env["HOME"] ?? homedir()),
     notify: osNotifier({ env }),
+    useRoots: env["PARLEY_HARNESS"] === "cursor",
+    repoRootFor: resolveRepoRoot,
   };
   return start(options);
 }

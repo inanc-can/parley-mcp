@@ -126,6 +126,9 @@ export function runInboxWatchOnce(
   session: string | null,
 ): WatchResult {
   const now = deps.now ?? Date.now();
+  // A running watch is how a Cursor/Grok agent stays reachable while idle, so
+  // each poll counts as a heartbeat (as a monitor's drain does).
+  agentsRepo.touchLiveness(deps.db, agentId, now);
   const pending = messagesRepo.listUndeliveredForRecipient(deps.db, agentId, now);
   const first = pending[0];
   if (first === undefined) {

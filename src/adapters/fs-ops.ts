@@ -1,3 +1,4 @@
+import { dirname } from "node:path";
 import { existsSync, readdirSync, rmdirSync, rmSync } from "node:fs";
 
 /**
@@ -31,4 +32,23 @@ export function removeDirIfEmpty(path: string): boolean {
   }
   rmdirSync(path);
   return true;
+}
+
+/**
+ * Remove `start` and then each parent directory while it is empty, stopping at
+ * `stopAt` (never removed) or at the first directory that still holds anything.
+ * Used to prune the launcher's bin/ and data dir after uninstall.
+ */
+export function pruneEmptyDirsUpTo(start: string, stopAt: string): void {
+  let dir = start;
+  while (dir !== stopAt && dir.startsWith(stopAt)) {
+    if (!removeDirIfEmpty(dir)) {
+      return;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) {
+      return;
+    }
+    dir = parent;
+  }
 }
