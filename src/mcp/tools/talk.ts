@@ -93,6 +93,19 @@ export async function handleTalk(
     );
   }
 
+  // A reply belongs in the thread of the message it answers. Agents get only
+  // the message id (the monitor line says "reply_to <id>"), so a reply_to with
+  // no thread_id joins the original's thread instead of starting a new one
+  // (live test: both woken replies failed with reply_to_unknown because talk
+  // created a fresh thread and then refused the cross-thread reply_to).
+  if (args.reply_to !== undefined && args.thread_id === undefined) {
+    const original = messagesRepo.findMessage(db, args.reply_to);
+    if (original === undefined) {
+      return refused("reply_to_unknown", `No message with id ${args.reply_to} exists to reply to.`);
+    }
+    args = { ...args, thread_id: original.thread_id };
+  }
+
   const threadOutcome = resolveThread(ctx, args, now);
   if (!threadOutcome.ok) {
     return refused(threadOutcome.errorCode, threadOutcome.detail);

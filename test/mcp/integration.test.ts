@@ -225,6 +225,20 @@ describe("MCP integration (SDK in-memory transport, two fake agents)", () => {
     db.close();
   });
 
+  it("a reply with only reply_to (no thread_id) joins the original's thread", async () => {
+    // Live test 2026-11-07: woken agents only know the message id from the
+    // monitor line, and both replies failed with reply_to_unknown.
+    const db = openMemoryDb();
+    const clientA = await startServer(db, "a@r");
+    const clientB = await startServer(db, "b@r");
+    const first = await talk(clientA, "b@r", "can you hear me?", "rt1");
+    // B sees it first (in real use the monitor delivers it), then replies.
+    await clientB.callTool({ name: "inbox", arguments: {} });
+    const reply = await talk(clientB, "a@r", "yes, loud and clear", "rt2", first.messageId);
+    expect(reply.threadId).toBe(first.threadId);
+    expect(messagesRepo.findMessage(db, first.messageId)?.status).toBe("replied");
+  });
+
   it("lists exactly the three Parley tools", async () => {
     const db = openMemoryDb();
     const clientA = await startServer(db, "a@r");

@@ -185,7 +185,8 @@ describe("cli inbox (adapter commands)", () => {
     );
     expect(count).toBe(1);
     expect(monitor.lines[0]).toContain("mcp-parley message from a@repo");
-    expect(monitor.lines[0]).toContain("reply_to");
+    expect(monitor.lines[0]).toMatch(/\(id [0-9a-f-]{36}\)/);
+    expect(monitor.lines[0]).toMatch(/reply_to [0-9a-f-]{36}/);
     const after = messagesRepo.getMessage(db, msgId);
     expect(after.status).toBe("delivered");
     expect(after.delivered_session).toBe("sess-1");
@@ -295,7 +296,11 @@ describe("cli serve command", () => {
     let captured: ServeOptions | undefined;
     const handle: ServeHandle = { isClosed: () => false, close: () => undefined };
     const result = await runServe({
-      env: { PARLEY_AGENT_ID: "codex@repo", PARLEY_DB_PATH: "/tmp/hub.db" },
+      env: {
+        PARLEY_AGENT_ID: "codex@repo",
+        PARLEY_DB_PATH: "/tmp/hub.db",
+        CLAUDE_CODE_SESSION_ID: "sess-123",
+      },
       cwd: "/repo",
       start: (options) => {
         captured = options;
@@ -306,5 +311,9 @@ describe("cli serve command", () => {
     expect(captured?.agentIdEnv).toBe("codex@repo");
     expect(captured?.dbPath).toBe("/tmp/hub.db");
     expect(captured?.repoRoot).toBeTypeOf("string");
+    // The harness's native session id and the session folder reach serve():
+    // identity follows the session, never the repo root's name.
+    expect(captured?.sessionId).toBe("sess-123");
+    expect(captured?.cwd).toBe("/repo");
   });
 });

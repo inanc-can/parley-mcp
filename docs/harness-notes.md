@@ -1,5 +1,12 @@
 # Harness notes
 
+**Verified live, 2026-11-07 (Claude Code 2.1.303, then 2.1.319):** MCP servers are started in the
+session's own folder (cwd) and receive `CLAUDE_CODE_SESSION_ID` (plus `CLAUDE_PROJECT_DIR`,
+`CLAUDE_CODE_ENTRYPOINT`) in their environment. Plugin monitors receive NO `CLAUDE_*` variables; they run
+in the session's starting folder. Plugin hooks fire in every session, including ones started before
+setup. Names: the MCP key, plugin and marketplace are all `mcp-parley` (install target
+`mcp-parley@mcp-parley`); older notes below that say `parley` predate the rename.
+
 Record verified harness details here: versions, hook payloads, config paths, and what was verified versus assumed. No secrets or personal data.
 
 (No real harness verified yet.)

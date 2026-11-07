@@ -12,6 +12,12 @@ export interface UpsertAgentInput {
   createdAt: number;
 }
 
+/**
+ * Insert or update an agent. A null nativeSession never erases a known one:
+ * the monitor registers without a session id, and wiping the session link
+ * SessionStart wrote would let a later hook (after a `cd`) fall back to cwd
+ * and take over another folder's agent (M4 review round 4, high finding).
+ */
 export function upsertAgent(db: Db, input: UpsertAgentInput): AgentRow {
   db.prepare(
     `INSERT INTO agents(id, harness, folder, repo_root, native_session, last_heartbeat, created_at)
@@ -20,7 +26,7 @@ export function upsertAgent(db: Db, input: UpsertAgentInput): AgentRow {
        harness = excluded.harness,
        folder = excluded.folder,
        repo_root = excluded.repo_root,
-       native_session = excluded.native_session,
+       native_session = COALESCE(excluded.native_session, agents.native_session),
        last_heartbeat = excluded.last_heartbeat`,
   ).run(input);
   return getAgent(db, input.id);

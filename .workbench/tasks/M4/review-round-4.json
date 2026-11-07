@@ -1,0 +1,34 @@
+{
+ "task_id": "M4",
+ "round": 4,
+ "verdict": "soft_fail",
+ "total": 5,
+ "note": "Review of the live-test fix round (a7a14c9); all findings addressed in the following commit.",
+ "findings": [
+  {
+   "severity": "high",
+   "detail": "Monitor's inbox register (no --session) set native_session NULL, wiping the SessionStart link; fixed with COALESCE in upsertAgent + register-then-cd test.",
+   "citation": "src/adapters/claude-code/plugin-files.ts:166"
+  },
+  {
+   "severity": "medium",
+   "detail": "src/mcp identity changes beyond the recorded name-strings scope; scope_changes entry added.",
+   "citation": "src/mcp/server.ts:108-121"
+  },
+  {
+   "severity": "medium",
+   "detail": "serve() depends on CLAUDE_CODE_SESSION_ID (now verified live, recorded in harness-notes); runServe forwarding now tested.",
+   "citation": "src/cli/commands/serve.ts:26"
+  },
+  {
+   "severity": "medium",
+   "detail": "Live-test docs used old names; updated.",
+   "citation": "docs/PROGRESS.md:137-143"
+  },
+  {
+   "severity": "low",
+   "detail": "isOurEntry suffix rule: any mcp-parley install counts as ours, Windows paths never match (recorded as a limit); old `parley` entry from earlier setups was removed by the pre-rename uninstall.",
+   "citation": "src/adapters/claude-code/install.ts:32-42"
+  }
+ ]
+}

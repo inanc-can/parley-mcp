@@ -1,5 +1,17 @@
 # Progress
 
+## M4: live test, 2026-11-07 (Claude, with the human)
+
+**First run:** setup installed the plugin; the idle web session woke ~1 s after api sent "Hi". Bugs found
+and fixed in a7a14c9 and the next commit: the MCP server named itself after the repo root
+(claude@parley-test); a session that cd'd took over another folder's agent; active sessions showed as idle;
+the woken agent didn't know to reply; setup overwrote another tool's `parley` MCP server (key renamed to
+`mcp-parley`, foreign entries are never touched); the monitor's register wiped the session link.
+**Re-run:** api (headless) -> web (idle, interactive): sent 20:37:43, delivered 20:37:47, read 20:37:49,
+and web answered on its own. Its replies with reply_to failed (reply_to_unknown) because talk opened a new
+thread; fixed: a reply_to with no thread_id joins the original's thread. Next: re-test the reply leg.
+
+
 ## M4 — fix round 2 (session kiro-M4-fix2, 2026-11-07)
 
 Applied review round 2 (`.workbench/tasks/M4/review-round-2.json`, soft_fail 6/10). The human chose
@@ -55,13 +67,13 @@ automated tests use a temporary HOME + a fake runner; a real run needs two Claud
    ```
    `setup` writes the launcher `~/.mcp-parley/bin/mcp-parley` (plain `node .../dist/cli/bin.js`) and
    points every config at it, never `npx`. Re-run `pnpm build` after pulling new code.
-2. **Check what setup changed.** It prints `~/.claude.json` (merged `mcpServers.parley`, command =
+2. **Check what setup changed.** It prints `~/.claude.json` (merged `mcpServers.mcp-parley`, command =
    the absolute launcher path, `env.PARLEY_HARNESS=claude`), the marketplace tree under
    `~/.mcp-parley/claude-marketplace/`, and any `claude plugin …` errors as `! …` lines.
-3. **Verify the plugin loaded:** `claude plugin list --json` shows `parley` enabled; then
+3. **Verify the plugin loaded:** `claude plugin list --json` shows `mcp-parley@mcp-parley` enabled; then
    `node dist/cli/bin.js doctor` should say **can wake idle** (it checks the plugin list, the
    monitor files, and that the MCP command points at this install). If not, re-run
-   `claude plugin install parley@parley --scope user` and restart Claude.
+   `claude plugin install mcp-parley@mcp-parley --scope user` and restart Claude.
 4. **Restart any open session** so the new MCP server and plugin load. Monitors are experimental —
    ensure your Claude Code is recent enough (`docs/harness-notes.md` records the version floor).
 5. **Open two sessions in one repo, different folders** (A in `<repo>/api`, B in `<repo>/web`). Each
@@ -81,7 +93,7 @@ automated tests use a temporary HOME + a fake runner; a real run needs two Claud
 9. **Capture fixtures:** save the real hook payloads Claude Code sends, anonymise paths/ids, replace
    the synthetic `src/adapters/claude-code/fixtures/*.json`, and keep the replay tests green.
 10. **Uninstall check:** `node dist/cli/bin.js uninstall`, then confirm
-   `claude plugin list --json` no longer shows `parley`, `~/.claude.json` keeps your other keys, and
+   `claude plugin list --json` no longer shows `mcp-parley@mcp-parley`, `~/.claude.json` keeps your other keys, and
    both `~/.mcp-parley/claude-marketplace/` and `~/.mcp-parley/bin/mcp-parley` are gone.
 
 If step 6 fails within 5 s, check (assumptions in `docs/harness-notes.md`): the monitor's agent-id

@@ -59,6 +59,15 @@
         "tsconfig.build.json"
       ],
       "reason": "The no-npx launcher needs a runnable CLI; tsx is not an allowed dependency, so add a tsc build (typescript is already a dependency) that emits dist/, which cliEntryPath already prefers."
+    },
+    {
+      "date": "2026-11-07",
+      "by": "claude (autonomous)",
+      "added": [
+        "src/mcp/server.ts identity logic",
+        "src/mcp/tools/talk.ts reply_to threading"
+      ],
+      "reason": "The human live test showed the MCP server naming itself after the repo root and replies failing with reply_to_unknown. Fixing those needs identity and reply logic changes in src/mcp, beyond the earlier name-strings-only change (review round 4 flagged the unrecorded expansion)."
     }
   ]
 }

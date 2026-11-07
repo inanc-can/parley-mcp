@@ -96,8 +96,9 @@ export function installClaudeCode(
     ensureLauncher(env.home);
   }
 
-  const mcpChange = foreignEntryPresent(p.claudeJson) ? null : planMcpChange(p.claudeJson, launcher);
-  if (foreignEntryPresent(p.claudeJson)) {
+  const foreign = foreignEntryPresent(p.claudeJson);
+  const mcpChange = foreign ? null : planMcpChange(p.claudeJson, launcher);
+  if (foreign) {
     notes.push(
       `~/.claude.json already has an "${MCP_SERVER_KEY}" MCP server that mcp-parley did not create; left it untouched`,
     );

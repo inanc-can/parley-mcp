@@ -96,3 +96,15 @@ describe("serve() identity", () => {
     expect(ids).toBe("claude@api");
   });
 });
+
+describe("session link survives the monitor's register", () => {
+  it("register without a session keeps SessionStart's link, so a later cd does not take over", async () => {
+    const { runInboxRegister } = await import("../../src/cli/commands/inbox.js");
+    const db = openMemoryDb();
+    runHookSessionStart(deps(db, 1_000), { session_id: "S-api", cwd: "/repo/api", source: "startup" });
+    runInboxRegister({ db, repoRoot: REPO, write: (): void => undefined, now: 1_500 }, "claude@api", null);
+    runHookUserPrompt(deps(db, 2_000), { session_id: "S-api", cwd: "/repo/web", prompt: "hi" });
+    expect(agentsRepo.getAgent(db, "claude@api").native_session).toBe("S-api");
+    expect(agentsRepo.findAgent(db, "claude@web")).toBeUndefined();
+  });
+});
