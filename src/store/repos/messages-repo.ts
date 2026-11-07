@@ -202,6 +202,22 @@ export function listUndeliveredForRecipient(
   return parseRows(messageRowSchema, rows);
 }
 
+/**
+ * Messages addressed to an agent that are `delivered` but not yet read. Read
+ * evidence (PLAN 4.3) is applied against these: a delivered message whose id
+ * appears in the agent's model input moves to `read`.
+ */
+export function listDeliveredForRecipient(db: Db, toAgent: string): MessageRow[] {
+  const rows = db
+    .prepare(
+      `SELECT * FROM messages
+       WHERE to_agent = ? AND status = 'delivered'
+       ORDER BY sent_at, id`,
+    )
+    .all(toAgent);
+  return parseRows(messageRowSchema, rows);
+}
+
 export function listThreadMessages(db: Db, threadId: string): MessageRow[] {
   const rows = db
     .prepare("SELECT * FROM messages WHERE thread_id = ? ORDER BY sent_at, id")
