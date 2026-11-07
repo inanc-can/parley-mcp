@@ -1,23 +1,25 @@
-# Handoff 2026-11-07T19:58:06+00:00
+# Handoff 2026-11-07T20:15:41+00:00
 
 - Task: M4
-- HEAD: `620cec024771`
+- HEAD: `9b513f22b310`
 - Verification: PASS `.workbench/tasks/M4/verification.json`
 - Review: `.workbench/tasks/M4/review.json`
 
-- Mode: checkpoints (Finish M4 fix round 2 (mcp-parley rename, no-npx launcher, mid-turn delivery), then review round 3 and the human's live test.)
+- Mode: checkpoints (M4 fix round 3 (Kiro): monitor-delivery requeue via SessionStart/SessionEnd, stale-doc refresh, build smoke test. wb verify PASS. Next: the human's live two-session test closes M4.)
 
 ## Summary
-M4 fix round 2 (kiro-M4-fix2): applied review-round-2 (soft_fail 6/10). Renamed to mcp-parley (data dir ~/.mcp-parley, PARLEY_DB_PATH kept; .parley/rules.md and PARLEY_* env NOT renamed; repo/GitHub stay parley-mcp). No installed config runs npx: a launcher at ~/.mcp-parley/bin/mcp-parley runs this install by absolute path and every MCP entry/hook/monitor/fake config points at it; doctor verifies the command points at this install. PostToolUse/Stop no longer drain (additionalContext is unreliable) so the monitor is the sole mid-turn delivery path; test proves a mid-turn message still reaches Claude. setup/uninstall surface claude command failures. Monitor passes --session monitor-$$ so delivered_session is recorded and requeue works. readPluginState is strict. Monitor-registers-everywhere deviation recorded. Live-test steps 1 and 7 fixed (exact tsx setup command; viewer-free receipts check). pnpm check green, 30 files / 154 tests.
+M4 after fix round 3 (Kiro): monitor deliveries are now requeued through the real hook path (SessionStart source=startup requeues this agent's stale delivered-unread messages; SessionEnd also requeues this agent's monitor-* deliveries, which a Claude-session-keyed SessionEnd could never match). Replaced the misleading test that called requeueDeliveredToSession('monitor-7') directly with tests that drive runHookSessionEnd/runHookSessionStart using realistic Claude session ids. Refreshed stale docs (harness-notes launcher-needs-tsx -> runs compiled dist/ via plain node; PROGRESS live-test step 7 thread-id source + a new requeue-on-close step). Added a build smoke test (tsc -p tsconfig.build.json into a dist/ subdir, run node .../cli/bin.js --help, skip if tsc missing). wb verify PASS, pnpm check exit=0.
 
 ## Decisions made without asking (review these)
 - [autonomous] 2026-11-07: GLM-5.3-Flash free and DeepSeek/MiMo free hit OpenCode's free usage limit mid-M2 (GLM resets in ~9.7 h). M2 continued in the same OpenCode session on opencode/nemotron-3.5-super-vl-free, the free model that still answered, instead of waiting or paying. Reversible: all work is in git. (Re-added by Claude: the builder's state rewrite dropped it.)
 - [autonomous] 2026-11-07: The M4 plugin-loading fix is held until the round-1 reviewer finishes, so the reviewer reads a stable tree; then plugin loading and the review findings go to the builder as one fix.
 - [autonomous] 2026-11-07: The M4 round-2 fixes proceed without waiting for the npm-name decision, because the fix (installed commands call this repo's CLI by absolute path, written at setup time) is name-independent. Only the published npm name (M12) stays a blocker for the human.
 - Name decided by the human (2026-11-07): the npm package and CLI command are `mcp-parley` (Claude advised against it as a word-swap of the unrelated `parley-mcp` package; the human chose it anyway). [autonomous] follow-ons: data dir becomes ~/.mcp-parley, plugin/marketplace names use mcp-parley, the repo folder and GitHub repo stay `parley-mcp` (renaming the GitHub repo is an outward action for the human).
+- [autonomous] 2026-11-07 (Claude): instead of adding tsx (not an allowed dependency), added a `build` script (tsc -p tsconfig.build.json -> dist/). cliEntryPath already prefers dist/cli/bin.js, so a launcher written by setup run from dist/ uses plain node. Running setup from the .ts source still writes a tsx launcher (a known limitation; the live-test steps use the build). Found and fixed while building: src/mcp/server.ts imported SDK subpaths without .js, which works under Vitest but crashes real Node; guarded by test/cli/build-imports.test.ts.
+- [autonomous] 2026-11-07: Review round 3 passed (7/10) but found monitor deliveries are never requeued (high). Fixing it, and the stale docs, before the human's live test, so the test can cover requeue too; not a new review round, since the verdict was pass.
 
 ## Next action
-M4 fix round 2 complete; run review round 3 (independent reviewer reads the diff + wb verify verdict), then the human's live two-session test (PROGRESS.md 'fix round 2' steps) is M4's remaining (H) acceptance. Open follow-up for the human: decide whether to add `tsx` as a dev dependency (the launcher needs it until M12 produces a compiled bin.js) — NOT added silently. Blocker unchanged: GitHub Actions billing lock.
+M4 fix round 3 is done (monitor requeue, stale docs, build smoke test; wb verify PASS). Give the human the live two-session Claude Code test (docs/PROGRESS.md, steps start with pnpm build) — now including step 8, which closes an unread reader session and checks the message requeues to sent. M4 closes only after the live test passes. Pushing/publishing is the human's call.
 
 ## Changed files
 - `docs/PLAN.md`
@@ -47,8 +49,12 @@ M4 fix round 2 complete; run review round 3 (independent reviewer reads the diff
 - `src/cli/commands/hook-payloads.ts`
 - `src/cli/commands/hook.ts`
 - `src/cli/commands/inbox.ts`
+- `src/cli/commands/log.ts`
+- `src/cli/commands/serve.ts`
 - `src/cli/commands/setup.ts`
 - `src/cli/commands/uninstall.ts`
+- `src/cli/commands/viewer.ts`
+- `src/cli/commands/who.ts`
 - `src/cli/context.ts`
 - `src/cli/index.ts`
 - `src/mcp/server.ts`
@@ -56,41 +62,22 @@ M4 fix round 2 complete; run review round 3 (independent reviewer reads the diff
 - `test/adapters/claude-code-fixtures.test.ts`
 - `test/adapters/claude-code.test.ts`
 - `test/adapters/fs-ops.test.ts`
+- `test/cli/build-imports.test.ts`
+- `test/cli/build-smoke.test.ts`
 - `test/cli/commands.test.ts`
 - `test/cli/hook.test.ts`
 - `test/cli/program.test.ts`
 - `test/cli/setup.test.ts`
 - `test/store/messages.test.ts`
+- `tsconfig.build.json`
 
 ## Open risks
 - blocker: GitHub Actions blocked by the account billing lock (human-only fix).
 
 ## Failed attempts
-- pnpm exec tsc --noEmit (exit 2)
-- pnpm exec eslint . (exit 1)
-- pnpm check (exit 1)
+- pnpm exec vitest run test/cli/build-smoke.test.ts (exit 1)
 
 ## Commands (last 30)
-- `pnpm check` exit 0 (41420ms)
-- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (4881ms)
-- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (4857ms)
-- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (4609ms)
-- `pnpm exec tsc --noEmit` exit 2 (2605ms)
-- `pnpm exec tsc --noEmit` exit 0 (3236ms)
-- `pnpm exec eslint .` exit 1 (9116ms)
-- `pnpm exec eslint .` exit 0 (7496ms)
-- `pnpm exec vitest run` exit 0 (5396ms)
-- `pnpm check` exit 0 (19248ms)
-- `pnpm check` exit 0 (16808ms)
-- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (2490ms)
-- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (2901ms)
-- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (2778ms)
-- `pnpm check` exit 0 (37959ms)
-- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (5867ms)
-- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (5420ms)
-- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (5207ms)
-- `pnpm run typecheck` exit 0 (3059ms)
-- `pnpm check` exit 1 (9126ms)
 - `pnpm check` exit 0 (21424ms)
 - `pnpm check` exit 0 (21173ms)
 - `pnpm check` exit 0 (16506ms)
@@ -101,3 +88,23 @@ M4 fix round 2 complete; run review round 3 (independent reviewer reads the diff
 - `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (2393ms)
 - `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (2716ms)
 - `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (2646ms)
+- `pnpm check` exit 0 (31360ms)
+- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (4962ms)
+- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (5537ms)
+- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (4965ms)
+- `pnpm check` exit 0 (28698ms)
+- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (4395ms)
+- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (5662ms)
+- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (4846ms)
+- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (4492ms)
+- `pnpm exec vitest run test/store` exit 0 (4879ms)
+- `pnpm exec eslint src/cli/commands/hook-events.ts src/store/repos/messages-repo.ts test/cli/hook.test.ts` exit 0 (6948ms)
+- `pnpm exec vitest run test/cli/build-smoke.test.ts` exit 1 (7382ms)
+- `pnpm exec vitest run test/cli/build-smoke.test.ts` exit 0 (8199ms)
+- `pnpm exec vitest run test/cli/build-smoke.test.ts` exit 0 (7782ms)
+- `pnpm exec eslint test/cli/build-smoke.test.ts` exit 0 (6118ms)
+- `pnpm check` exit 0 (31397ms)
+- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (4969ms)
+- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (5007ms)
+- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (5158ms)
+- `node -e JSON.parse(require('fs').readFileSync('.workbench/state.json','utf8')); console.log('state.json OK')` exit 0 (142ms)
