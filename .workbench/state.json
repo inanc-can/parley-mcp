@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "active_task_id": "M4",
-  "summary": "M4 (Claude Code adapter) build complete: pnpm check passes (30 files, 139 tests) and wb verify PASS. Step 1 fixed the M3 review must-fix (fake adapter's recursive uninstall -> shared safe removeFileIfPresent/removeDirIfEmpty; a non-empty dir survives) and the other M3 follow-ups (unknown --format errors, buildProgram dry-run test, DoctorReport.hooksTrusted, documented Adapter deviation). Built src/adapters/claude-code: ~/.claude.json mcpServers.parley registration + a plugin (plugin.json, hooks.json, monitors.json, scripts) with hook handlers for SessionStart/UserPromptSubmit/Stop/PostToolUse/SessionEnd that ignore subagent payloads and take UserPromptSubmit read-evidence. The (H) live two-session test remains for the human (steps in docs/PROGRESS.md); fixtures are synthetic until then.",
+  "summary": "M4 (Claude Code adapter + M3 must-fix) built by kiro-cli: wb verify passes, 139 tests. Independent review round 1 is running. Claude is separately checking the official docs on whether copying a folder into ~/.claude/plugins/parley is enough for Claude Code to load the plugin (suspected not: plugins may need a marketplace install or enabledPlugins).",
   "assumptions": [
     "M1 (recorded 2026-11-07, fix session): The secret-scan regex thresholds are builder-chosen minimum length heuristics (AWS AKIA +16 chars; ghp_/github_pat_/sk- at 20+ chars; Slack xox*- tokens at 10+ chars; .env SECRET=TOKEN=PASSWORD=API_KEY lines with values of 12+ chars). They may need tightening after real-world false negative/positive feedback; none may ever be relaxed to log the secret value.",
     "M1 (recorded 2026-11-07, fix session): everyone fan-out derives per-recipient idempotency keys as <base key>::<toAgent>; the double-colon separator is a builder choice, and changing it changes which retries dedupe.",
@@ -30,7 +30,7 @@
   ],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "M4 build is complete and verified (wb verify PASS, 139 tests). REMAINING for M4: the human runs the live two-session acceptance test (PLAN marks it (H)); exact steps are in docs/PROGRESS.md 'Human live two-session test'. During that test, capture real anonymised Claude Code hook payloads into src/adapters/claude-code/fixtures/ (replacing the synthetic ones) and confirm the assumed bits in docs/harness-notes.md (monitor agent-id derivation, monitor stdout -> notification, parent-pid exit guard, UserPromptSubmit read-evidence echo). Then an independent reviewer should read the M4 diff. After M4 sign-off: M5 (Codex adapter) or M3b (the work harness adapter) once the human names the work harness in docs/harness-notes.md.",
+  "next_action": "When the reviewer and the docs check report: save .workbench/tasks/M4/review.json; fix plugin loading if needed plus any soft_fail findings (at most 2 rounds); then hand the human the live two-session test steps from docs/PROGRESS.md (M4 acceptance needs the human). Close M4 only after the live test passes. Pushing is the human's call.",
   "updated_at": "2026-11-07T18:56:18+00:00",
   "last_mode": "checkpoints",
   "last_mode_notes": ""
