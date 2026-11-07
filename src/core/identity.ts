@@ -5,6 +5,16 @@ export interface AgentIdentity {
   suffix: number | null;
 }
 
+export const ALIVE_WINDOW_MS = 30 * 1000;
+
+/**
+ * Presence: an agent is alive when it sent a heartbeat within the last 30 s
+ * (PLAN section 2). An agent without any heartbeat has never been seen here.
+ */
+export function isAlive(lastHeartbeat: number | null, now: number): boolean {
+  return lastHeartbeat !== null && now - lastHeartbeat <= ALIVE_WINDOW_MS;
+}
+
 export function formatAgentId(harness: string, folder: string, suffix: number | null): string {
   const base = `${harness}@${folder}`;
   if (suffix === null || suffix < 2) {

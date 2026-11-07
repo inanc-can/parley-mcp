@@ -54,3 +54,11 @@ export function detectOverlap(input: DetectOverlapInput): OverlapConflict[] {
   }
   return conflicts;
 }
+
+/**
+ * Whether one claim's glob overlaps another path (used by `agree claim` to
+ * surface claim conflicts as warnings, never blocks).
+ */
+export function claimsOverlap(claimGlob: string, path: string): boolean {
+  return globMatch(claimGlob, path);
+}

@@ -209,6 +209,27 @@ export function listThreadMessages(db: Db, threadId: string): MessageRow[] {
   return parseRows(messageRowSchema, rows);
 }
 
+export function listMessagesFromAgent(db: Db, fromAgent: string): MessageRow[] {
+  const rows = db
+    .prepare(
+      `SELECT m.* FROM messages m
+       JOIN threads t ON t.id = m.thread_id
+       WHERE m.from_agent = ?
+       ORDER BY m.sent_at, m.id`,
+    )
+    .all(fromAgent);
+  return parseRows(messageRowSchema, rows);
+}
+
+export function findLatestReplyTo(db: Db, replyTo: string): MessageRow | undefined {
+  const row = db
+    .prepare(
+      "SELECT * FROM messages WHERE reply_to = ? ORDER BY sent_at DESC, id DESC LIMIT 1",
+    )
+    .get(replyTo);
+  return parseOptionalRow(messageRowSchema, row);
+}
+
 export function deleteMessagesOlderThan(db: Db, before: number): number {
   const info = db
     .prepare("DELETE FROM messages WHERE sent_at < ?")

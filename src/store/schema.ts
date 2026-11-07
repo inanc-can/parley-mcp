@@ -12,14 +12,16 @@ export const messageStatusSchema = z.enum([
 ]);
 export type MessageStatus = z.infer<typeof messageStatusSchema>;
 
-export const messageKindSchema = z.enum([
+export const MESSAGE_KINDS = [
   "text",
   "question",
   "proposal",
   "file_ref",
   "handoff",
   "request",
-]);
+] as const;
+
+export const messageKindSchema = z.enum(MESSAGE_KINDS);
 export type MessageKind = z.infer<typeof messageKindSchema>;
 
 export const agreementStatusSchema = z.enum([

@@ -1,5 +1,7 @@
 import type { MessageStatus } from "../store/schema.js";
 
+export const MESSAGE_TTL_MS = 24 * 60 * 60 * 1000;
+
 const TRANSITIONS: Record<MessageStatus, readonly MessageStatus[]> = {
   sent: ["delivered", "failed"],
   // A reply counts as read evidence (PLAN 4.3), so delivered may jump to

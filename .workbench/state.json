@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "active_task_id": "",
-  "summary": "M1 (store and core) closed: wb verify passes (55 tests); independent review round 2 passed 8/10 after round-1 fixes. The user confirmed the opencode.json scope exception in chat on 2026-11-07.",
+  "active_task_id": "M2",
+  "summary": "M2 in progress in OpenCode: framed (5c2b5b7), MCP SDK added (8e21b36), all three M1 review follow-ups fixed (8b58d4c). GLM free hit its usage limit while writing the agree tool; the same session continues on nemotron-3.5-super-vl-free. Interim wb verify (mid-build, while Nemotron is still writing the MCP tools): FAIL, as expected; lint fails and the M2 test files don't exist yet.",
   "assumptions": [
     "M1 (recorded 2026-11-07, fix session): The secret-scan regex thresholds are builder-chosen minimum length heuristics (AWS AKIA +16 chars; ghp_/github_pat_/sk- at 20+ chars; Slack xox*- tokens at 10+ chars; .env SECRET=TOKEN=PASSWORD=API_KEY lines with values of 12+ chars). They may need tightening after real-world false negative/positive feedback; none may ever be relaxed to log the secret value.",
     "M1 (recorded 2026-11-07, fix session): everyone fan-out derives per-recipient idempotency keys as `<base key>::<toAgent>`; the double-colon separator is a builder choice, and changing it changes which retries dedupe.",
@@ -9,13 +9,14 @@
     "M1 (recorded 2026-11-07, fix session): Retention is keyed on messages.sent_at (PLAN 4.7 'older than 30 days' interpreted relative to send time), agreements.created_at, edits.at, and message-events are deleted with the messages that own them regardless of event time (keeps FKs safe).",
     "M1 (recorded 2026-11-07, fix session): SQLite connections use WAL journal mode and a 5 s busy_timeout by default; concurrent writers wait briefly instead of failing immediately.",
     "M1 (recorded 2026-11-07, fix session): A reply implies read (PLAN 4.3): delivered->replied is allowed and stamps read_at with the replied timestamp; read->replied keeps the earlier read_at.",
-    "M1 review round 1 disputed (opencode.json): the default-model change in opencode.json was requested by the user in chat and recorded as human_approved_exceptions in .workbench/tasks/M1/scope.json, but the record was written by an assistant session; the user should confirm the entry (or tell the workbench to forget it) in M2."
+    "M1 review round 1 disputed (opencode.json): the default-model change in opencode.json was requested by the user in chat and recorded as human_approved_exceptions in .workbench/tasks/M1/scope.json, but the record was written by an assistant session; the user should confirm the entry (or tell the workbench to forget it) in M2.",
+    "[autonomous] 2026-11-07: GLM-5.3-Flash free and DeepSeek/MiMo free hit OpenCode's free usage limit mid-M2 (GLM resets in ~9.7 h). Continued M2 in the same OpenCode session on opencode/nemotron-3.5-super-vl-free, the free model that still answered, instead of waiting or paying. Reversible: all work is in git."
   ],
   "blockers": [],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "Start M2 (MCP server: talk/inbox/agree over stdio) on glm-5.3-flash-free. Fold in M1 review follow-ups while framing M2: move enforceMessageCap/checkStopAll composition out of store into core or the mcp caller (fix the store->core import inversion); guard updateAgreementStatus (status='offered' + recipient) with a real store test; add negative near-miss secret-scan tests.",
-  "updated_at": "2026-11-07T14:15:14+00:00",
+  "next_action": "When the Nemotron OpenCode run finishes: run wb verify and pnpm check, then the independent reviewer (fix soft_fail, at most 2 rounds), then close M2 and run wb handoff. If Nemotron's work is poor, revert to 8b58d4c and resume on GLM after its limit resets (~9.7 h from 14:50 UTC). Fallback builder approved by the user: kiro-cli 3.1.0 (kiro-cli chat --no-interactive with scoped --trust-tools, never --trust-all-tools).",
+  "updated_at": "2026-11-07T14:46:24+00:00",
   "last_mode": "checkpoints",
-  "last_mode_notes": "checkpoints mode recorded for session opencode-M1-fix (wb mode checkpoints); stop at end of milestone reached: wb verify PASS, handoff done."
+  "last_mode_notes": ""
 }

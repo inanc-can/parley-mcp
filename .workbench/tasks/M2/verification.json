@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "task_id": "M2",
+  "passed": false,
+  "created_at": "2026-11-07T15:03:08+00:00",
+  "head": "8b58d4c8679ab034021ea6a32d4cfcf876a1a54d",
+  "base_rev": "1b6ff206909017a64f7550ba9bc029b285d0894a",
+  "changed_files": [
+    "package.json",
+    "pnpm-lock.yaml",
+    "src/core/identity.ts",
+    "src/core/message-rules.ts",
+    "src/core/overlap.ts",
+    "src/core/threads.ts",
+    "src/mcp/context.ts",
+    "src/mcp/guards.ts",
+    "src/mcp/identity.ts",
+    "src/mcp/outlook.ts",
+    "src/mcp/response.ts",
+    "src/mcp/rules.ts",
+    "src/mcp/server.ts",
+    "src/mcp/tools/agree.ts",
+    "src/mcp/tools/inbox.ts",
+    "src/mcp/tools/talk.ts",
+    "src/store/repos/agreements-repo.ts",
+    "src/store/repos/messages-repo.ts",
+    "src/store/repos/settings-repo.ts",
+    "src/store/repos/threads-repo.ts",
+    "src/store/schema.ts",
+    "test/core/fanout-and-cap.test.ts",
+    "test/core/guards.test.ts",
+    "test/core/identity.test.ts",
+    "test/mcp/guards.test.ts",
+    "test/store/agreements.test.ts",
+    "test/store/layering.test.ts",
+    "test/store/stop-all.test.ts"
+  ],
+  "checks": [
+    {
+      "code": "scope_contract_valid",
+      "status": "pass",
+      "severity": "block",
+      "detail": "ok",
+      "artifact": ".workbench/tasks/M2/scope.json"
+    },
+    {
+      "code": "acceptance_pass",
+      "status": "fail",
+      "severity": "block",
+      "detail": "`pnpm check` exit=1 in 7116ms: $ pnpm run lint && pnpm run typecheck && pnpm run test | $ eslint .",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T15:02:53+00:00"
+    },
+    {
+      "code": "acceptance_pass",
+      "status": "fail",
+      "severity": "block",
+      "detail": "`pnpm exec vitest run test/mcp/integration.test.ts` exit=1 in 1765ms: No test files found, exiting with code 1 |  | filter: test/mcp/integration.test.ts | include: test/**/*.test.ts | exclude:  **/node_modules/**, **/dist/**, **/cypress/**, **/.{idea,git,cache,output,temp}/**, **/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T15:03:00+00:00"
+    },
+    {
+      "code": "acceptance_pass",
+      "status": "fail",
+      "severity": "block",
+      "detail": "`pnpm exec vitest run test/mcp/tool-size.test.ts` exit=1 in 1122ms: No test files found, exiting with code 1 |  | filter: test/mcp/tool-size.test.ts | include: test/**/*.test.ts | exclude:  **/node_modules/**, **/dist/**, **/cypress/**, **/.{idea,git,cache,output,temp}/**, **/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T15:03:02+00:00"
+    },
+    {
+      "code": "acceptance_pass",
+      "status": "pass",
+      "severity": "block",
+      "detail": "`pnpm exec vitest run test/store/agreements.test.ts` exit=0 in 2374ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T15:03:03+00:00"
+    },
+    {
+      "code": "acceptance_pass",
+      "status": "pass",
+      "severity": "block",
+      "detail": "`pnpm exec vitest run test/core/guards.test.ts` exit=0 in 2106ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T15:03:06+00:00"
+    },
+    {
+      "code": "scope_forbidden",
+      "status": "pass",
+      "severity": "block",
+      "detail": "ok",
+      "artifact": ""
+    },
+    {
+      "code": "scope_outside_allowed",
+      "status": "pass",
+      "severity": "block",
+      "detail": "ok",
+      "artifact": ""
+    },
+    {
+      "code": "dependency_approval",
+      "status": "pass",
+      "severity": "block",
+      "detail": "dependency manifests changed: ['package.json']",
+      "artifact": ""
+    }
+  ],
+  "artifacts": [
+    ".workbench/config.json",
+    ".workbench/feedback.jsonl",
+    ".workbench/tasks/M2/scope.json"
+  ]
+}
