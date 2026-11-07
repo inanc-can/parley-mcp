@@ -368,6 +368,8 @@ no-unsafe-*, consistent-type-assertions: never, max-lines 400), Prettier, Vitest
 script; a GitHub Actions CI file for Node 20 and 22 on macOS, Linux and Windows; MIT LICENSE; empty
 `docs/PROGRESS.md` and `docs/harness-notes.md`.
 *Check:* `pnpm check` passes on an empty test suite; an `any` in a scratch file fails lint.
+*(H) Then stop:* the human sets up the agent workbench with `pnpm check` as its verify gate before M1
+starts. Don't create `.workbench/` yourself.
 
 **M1. Store and core.** Schema, migrations, repositories with Zod row parsing; identity, message state
 machine, threads, agreements, claims, overlap, guards (cap, stop-all, secret scan), retention, cost
