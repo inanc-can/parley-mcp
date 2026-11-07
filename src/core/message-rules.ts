@@ -2,7 +2,9 @@ import type { MessageStatus } from "../store/schema.js";
 
 const TRANSITIONS: Record<MessageStatus, readonly MessageStatus[]> = {
   sent: ["delivered", "failed"],
-  delivered: ["read"],
+  // A reply counts as read evidence (PLAN 4.3), so delivered may jump to
+  // replied; the store sets read_at when it does.
+  delivered: ["read", "replied"],
   read: ["replied"],
   replied: [],
   failed: [],

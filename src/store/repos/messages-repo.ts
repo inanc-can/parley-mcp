@@ -96,7 +96,8 @@ const ALLOWED_FROM: Record<MessageStatus, readonly MessageStatus[]> = {
   sent: [],
   delivered: ["sent"],
   read: ["delivered"],
-  replied: ["read"],
+  // replied from delivered: a reply implies read (PLAN 4.3); read_at is set below.
+  replied: ["delivered", "read"],
   failed: ["sent"],
 };
 
@@ -129,6 +130,10 @@ export function guardedStatusUpdate(
     args.push(update.at);
   } else if (update.status === "replied") {
     sets.push("replied_at = ?");
+    args.push(update.at);
+    // A reply implies read (PLAN 4.3): stamp read_at unless it is already set
+    // (kept when the message was in `read` before replying).
+    sets.push("read_at = COALESCE(read_at, ?)");
     args.push(update.at);
   } else if (update.status === "failed") {
     sets.push("failed_at = ?");

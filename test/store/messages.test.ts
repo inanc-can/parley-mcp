@@ -104,25 +104,49 @@ describe("message status moves", () => {
         at: 3_000,
       }),
     ).toBe(false);
-    // invalid jump: replied requires read, but message is delivered
+    // a reply implies read (PLAN 4.3): delivered may jump straight to replied
     expect(
       messagesRepo.guardedStatusUpdate(db, m.id, {
         status: "replied",
         at: 3_000,
       }),
-    ).toBe(false);
-    // read is valid next step; after read, failed (from sent) is a no-op
-    expect(
-      messagesRepo.guardedStatusUpdate(db, m.id, { status: "read", at: 3_000 }),
     ).toBe(true);
+    const repliedDirect = messagesRepo.getMessage(db, m.id);
+    expect(repliedDirect.status).toBe("replied");
+    expect(repliedDirect.replied_at).toBe(3_000);
+    expect(repliedDirect.read_at).toBe(3_000);
+    db.close();
+  });
+
+  it("a reply after read keeps the earlier read_at (reply implies read, not re-read)", () => {
+    const db = openMemoryDb();
+    const { threadId } = setup(db);
+    const m = messagesRepo.insertMessage(db, msgInput(threadId));
+    messagesRepo.guardedStatusUpdate(db, m.id, {
+      status: "delivered",
+      at: 2_000,
+      deliveredSession: "s1",
+    });
+    messagesRepo.guardedStatusUpdate(db, m.id, { status: "read", at: 3_000 });
+    expect(
+      messagesRepo.guardedStatusUpdate(db, m.id, {
+        status: "replied",
+        at: 4_000,
+      }),
+    ).toBe(true);
+    const after = messagesRepo.getMessage(db, m.id);
+    expect(after.status).toBe("replied");
+    expect(after.replied_at).toBe(4_000);
+    expect(after.read_at).toBe(3_000);
+    // failed (from sent) is still a no-op on a replied message
     expect(
       messagesRepo.guardedStatusUpdate(db, m.id, {
         status: "failed",
-        at: 4_000,
+        at: 5_000,
         errorCode: "x",
       }),
     ).toBe(false);
-    expect(messagesRepo.getMessage(db, m.id).status).toBe("read");
+    expect(messagesRepo.getMessage(db, m.id).status).toBe("replied");
     db.close();
   });
 
