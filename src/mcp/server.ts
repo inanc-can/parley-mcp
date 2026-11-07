@@ -83,11 +83,23 @@ export function createServer(ctx: ToolContext): McpServer {
 }
 
 /**
+ * A running `serve()` session. `isClosed()` reports whether the hub db has
+ * been closed (on transport close, stdin end/close, or an explicit `close()`).
+ * `close()` tears the session down and is idempotent.
+ */
+export interface ServeHandle {
+  isClosed(): boolean;
+  close(): void;
+}
+
+/**
  * Entry point for `parley-mcp serve` over stdio. Opens the shared SQLite hub
  * (WAL, busy timeout), runs retention, registers the calling agent, then
- * connects the SDK server to stdio. Called by each harness adapter.
+ * connects the SDK server to stdio. Called by each harness adapter. Resolves
+ * with a handle once the transport is wired up; the hub db stays open until
+ * the session closes.
  */
-export async function serve(options: ServeOptions = {}): Promise<void> {
+export async function serve(options: ServeOptions = {}): Promise<ServeHandle> {
   const repoRoot = options.repoRoot ?? DEFAULT_REPO_ROOT;
   const agentId = resolveAgentId(options.agentIdEnv, repoRoot);
   const db = openDb({ path: options.dbPath ?? DEFAULT_DB_PATH });
@@ -107,20 +119,26 @@ export async function serve(options: ServeOptions = {}): Promise<void> {
 
     const ctx: ToolContext = { db, agentId, repoRoot, nativeSession: null, rulesTextSent: false };
     const server = createServer(ctx);
-    const transport = new StdioServerTransport(
-      options.stdin ?? process.stdin,
-      options.stdout ?? process.stdout,
-    );
-    await server.connect(transport);
+    const stdin = options.stdin ?? process.stdin;
+    const transport = new StdioServerTransport(stdin, options.stdout ?? process.stdout);
+
     // The db must stay open for the whole stdio session. server.connect()
     // returns as soon as stdio is wired up, but real tool calls arrive later
-    // on stdin. Closing the db in a finally right after connect (the old
-    // behaviour) made every real stdio tool call hit a closed database.
-    // Instead we close it only when the transport closes (the harness
-    // disconnects); until then every tool call can read and write the hub.
-    transport.onclose = () => {
-      closeDb();
-    };
+    // on stdin, so the db cannot be closed in a finally right after connect.
+    // The close handler is registered BEFORE connect so no close can be missed
+    // in the window between connect returning and the handler being set.
+    //
+    // server.connect() preserves an existing transport.onclose and chains it
+    // (shared/protocol.js wraps the prior handler), so setting it here keeps
+    // the SDK's own close handling and also closes the db. We also close the
+    // db when stdin ends or closes (the harness went away), which covers a
+    // transport that ends the input stream without a protocol-level close.
+    transport.onclose = closeDb;
+    stdin.on("end", closeDb);
+    stdin.on("close", closeDb);
+
+    await server.connect(transport);
+    return { isClosed: () => closed, close: closeDb };
   } catch (error) {
     closeDb();
     throw error;

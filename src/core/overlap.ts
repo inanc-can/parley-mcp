@@ -54,5 +54,3 @@ export function detectOverlap(input: DetectOverlapInput): OverlapConflict[] {
   }
   return conflicts;
 }
-
-

@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS agreements (
   text TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('offered','accepted','countered','rejected','vetoed')),
   offered_by TEXT NOT NULL,
+  offered_to TEXT NOT NULL,
   answered_by TEXT,
   parent_id TEXT,
   created_at INTEGER NOT NULL,
@@ -106,13 +107,6 @@ CREATE INDEX IF NOT EXISTS idx_agents_repo
   ON agents(repo_root, last_heartbeat);
 CREATE INDEX IF NOT EXISTS idx_agreements_repo
   ON agreements(repo_root, created_at);
-`,
-  },
-  {
-    id: 2,
-    name: "add_agreement_recipient",
-    sql: `
-ALTER TABLE agreements ADD COLUMN offered_to TEXT;
 CREATE INDEX IF NOT EXISTS idx_agreements_offered_to
   ON agreements(offered_to);
 `,

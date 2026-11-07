@@ -104,9 +104,9 @@ describe("serve() over a real stdio stream pair", () => {
       const toServer = new PassThrough();
       const fromServer = new PassThrough();
 
-      // serve() returns once the stdio transport is wired up; the db stays
-      // open until the transport closes, so a real tool call can use it.
-      await serve({
+      // serve() returns a handle once the stdio transport is wired up; the db
+      // stays open until the session closes, so a real tool call can use it.
+      const handle = await serve({
         agentIdEnv: "a@r",
         repoRoot: REPO_ROOT,
         dbPath,
@@ -157,7 +157,44 @@ describe("serve() over a real stdio stream pair", () => {
         checkDb.close();
       }
 
+      expect(handle.isClosed()).toBe(false);
       await transport.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("closes the hub db when stdin ends", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "parley-serve-close-"));
+    const dbPath = join(dir, "hub.db");
+    try {
+      const toServer = new PassThrough();
+      const fromServer = new PassThrough();
+      const handle = await serve({
+        agentIdEnv: "a@r",
+        repoRoot: REPO_ROOT,
+        dbPath,
+        stdin: toServer,
+        stdout: fromServer,
+      });
+      expect(handle.isClosed()).toBe(false);
+
+      // Ending stdin (the harness went away) closes the hub db.
+      const closed = new Promise<void>((resolve) => {
+        toServer.on("close", () => {
+          resolve();
+        });
+      });
+      toServer.end();
+      await closed;
+      // Give the "close" listener a microtask to run.
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(handle.isClosed()).toBe(true);
+
+      // close() is idempotent after the stream already closed it.
+      handle.close();
+      expect(handle.isClosed()).toBe(true);
+      fromServer.end();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

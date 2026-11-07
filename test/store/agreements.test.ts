@@ -143,6 +143,40 @@ describe("agreement lifecycle", () => {
     setup.db.close();
   });
 
+  it("refuses an agent that is a thread participant but not the agreement's recipient", () => {
+    const setup = setupThreadWithParticipants();
+    // c@r joins the same thread by messaging a@r, so c@r is a participant...
+    messagesRepo.insertMessage(setup.db, {
+      id: randomUUID(),
+      threadId: setup.threadId,
+      fromAgent: "c@r",
+      toAgent: "a@r",
+      kind: "text",
+      body: "I can take the tests",
+      payloadJson: null,
+      replyTo: null,
+      status: "delivered",
+      sentAt: 1_200,
+      expiresAt: 100_000,
+      idempotencyKey: randomUUID(),
+      estTokens: 6,
+    });
+    // ...but the offer was made to b@r (offered_to = 'b@r'), so c@r may not
+    // answer it even though they take part in the thread.
+    const offered = offer(setup);
+    expect(offered.offered_to).toBe("b@r");
+    expect(attempt(setup, offered.id, "accepted", "c@r", 3_000)).toBe(false);
+    const row = agreementsRepo.getAgreement(setup.db, offered.id);
+    expect(row.status).toBe("offered");
+    expect(row.answered_by).toBeNull();
+    // The real recipient b@r still succeeds.
+    expect(attempt(setup, offered.id, "accepted", "b@r", 3_500)).toBe(true);
+    expect(agreementsRepo.getAgreement(setup.db, offered.id).status).toBe(
+      "accepted",
+    );
+    setup.db.close();
+  });
+
   it("refuses the update attempt on a settled agreement", () => {
     const setup = setupThreadWithParticipants();
     const offered = offer(setup);
