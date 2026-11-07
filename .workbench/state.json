@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "active_task_id": "M2",
-  "summary": "M2 review round 1 soft_fail fixed by OpenCode (Nemotron free). All five review findings are fixed and re-tested: (1) serve() keeps the hub db open until the stdio transport closes, with a serve() stream-pair test making a real talk call; (2) the agreement recipient (offered_to) is stored via a new migration and answers are guarded on it, including a 3-agent test where a third agent's accept is refused; (3) counter validates text before touching the store and does both writes in one transaction; (4) the integration test now asserts a reply moves the original to replied, refuses a forbidden answer through MCP, and asserts structuredContent, plus new unit tests for outlook, secret blocking (near-misses), rules reminder and claim conflicts; (5) agree claim reports only other agents' claims, the claimsOverlap alias and the no-op listMessagesFromAgent JOIN are removed, and the titleFromFirstMessage test moved into test/core/threads.test.ts. wb verify for task M2 passes: 87 tests, every acceptance command. The serve command itself (the `parley-mcp serve` CLI wiring in src/cli) is NOT part of M2; it is wired in M3 (src/cli) - recorded as an assumption below.",
+  "active_task_id": "",
+  "summary": "M2 (MCP server: talk/inbox/agree over stdio) closed: wb verify passes (87 tests); independent review round 2 passed 7/10 after round-1 fixes (round 1 was 5/10). Built by OpenCode on GLM-5.3-Flash free, then Nemotron free after GLM's free limit.",
   "assumptions": [
     "M1 (recorded 2026-11-07, fix session): The secret-scan regex thresholds are builder-chosen minimum length heuristics (AWS AKIA +16 chars; ghp_/github_pat_/sk- at 20+ chars; Slack xox*- tokens at 10+ chars; .env SECRET=TOKEN=PASSWORD=API_KEY lines with values of 12+ chars). They may need tightening after real-world false negative/positive feedback; none may ever be relaxed to log the secret value.",
     "M1 (recorded 2026-11-07, fix session): everyone fan-out derives per-recipient idempotency keys as <base key>::<toAgent>; the double-colon separator is a builder choice, and changing it changes which retries dedupe.",
@@ -14,11 +14,13 @@
     "[autonomous] 2026-11-07: GLM-5.3-Flash free and DeepSeek/MiMo free hit OpenCode's free usage limit mid-M2 (GLM resets in ~9.7 h). M2 continued in the same OpenCode session on opencode/nemotron-3.5-super-vl-free, the free model that still answered, instead of waiting or paying. Reversible: all work is in git. (Re-added by Claude: the builder's state rewrite dropped it.)",
     "M2 (recorded 2026-11-07, fix session): The serve command itself (the `parley-mcp serve` CLI wiring in src/cli) is deferred to M3; M2 only owns src/mcp/server.ts#serve and its stdio database lifecycle. src/cli is forbidden in M2 and was not touched."
   ],
-  "blockers": [],
+  "blockers": [
+    "Pushing local M2 commits to GitHub needs the human's go-ahead (outward action in autonomous mode)."
+  ],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "wb verify passes for M2 (87 tests, all acceptance commands). Run wb handoff and stop. Pushing to GitHub is a blocker for the human (outward action).",
-  "updated_at": "2026-11-07T15:22:38+00:00",
+  "next_action": "Push the M2 commits (human decision: outward action). Then M3 (CLI basics incl. wiring `serve`), or M3b if the work harness is named. Fold in M2 review follow-ups while framing M3: (1) set serve()'s close handling before server.connect (don't replace the SDK onclose) and close the db on stdin end/close, with a test of the close path, fixing the misleading comment; (2) recipient-guard test where c@r is a thread participant but not the recipient; (3) offered_to nullable vs required row schema: backfill or decide; (4) tidy overlap.ts blank lines and the serve test's leaked db handle.",
+  "updated_at": "2026-11-07T16:20:38+00:00",
   "last_mode": "checkpoints",
   "last_mode_notes": "M2 review findings fixed; pnpm check and wb verify pass; 87 tests"
 }

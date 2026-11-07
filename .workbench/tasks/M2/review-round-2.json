@@ -1,0 +1,45 @@
+{
+ "task_id": "M2",
+ "round": 2,
+ "verdict": "pass",
+ "total": 7,
+ "dimensions": {
+  "problem_fit": 1,
+  "scope_discipline": 2,
+  "assumptions": 2,
+  "verification_quality": 1,
+  "handoff_readiness": 1
+ },
+ "weakest_check": {
+  "command": "pnpm exec vitest run test/mcp/integration.test.ts",
+  "mutation": "restore the round-1 participant guard (drop AND offered_to = ?)",
+  "expected": "should fail; today passes because c@r never posts in the thread"
+ },
+ "findings": [
+  {
+   "severity": "medium",
+   "detail": "Recipient-guard tests can't distinguish the new offered_to guard from the old participant guard: c@r never posts in the thread. Add a case where c@r participates but isn't the recipient.",
+   "citation": "test/mcp/integration.test.ts:189-211"
+  },
+  {
+   "severity": "medium",
+   "detail": "serve() sets transport.onclose after server.connect(), replacing the SDK's handler; set it before connect or use server.server.onclose.",
+   "citation": "src/mcp/server.ts:122"
+  },
+  {
+   "severity": "medium",
+   "detail": "StdioServerTransport doesn't fire onclose on stdin end; the 'closes when the harness disconnects' comment is false. Listen for stdin end/close; test the close path.",
+   "citation": "src/mcp/server.ts:115-121"
+  },
+  {
+   "severity": "low",
+   "detail": "offered_to is nullable in migration 2 but required by the row schema; old rows would fail to parse. Backfill, make nullable, or record the choice.",
+   "citation": "src/store/schema.ts:100"
+  },
+  {
+   "severity": "low",
+   "detail": "Trailing blank lines in overlap.ts; serve test leaks its db handle.",
+   "citation": "src/core/overlap.ts:57"
+  }
+ ]
+}
