@@ -9,9 +9,15 @@
     "test/**",
     "docs/PROGRESS.md",
     "docs/harness-notes.md",
-    ".workbench/**"
+    ".workbench/**",
+    "src/mcp/**",
+    "package.json"
   ],
-  "forbidden_files": ["src/viewer/**", "src/notify/**", "src/mcp/**", "package.json", "pnpm-lock.yaml"],
+  "forbidden_files": [
+    "src/viewer/**",
+    "src/notify/**",
+    "pnpm-lock.yaml"
+  ],
   "acceptance": [
     "pnpm check",
     "pnpm exec vitest run test/cli/setup.test.ts",
@@ -20,5 +26,16 @@
   ],
   "approvals": [],
   "rollback_plan": "Revert the M4 commits on the local branch (git revert); the only files touched are under src/adapters, src/cli, src/core, src/store and test, plus docs. No new dependencies, no external services, no production data, no repo writes: all install/uninstall work targets a temporary HOME in tests. Nothing was published or pushed.",
-  "human_approved_exceptions": []
+  "human_approved_exceptions": [],
+  "scope_changes": [
+    {
+      "date": "2026-11-07",
+      "by": "claude (autonomous)",
+      "added": [
+        "src/mcp/**",
+        "package.json"
+      ],
+      "reason": "The human chose the package/CLI name mcp-parley after review round 2 found parley-mcp is an unrelated npm package; the rename touches package.json (name) and src/mcp/server.ts (name strings). No other src/mcp change is in scope."
+    }
+  ]
 }
