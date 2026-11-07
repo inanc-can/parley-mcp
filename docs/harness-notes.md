@@ -122,3 +122,43 @@ Superseding details from the first M4 build, after the review and
   `last_assistant_message`; that is the assistant's *output*, outside PLAN 4.3's definition of read
   evidence (model *input*, an `inbox` call, or a reply). It has been removed, so the Stop hook only
   drains at turn end. (Previously recorded as an assumption; now resolved by removal.)
+
+### M4 fix round 2 (2026-11-07, kiro-M4-fix2): name, no-npx launcher, mid-turn delivery
+
+- **Name is `mcp-parley`** (the human's choice). Data dir is now `~/.mcp-parley` (hub.db,
+  `claude-marketplace/`, and the launcher `bin/mcp-parley`); `PARLEY_DB_PATH` still overrides the db
+  path. The repo folder and the GitHub repo stay `parley-mcp`. The repo-level rules file
+  `.parley/rules.md` (PLAN product decision) and the `PARLEY_*` env vars (stable override contract)
+  were deliberately NOT renamed.
+- **No `npx` in any installed config.** `npx mcp-parley …` (or `parley-mcp`) could download and run
+  an unrelated registry package; the review confirmed `parley-mcp` on npm is a third party. Setup
+  writes a launcher at `~/.mcp-parley/bin/mcp-parley` that runs THIS install's CLI by absolute path,
+  and the MCP entry, every hook script, the monitor and the fake adapter's config all use that
+  absolute launcher path. `doctor` additionally checks the MCP entry's `command` equals the
+  launcher path, so a stale `npx` entry from an older install reports cannot-wake-idle.
+  - **ASSUMED (needs the human's live test / possible dep):** there is no build step yet (M12), so
+    the launcher runs the TypeScript entry via `node --import tsx <abs>/src/cli/bin.ts`. This
+    requires `tsx` to be available. `tsx` is NOT in PLAN's dependency list, so it is left for the
+    human to add as a dev dependency (or the launcher regenerates to plain `node` once M12 produces
+    a compiled `src/cli/bin.js`, which `cliEntryPath()` already prefers when present). Flag, not a
+    silent dependency add.
+- **Mid-turn delivery.** `PostToolUse` and `Stop` hooks no longer drain. The documented
+  `additionalContext` output for PostToolUse is not reliably surfaced to the model (public bug
+  report, Jan 2026), so a drained-but-unshown message would be a silent loss. The hooks now only
+  heartbeat (PostToolUse also records edits); the **monitor** is the single mid-turn delivery path
+  (it prints the body, which wakes an idle/busy session at a safe point). Content rephrased for
+  licensing compliance.
+- **Monitor session id.** The monitor has no native Claude session id, so it uses `monitor-$$`
+  (its own PID) and passes it via `inbox drain --session`, so deliveries record `delivered_session`
+  and the session-scoped requeue (`requeueDeliveredToSession`) can act on monitor deliveries. ASSUMED
+  stable for the life of the monitor process; confirm on the live run.
+- **`claude plugin list --json` strictness.** `readPluginState` now requires explicit enabled
+  evidence (`enabled: true`, `disabled: false`, or `status: "enabled"`) and matches the entry by
+  `id`/`name`/`parley@parley`. The absence of an enabled/disabled/status field no longer counts as
+  enabled. The exact JSON shape is still unverified (assumed: an array of entries, or
+  `{ plugins: [...] }`, each `{ name|id|plugin, enabled|disabled|status }`); confirm on the live run.
+- **PLAN section 6 deviation (recorded).** The monitor registers an agent in EVERY folder it runs in
+  (it self-registers `claude@<basename(pwd)>` to survive the SessionStart race). PLAN describes
+  registration as a SessionStart concern; the monitor doing it too means a folder with a running
+  Claude session always has a registered agent even if SessionStart was missed. This is intentional
+  (idempotent, never deletes) and recorded in `.workbench/state.json` assumptions.

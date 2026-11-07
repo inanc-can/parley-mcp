@@ -1,5 +1,90 @@
 # Progress
 
+## M4 — fix round 2 (session kiro-M4-fix2, 2026-11-07)
+
+Applied review round 2 (`.workbench/tasks/M4/review-round-2.json`, soft_fail 6/10). The human chose
+the name **mcp-parley**.
+
+**Fixes**
+0. **Rename to `mcp-parley`.** `package.json` name, the CLI program name/help, the data dir
+   (`~/.parley-mcp` → `~/.mcp-parley`, `PARLEY_DB_PATH` override kept), the plugin/marketplace
+   launcher names, docs and tests. The repo folder and the GitHub repo stay `parley-mcp` (renaming
+   the GitHub repo is the human's outward action). The repo-level rules path `.parley/rules.md` and
+   the `PARLEY_*` env vars are product/contract names and were deliberately NOT renamed.
+1. **No `npx`, ever (HIGH).** The npm name `parley-mcp` is an unrelated third-party package, so every
+   installed `npx …` was a code-execution risk. Setup now writes a launcher at
+   `~/.mcp-parley/bin/mcp-parley` (runs THIS repo's CLI by absolute path) and points the MCP entry,
+   every hook script, the monitor and the fake config at that absolute launcher. New test asserts no
+   generated file contains `npx`; `doctor` fails when the configured command does not point at this
+   install (`src/adapters/cli-path.ts`).
+2. **Mid-turn messages not swallowed (HIGH).** `PostToolUse` and `Stop` no longer drain. Draining
+   marks a message `delivered` with no reliable way to show its body (`additionalContext` for
+   PostToolUse is documented but not reliably implemented — see harness-notes). The hooks now only
+   heartbeat (and PostToolUse records edits); delivery is left to the monitor, which surfaces the
+   body and wakes the session. Test: a message arriving mid-turn stays `sent` through PostToolUse +
+   Stop and is then surfaced (and marked `delivered`) by `inbox drain`.
+3. **Report `claude` failures.** `InstallReport.notes` carries any non-zero `claude plugin …` step;
+   `setup`/`uninstall` print them. Tests use a fake runner returning exit 1 for `install` /
+   `uninstall`.
+4. **Monitor passes its session.** `monitor.sh` passes `--session monitor-$$` to `inbox drain`, so
+   monitor deliveries record `delivered_session` and the session-scoped requeue works. Test: a
+   monitor-delivered message requeues when its monitor session ends.
+5. **Strictness + deviation.** `readPluginState` now requires explicit enabled evidence (no
+   permissive "assume enabled" default) and matches by id/name/ref. The monitor test is strengthened
+   so a mutation that exits the loop on the first failed drain fails (the only `exit` is the
+   parent-pid guard; the drain line is unconditional; no `set -e`). The "monitor registers an agent
+   in every folder" PLAN-6 deviation is recorded in `.workbench/state.json`.
+6. **Docs.** Live-test step 1 now gives the exact command to run setup from this repo; step 7 no
+   longer depends on the unbuilt viewer (uses `mcp-parley log` / `mcp-parley inbox`).
+
+**Result:** `pnpm check` (eslint strict + tsc --noEmit + vitest) — **passed, 30 files / 154 tests**.
+
+### (H) Human live two-session test — exact steps (fix round 2)
+
+This is M4's acceptance check (PLAN marks it **(H)**). The build cannot run `claude` itself and the
+automated tests use a temporary HOME + a fake runner; a real run needs two Claude Code sessions.
+
+1. **Run setup from this repo (no published package yet, M12).** There is no build step yet, so run
+   the CLI through `tsx` from the repo root:
+   ```sh
+   cd "/Users/inanccan/Desktop/Project Parley/parley-mcp"
+   pnpm add -D tsx            # one-time, if not already present (dev-only)
+   pnpm exec tsx src/cli/bin.ts doctor      # confirm the CLI runs
+   pnpm exec tsx src/cli/bin.ts setup --harness claude-code
+   ```
+   `setup` writes the launcher `~/.mcp-parley/bin/mcp-parley` (which runs this repo via
+   `node --import tsx src/cli/bin.ts`) and points every config at it — no `npx`. If `tsx` is not
+   available as a dev dep yet, that is the one dependency to add (dev-only); otherwise stop and ask.
+2. **Check what setup changed.** It prints `~/.claude.json` (merged `mcpServers.parley`, command =
+   the absolute launcher path, `env.PARLEY_HARNESS=claude`), the marketplace tree under
+   `~/.mcp-parley/claude-marketplace/`, and any `claude plugin …` errors as `! …` lines.
+3. **Verify the plugin loaded:** `claude plugin list --json` shows `parley` enabled; then
+   `pnpm exec tsx src/cli/bin.ts doctor` should say **can wake idle** (it checks the plugin list, the
+   monitor files, and that the MCP command points at this install). If not, re-run
+   `claude plugin install parley@parley --scope user` and restart Claude.
+4. **Restart any open session** so the new MCP server and plugin load. Monitors are experimental —
+   ensure your Claude Code is recent enough (`docs/harness-notes.md` records the version floor).
+5. **Open two sessions in one repo, different folders** (A in `<repo>/api`, B in `<repo>/web`). Each
+   registers as `claude@api` / `claude@web` on SessionStart. `mcp-parley who` (run from the repo via
+   `pnpm exec tsx src/cli/bin.ts who`) should list both as alive.
+6. **Leave session B idle.** In session A type `say hi to claude@web`. Expect B's monitor to surface
+   the message and the idle agent to answer **within 5 s with no typing in B**.
+7. **Confirm receipts without the viewer (M6 not built).** Run
+   `pnpm exec tsx src/cli/bin.ts log --thread <id>` (the thread id is printed by `who`/`log`), or
+   call the `inbox` MCP tool with `include_sent: true` from session A, and confirm the message shows
+   `delivered ✓✓` and, after B's reply or a prompt echoing the id, `read` / `replied`.
+8. **Capture fixtures:** save the real hook payloads Claude Code sends, anonymise paths/ids, replace
+   the synthetic `src/adapters/claude-code/fixtures/*.json`, and keep the replay tests green.
+9. **Uninstall check:** `pnpm exec tsx src/cli/bin.ts uninstall`, then confirm
+   `claude plugin list --json` no longer shows `parley`, `~/.claude.json` keeps your other keys, and
+   both `~/.mcp-parley/claude-marketplace/` and `~/.mcp-parley/bin/mcp-parley` are gone.
+
+If step 6 fails within 5 s, check (assumptions in `docs/harness-notes.md`): the monitor's agent-id
+derivation (`claude@$(basename "$PWD")`), whether the monitor's stdout reaches Claude as a
+notification on your version, the parent-pid exit guard, and whether the plugin is enabled.
+
+---
+
 ## M4 — fix round (session kiro-M4-fix, 2026-11-07)
 
 Applied the independent review (`.workbench/tasks/M4/review.json`) and the confirmed plugin-loading
