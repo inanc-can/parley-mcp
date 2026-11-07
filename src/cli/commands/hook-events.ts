@@ -44,6 +44,26 @@ export function runHookSessionStart(deps: HookEventDeps, payload: SessionStartPa
   const agentId = claudeAgentId(payload.cwd);
   registerAgent(deps.db, agentId, deps.repoRoot, payload.session_id, now);
   deps.status(`registered ${agentId} (session ${payload.session_id})`);
+  // PLAN 4.3 fresh-session requeue: a fresh session (source=startup) means any
+  // earlier session — including the monitor process that delivered with its own
+  // `monitor-<pid>` session id — is no longer the live reader. Requeue this
+  // agent's delivered-but-unread messages so they are shown again, EXCEPT ones
+  // already delivered to this brand-new session (there are none yet, but this
+  // keeps the call safe if a monitor raced ahead). This is the real path that
+  // recovers monitor deliveries, which SessionEnd (keyed on Claude's session
+  // id) can never match.
+  if (payload.source === "startup") {
+    const requeued = messagesRepo.requeueDeliveredForSession(
+      deps.db,
+      agentId,
+      payload.session_id,
+    );
+    if (requeued > 0) {
+      deps.status(
+        `session-start ${agentId}: requeued ${String(requeued)} stale delivered-unread message(s)`,
+      );
+    }
+  }
 }
 
 /**
@@ -124,8 +144,13 @@ export function runHookSessionEnd(deps: HookEventDeps, payload: SessionEndPayloa
   // Requeue only messages delivered to THIS ending session, not every delivered
   // message across the agent's other live sessions (PLAN 4.3 requeue).
   const requeued = messagesRepo.requeueDeliveredToSession(deps.db, agentId, payload.session_id);
-  deps.status(`session-end ${agentId}: requeued ${String(requeued)} unread message(s)`);
-  return requeued;
+  // Also requeue this agent's monitor-surfaced deliveries: a monitor delivers
+  // with its own `monitor-<pid>` session id and never fires a Claude SessionEnd,
+  // so this is the only hook that can recover an unread monitor delivery.
+  const requeuedMonitor = messagesRepo.requeueMonitorDelivered(deps.db, agentId);
+  const total = requeued + requeuedMonitor;
+  deps.status(`session-end ${agentId}: requeued ${String(total)} unread message(s)`);
+  return total;
 }
 
 function ignoreSubagent(deps: HookEventDeps, payload: PayloadMeta, event: string): boolean {

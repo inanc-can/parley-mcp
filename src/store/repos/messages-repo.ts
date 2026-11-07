@@ -193,6 +193,25 @@ export function requeueDeliveredToSession(db: Db, toAgent: string, session: stri
   return info.changes;
 }
 
+/**
+ * Requeue (delivered -> sent) this agent's messages delivered by a monitor
+ * process (delivered_session LIKE 'monitor-%'). A monitor's delivery marks a
+ * message `delivered` to wake an idle session, but a monitor process never
+ * fires a Claude SessionEnd, so `requeueDeliveredToSession` (keyed on Claude's
+ * session id) can never recover it. SessionEnd calls this so a monitor-surfaced
+ * message that was never read goes back to `sent` for the next session
+ * (PLAN 4.3 requeue).
+ */
+export function requeueMonitorDelivered(db: Db, toAgent: string): number {
+  const info = db
+    .prepare(
+      `UPDATE messages SET status = 'sent', delivered_at = NULL, delivered_session = NULL
+       WHERE to_agent = ? AND status = 'delivered' AND delivered_session LIKE 'monitor-%'`,
+    )
+    .run(toAgent);
+  return info.changes;
+}
+
 export function expireSentMessages(db: Db, now: number): number {
   const info = db
     .prepare(

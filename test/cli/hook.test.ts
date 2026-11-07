@@ -236,11 +236,13 @@ describe("mid-turn message delivery (not swallowed)", () => {
     database.close();
   });
 
-  it("requeues a monitor-delivered message when its monitor session ends", () => {
+  it("requeues a monitor-delivered message when the agent's session ends (realistic hook path)", () => {
     const database = db();
+    const out = collector();
     const id = seedMessageTo(database, AGENT, "sent");
     const written: string[] = [];
-    // The monitor delivers with its own session id.
+    // The monitor delivers with its own PID-based session id (monitor-<pid>),
+    // which never equals a Claude session id.
     runInboxDrain(
       { db: database, repoRoot: REPO, write: (l) => written.push(l) },
       AGENT,
@@ -248,9 +250,41 @@ describe("mid-turn message delivery (not swallowed)", () => {
       "monitor-7",
     );
     expect(messagesRepo.getMessage(database, id).status).toBe("delivered");
-    // SessionEnd for that monitor session requeues it (delivered_session matched).
-    const requeued = messagesRepo.requeueDeliveredToSession(database, AGENT, "monitor-7");
+
+    // SessionEnd fires with a REAL Claude session id (not the monitor's). The
+    // old session-only requeue could never match monitor-7, so this is the path
+    // that proves monitor deliveries are recovered through the hook, not by
+    // calling the repo with a monitor id directly.
+    const requeued = runHookSessionEnd(
+      { db: database, repoRoot: REPO, status: out.status },
+      { session_id: "sess-claude-1", cwd: CWD, reason: "clear" },
+    );
     expect(requeued).toBe(1);
+    expect(messagesRepo.getMessage(database, id).status).toBe("sent");
+    database.close();
+  });
+
+  it("requeues a monitor-delivered message on the next SessionStart (startup fresh-session rule)", () => {
+    const database = db();
+    const out = collector();
+    const id = seedMessageTo(database, AGENT, "sent");
+    const written: string[] = [];
+    // A prior monitor delivered the message to an old (now dead) session.
+    runInboxDrain(
+      { db: database, repoRoot: REPO, write: (l) => written.push(l) },
+      AGENT,
+      "monitor",
+      "monitor-99",
+    );
+    expect(messagesRepo.getMessage(database, id).status).toBe("delivered");
+
+    // A fresh Claude session starts (source=startup) with a brand-new session
+    // id. PLAN 4.3: the delivered-but-unread message is requeued so the new
+    // session sees it again.
+    runHookSessionStart(
+      { db: database, repoRoot: REPO, status: out.status, now: 9_000 },
+      { session_id: "sess-fresh", cwd: CWD, source: "startup" },
+    );
     expect(messagesRepo.getMessage(database, id).status).toBe("sent");
     database.close();
   });
