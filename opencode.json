@@ -1,5 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/glm-5.3-flash-free",
   "permission": {
     "*": "deny",
     "read": "allow",
