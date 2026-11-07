@@ -65,12 +65,17 @@ export function runHookUserPrompt(deps: HookEventDeps, payload: UserPromptPayloa
 }
 
 /**
- * `hook stop`: at the safe point of turn end, drain queued messages (deliver
- * them so the monitor/next turn can surface them). Subagent payloads are
- * ignored. We do NOT treat the final assistant message as read-evidence:
- * PLAN 4.3 restricts read to the model's *input* (UserPromptSubmit prompt or
- * transcript), an `inbox` call, or a reply — the assistant's own output is not
- * in that list, so a delivered-but-unechoed message stays `delivered`.
+ * `hook stop`: at turn end, refresh the heartbeat. We deliberately do NOT drain
+ * here. Draining marks a message `delivered` with no way to show its body to
+ * Claude (a Stop hook's stdout is not reliably surfaced, and `additionalContext`
+ * for PostToolUse is documented but not reliably implemented — see
+ * docs/harness-notes.md), so a mid-turn message would be marked delivered yet
+ * never shown. Leaving it `sent` lets the monitor surface it and wake the
+ * session (PLAN section 6). Subagent payloads are ignored.
+ *
+ * We also do NOT treat the final assistant message as read-evidence: PLAN 4.3
+ * restricts read to the model's *input* (UserPromptSubmit prompt or transcript),
+ * an `inbox` call, or a reply — the assistant's own output is not in that list.
  */
 export function runHookStop(deps: HookEventDeps, payload: StopPayload): void {
   if (ignoreSubagent(deps, payload, "stop")) {
@@ -79,14 +84,16 @@ export function runHookStop(deps: HookEventDeps, payload: StopPayload): void {
   const now = deps.now ?? Date.now();
   const agentId = claudeAgentId(payload.cwd);
   touchHeartbeat(deps.db, agentId, deps.repoRoot, payload.session_id, now);
-  const delivered = drain(deps.db, agentId, payload.session_id, now);
-  deps.status(`stop ${agentId}: delivered ${String(delivered)} message(s)`);
+  deps.status(`stop ${agentId}: heartbeat (delivery left to the monitor)`);
 }
 
 /**
- * `hook post-tool`: at a safe point after a tool call, drain queued messages.
- * For Edit/Write tools, also record the edit (overlap warning, never blocks)
- * via the existing edit hook. Subagent payloads are ignored.
+ * `hook post-tool`: at a safe point after a tool call, refresh the heartbeat
+ * and, for Edit/Write tools, record the edit (overlap warning, never blocks).
+ * We deliberately do NOT drain here (same reason as `stop`): a drained message
+ * is marked `delivered` but its body is never shown to Claude mid-turn, so it
+ * would be swallowed. The monitor is the mid-turn delivery path. Subagent
+ * payloads are ignored.
  */
 export function runHookPostTool(deps: HookEventDeps, payload: PostToolPayload): void {
   if (ignoreSubagent(deps, payload, "post-tool")) {
@@ -101,8 +108,7 @@ export function runHookPostTool(deps: HookEventDeps, payload: PostToolPayload): 
       runHookEdit({ db: deps.db, repoRoot: deps.repoRoot, status: deps.status, now }, agentId, path);
     }
   }
-  const delivered = drain(deps.db, agentId, payload.session_id, now);
-  deps.status(`post-tool ${agentId}: delivered ${String(delivered)} message(s)`);
+  deps.status(`post-tool ${agentId}: heartbeat + edits (delivery left to the monitor)`);
 }
 
 /**
@@ -214,28 +220,6 @@ function markReadByEvidence(db: Db, agentId: string, text: string, now: number):
     }
   }
   return count;
-}
-
-/** Deliver this agent's pending (sent) messages and record delivered events. */
-function drain(db: Db, agentId: string, session: string, now: number): number {
-  const pending = messagesRepo.listUndeliveredForRecipient(db, agentId, now);
-  for (const message of pending) {
-    const moved = messagesRepo.guardedStatusUpdate(db, message.id, {
-      status: "delivered",
-      at: now,
-      deliveredSession: session,
-    });
-    if (moved) {
-      messageEventsRepo.insertMessageEvent(db, {
-        id: randomUUID(),
-        messageId: message.id,
-        event: "delivered",
-        at: now,
-        detailJson: null,
-      });
-    }
-  }
-  return pending.length;
 }
 
 function editedPath(toolInput: Record<string, unknown> | undefined): string | null {

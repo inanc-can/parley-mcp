@@ -14,6 +14,7 @@ import {
   runHookStop,
   runHookUserPrompt,
 } from "../../src/cli/commands/hook-events.js";
+import { runInboxDrain } from "../../src/cli/commands/inbox.js";
 
 const REPO = "/repo";
 const CWD = "/repo/api";
@@ -160,7 +161,7 @@ describe("user-prompt read evidence", () => {
 });
 
 describe("post-tool", () => {
-  it("drains pending messages and records an Edit", () => {
+  it("records an Edit but does NOT drain (delivery is the monitor's job)", () => {
     const database = db();
     const out = collector();
     agentsRepo.upsertAgent(database, {
@@ -183,8 +184,74 @@ describe("post-tool", () => {
         tool_input: { file_path: "/repo/api/src/x.ts" },
       },
     );
-    expect(messagesRepo.getMessage(database, id).status).toBe("delivered");
+    // The message is NOT swallowed into `delivered` with no body shown: it stays
+    // `sent` so the monitor can surface its body and wake the session.
+    expect(messagesRepo.getMessage(database, id).status).toBe("sent");
     expect(out.lines.join("\n")).toContain("edit recorded");
+    database.close();
+  });
+});
+
+describe("mid-turn message delivery (not swallowed)", () => {
+  it("a message arriving during a turn stays sent through Stop/PostToolUse and is surfaced by the monitor", () => {
+    const database = db();
+    const out = collector();
+    agentsRepo.upsertAgent(database, {
+      id: AGENT,
+      harness: "claude",
+      folder: "api",
+      repoRoot: REPO,
+      nativeSession: "sess-9",
+      lastHeartbeat: 1_000,
+      createdAt: 1_000,
+    });
+    // A message arrives mid-turn.
+    const id = seedMessageTo(database, AGENT, "sent");
+
+    // PostToolUse fires (after a tool call) and then Stop fires (turn end).
+    runHookPostTool(
+      { db: database, repoRoot: REPO, status: out.status, now: 7_000 },
+      { session_id: "sess-9", cwd: CWD, tool_name: "Read", tool_input: {} },
+    );
+    runHookStop(
+      { db: database, repoRoot: REPO, status: out.status, now: 7_100 },
+      { session_id: "sess-9", cwd: CWD },
+    );
+    // Neither hook marked it delivered, so it is still pending for the monitor.
+    expect(messagesRepo.getMessage(database, id).status).toBe("sent");
+
+    // The monitor (inbox drain) then surfaces its body to Claude and marks it
+    // delivered, recording the delivering session — the message reached Claude.
+    const written: string[] = [];
+    runInboxDrain(
+      { db: database, repoRoot: REPO, write: (l) => written.push(l) },
+      AGENT,
+      "monitor",
+      "monitor-123",
+    );
+    expect(written.join("\n")).toContain("hi");
+    const delivered = messagesRepo.getMessage(database, id);
+    expect(delivered.status).toBe("delivered");
+    expect(delivered.delivered_session).toBe("monitor-123");
+    database.close();
+  });
+
+  it("requeues a monitor-delivered message when its monitor session ends", () => {
+    const database = db();
+    const id = seedMessageTo(database, AGENT, "sent");
+    const written: string[] = [];
+    // The monitor delivers with its own session id.
+    runInboxDrain(
+      { db: database, repoRoot: REPO, write: (l) => written.push(l) },
+      AGENT,
+      "monitor",
+      "monitor-7",
+    );
+    expect(messagesRepo.getMessage(database, id).status).toBe("delivered");
+    // SessionEnd for that monitor session requeues it (delivered_session matched).
+    const requeued = messagesRepo.requeueDeliveredToSession(database, AGENT, "monitor-7");
+    expect(requeued).toBe(1);
+    expect(messagesRepo.getMessage(database, id).status).toBe("sent");
     database.close();
   });
 });
