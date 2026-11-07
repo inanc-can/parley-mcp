@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { claimsOverlap } from "../../core/overlap.js";
+import { globMatch } from "../../core/glob.js";
 import { activeClaims, claimExpiresAt } from "../../core/claims.js";
 import { nextAgreementStatus } from "../../core/agreements.js";
 import type { ToolContext } from "../context.js";
@@ -230,7 +230,10 @@ function makeClaim(ctx: ToolContext, args: AgreeArgs, now: number): ToolOutcome 
     claimsRepo.listActiveClaims(ctx.db, ctx.repoRoot, now),
     now,
   )
-    .map((claim) => ({ claim, overlap: claimsOverlap(claim.path_glob, requested) }))
+    // Claim conflicts are reported for other agents only (PLAN 4.5); an
+    // agent's own claims never conflict with themselves.
+    .filter((claim) => claim.agent_id !== ctx.agentId)
+    .map((claim) => ({ claim, overlap: globMatch(claim.path_glob, requested) }))
     .filter((entry) => entry.overlap)
     .map((entry) => ({
       kind: "claim" as const,

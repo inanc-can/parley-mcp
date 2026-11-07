@@ -212,10 +212,9 @@ export function listThreadMessages(db: Db, threadId: string): MessageRow[] {
 export function listMessagesFromAgent(db: Db, fromAgent: string): MessageRow[] {
   const rows = db
     .prepare(
-      `SELECT m.* FROM messages m
-       JOIN threads t ON t.id = m.thread_id
-       WHERE m.from_agent = ?
-       ORDER BY m.sent_at, m.id`,
+      `SELECT * FROM messages
+       WHERE from_agent = ?
+       ORDER BY sent_at, id`,
     )
     .all(fromAgent);
   return parseRows(messageRowSchema, rows);
