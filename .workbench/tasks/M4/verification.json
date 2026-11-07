@@ -2,8 +2,8 @@
   "schema_version": 1,
   "task_id": "M4",
   "passed": true,
-  "created_at": "2026-11-07T20:16:49+00:00",
-  "head": "5bba828350b0e6cf8a4c5998f6e77ea24f31a5e5",
+  "created_at": "2026-11-07T20:18:29+00:00",
+  "head": "72b71bf50b4a36ebd69e29f7d53c28ade3c2741f",
   "base_rev": "ab9ce3f914ac07e8683d8ec11f67b13cf6d46578",
   "changed_files": [
     "docs/PLAN.md",
@@ -67,29 +67,29 @@
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm check` exit=0 in 21446ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T20:16:19+00:00"
+      "detail": "`pnpm check` exit=0 in 23064ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T20:17:57+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/cli/setup.test.ts` exit=0 in 2635ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T20:16:41+00:00"
+      "detail": "`pnpm exec vitest run test/cli/setup.test.ts` exit=0 in 2583ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T20:18:21+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/adapters/claude-code.test.ts` exit=0 in 2931ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T20:16:43+00:00"
+      "detail": "`pnpm exec vitest run test/adapters/claude-code.test.ts` exit=0 in 3016ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T20:18:23+00:00"
     },
     {
       "code": "acceptance_pass",
       "status": "pass",
       "severity": "block",
-      "detail": "`pnpm exec vitest run test/cli/hook.test.ts` exit=0 in 2808ms",
-      "artifact": ".workbench/feedback.jsonl@2026-11-07T20:16:46+00:00"
+      "detail": "`pnpm exec vitest run test/cli/hook.test.ts` exit=0 in 2917ms",
+      "artifact": ".workbench/feedback.jsonl@2026-11-07T20:18:26+00:00"
     },
     {
       "code": "scope_forbidden",

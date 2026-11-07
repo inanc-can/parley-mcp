@@ -1,14 +1,14 @@
-# Handoff 2026-11-07T20:15:41+00:00
+# Handoff 2026-11-07T20:18:29+00:00
 
 - Task: M4
-- HEAD: `9b513f22b310`
+- HEAD: `72b71bf50b4a`
 - Verification: PASS `.workbench/tasks/M4/verification.json`
 - Review: `.workbench/tasks/M4/review.json`
 
 - Mode: checkpoints (M4 fix round 3 (Kiro): monitor-delivery requeue via SessionStart/SessionEnd, stale-doc refresh, build smoke test. wb verify PASS. Next: the human's live two-session test closes M4.)
 
 ## Summary
-M4 after fix round 3 (Kiro): monitor deliveries are now requeued through the real hook path (SessionStart source=startup requeues this agent's stale delivered-unread messages; SessionEnd also requeues this agent's monitor-* deliveries, which a Claude-session-keyed SessionEnd could never match). Replaced the misleading test that called requeueDeliveredToSession('monitor-7') directly with tests that drive runHookSessionEnd/runHookSessionStart using realistic Claude session ids. Refreshed stale docs (harness-notes launcher-needs-tsx -> runs compiled dist/ via plain node; PROGRESS live-test step 7 thread-id source + a new requeue-on-close step). Added a build smoke test (tsc -p tsconfig.build.json into a dist/ subdir, run node .../cli/bin.js --help, skip if tsc missing). wb verify PASS, pnpm check exit=0.
+M4 (Claude Code adapter) automated part done: review round 3 passed 7/10; its high finding (monitor deliveries never requeued) fixed by Kiro with end-to-end hook tests; build smoke test added. wb verify passes, 157 tests.
 
 ## Decisions made without asking (review these)
 - [autonomous] 2026-11-07: GLM-5.3-Flash free and DeepSeek/MiMo free hit OpenCode's free usage limit mid-M2 (GLM resets in ~9.7 h). M2 continued in the same OpenCode session on opencode/nemotron-3.5-super-vl-free, the free model that still answered, instead of waiting or paying. Reversible: all work is in git. (Re-added by Claude: the builder's state rewrite dropped it.)
@@ -19,7 +19,7 @@ M4 after fix round 3 (Kiro): monitor deliveries are now requeued through the rea
 - [autonomous] 2026-11-07: Review round 3 passed (7/10) but found monitor deliveries are never requeued (high). Fixing it, and the stale docs, before the human's live test, so the test can cover requeue too; not a new review round, since the verdict was pass.
 
 ## Next action
-M4 fix round 3 is done (monitor requeue, stale docs, build smoke test; wb verify PASS). Give the human the live two-session Claude Code test (docs/PROGRESS.md, steps start with pnpm build) — now including step 8, which closes an unread reader session and checks the message requeues to sent. M4 closes only after the live test passes. Pushing/publishing is the human's call.
+Human: run the live two-session test in docs/PROGRESS.md (pnpm build; node dist/cli/bin.js setup --harness claude-code; two Claude Code sessions in a throwaway repo; idle wake within 5 s; receipts; requeue on close; uninstall). M4 closes only after it passes. Pushing is the human's call.
 
 ## Changed files
 - `docs/PLAN.md`
@@ -73,19 +73,12 @@ M4 fix round 3 is done (monitor requeue, stale docs, build smoke test; wb verify
 
 ## Open risks
 - blocker: GitHub Actions blocked by the account billing lock (human-only fix).
+- blocker: M4 live two-session test needs the human (it installs into the real ~/.claude and needs two interactive Claude Code sessions).
 
 ## Failed attempts
 - pnpm exec vitest run test/cli/build-smoke.test.ts (exit 1)
 
 ## Commands (last 30)
-- `pnpm check` exit 0 (21424ms)
-- `pnpm check` exit 0 (21173ms)
-- `pnpm check` exit 0 (16506ms)
-- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (2569ms)
-- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (2790ms)
-- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (2629ms)
-- `pnpm check` exit 0 (16099ms)
-- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (2393ms)
 - `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (2716ms)
 - `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (2646ms)
 - `pnpm check` exit 0 (31360ms)
@@ -108,3 +101,11 @@ M4 fix round 3 is done (monitor requeue, stale docs, build smoke test; wb verify
 - `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (5007ms)
 - `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (5158ms)
 - `node -e JSON.parse(require('fs').readFileSync('.workbench/state.json','utf8')); console.log('state.json OK')` exit 0 (142ms)
+- `pnpm check` exit 0 (21446ms)
+- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (2635ms)
+- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (2931ms)
+- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (2808ms)
+- `pnpm check` exit 0 (23064ms)
+- `pnpm exec vitest run test/cli/setup.test.ts` exit 0 (2583ms)
+- `pnpm exec vitest run test/adapters/claude-code.test.ts` exit 0 (3016ms)
+- `pnpm exec vitest run test/cli/hook.test.ts` exit 0 (2917ms)
