@@ -14,7 +14,9 @@
     "[autonomous] 2026-11-07: GLM-5.3-Flash free and DeepSeek/MiMo free hit OpenCode's free usage limit mid-M2 (GLM resets in ~9.7 h). M2 continued in the same OpenCode session on opencode/nemotron-3.5-super-vl-free, the free model that still answered, instead of waiting or paying. Reversible: all work is in git. (Re-added by Claude: the builder's state rewrite dropped it.)",
     "M2 (recorded 2026-11-07, fix session): The serve command itself (the `parley-mcp serve` CLI wiring in src/cli) is deferred to M3; M2 only owns src/mcp/server.ts#serve and its stdio database lifecycle. src/cli is forbidden in M2 and was not touched."
   ],
-  "blockers": [],
+  "blockers": [
+    "GitHub Actions won't start any job: 'The job was not started because your account is locked due to a billing issue.' (seen 2026-11-07, even after making the repo public). Only the human can fix it, at github.com/settings/billing."
+  ],
   "open_risks": [],
   "failed_attempts": [],
   "next_action": "M2 commits are pushed. Next: M3 (CLI basics incl. wiring `serve`), or M3b if the work harness is named. Fold in M2 review follow-ups while framing M3: (1) set serve()'s close handling before server.connect (don't replace the SDK onclose) and close the db on stdin end/close, with a test of the close path, fixing the misleading comment; (2) recipient-guard test where c@r is a thread participant but not the recipient; (3) offered_to nullable vs required row schema: backfill or decide; (4) tidy overlap.ts blank lines and the serve test's leaked db handle.",
