@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "active_task_id": "M10",
-  "summary": "M10 built by Claude: repo-relative edit paths and claim globs across all four harnesses, Codex apply_patch files parsed from the patch (verified in openai/codex source), 10-minute repeat throttle, Codex wake for warned agents. pnpm check 302 tests. Laptop tests M5/M6/M8/M9/M10 pending; M9 Stop-reminder question open.",
+  "active_task_id": "M11",
+  "summary": "M11 done by Claude: telemetry_opt_in flag (default false, unused), docs/telemetry.md, and a no-network guard test enforcing AGENTS.md's network limit. No sending code (PLAN: stop and ask). pnpm check 305 tests. Laptop tests M5/M6/M8/M9/M10 pending; M9 and M11 questions open.",
   "assumptions": [
     "M1 (recorded 2026-11-07, fix session): The secret-scan regex thresholds are builder-chosen minimum length heuristics (AWS AKIA +16 chars; ghp_/github_pat_/sk- at 20+ chars; Slack xox*- tokens at 10+ chars; .env SECRET=TOKEN=PASSWORD=API_KEY lines with values of 12+ chars). They may need tightening after real-world false negative/positive feedback; none may ever be relaxed to log the secret value.",
     "M1 (recorded 2026-11-07, fix session): everyone fan-out derives per-recipient idempotency keys as <base key>::<toAgent>; the double-colon separator is a builder choice, and changing it changes which retries dedupe.",
@@ -60,8 +60,8 @@
   ],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "Human: laptop tests and the M9 question. Then M11 (telemetry: deliberately not built) and M12 (release).",
-  "updated_at": "2026-11-08T19:40:00+00:00",
+  "next_action": "Human: answer M11 (leave telemetry unbuilt?) and M9 questions; laptop tests. Then M12 launch polish (README, demo GIF by the human, npm publish by the human).",
+  "updated_at": "2026-11-08T20:00:00+00:00",
   "last_mode": "checkpoints",
   "last_mode_notes": "M5 review + wake by Claude in a cloud session; user away, laptop off; no wb tool in the cloud, verified with pnpm check and a live Codex run."
 }

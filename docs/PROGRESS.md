@@ -6,6 +6,19 @@
 > agent the same thing. Your laptop test decides whether the reminder works; if not, is relying on
 > the skill + instructions acceptable for M9's check?
 
+## M11: telemetry, deliberately not built (Claude, cloud session, 2026-11-08)
+
+> **Question for the human (M11, per PLAN):** no sending code was written. Telemetry needs a server
+> to receive counts and the project has none. Leave it at the flag + doc (recommended for v1), or do
+> you want to plan a self-hosted endpoint later?
+
+**Built:** `settingsRepo.getTelemetryOptIn/setTelemetryOptIn` (setting `telemetry_opt_in`, default
+false, read by nothing), `docs/telemetry.md` (what would ever be collected and why nothing is), and
+`test/no-network.test.ts`, which fails if source code uses network APIs beyond the viewer on
+127.0.0.1, the viewer page calling its own server, and the Codex local Unix socket.
+
+**Checks:** `pnpm check` passes (305 tests).
+
 ## M10: claims and overlap from real edits (Claude, cloud session, 2026-11-08)
 
 **Found and fixed:** paths never lined up across harnesses (absolute vs relative edits, relative

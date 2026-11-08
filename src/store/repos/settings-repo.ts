@@ -21,3 +21,16 @@ export function getStopAll(db: Db): boolean {
 export function setStopAll(db: Db, value: boolean): void {
   setSetting(db, "stop_all", value ? "true" : "false");
 }
+
+/**
+ * Telemetry consent (PLAN M11): opt-in anonymous counts, off by default. Only
+ * the flag exists. Nothing reads it to send anything, because there is no
+ * server and no sending code until the human decides (see docs/telemetry.md).
+ */
+export function getTelemetryOptIn(db: Db): boolean {
+  return getSetting(db, "telemetry_opt_in") === "true";
+}
+
+export function setTelemetryOptIn(db: Db, value: boolean): void {
+  setSetting(db, "telemetry_opt_in", value ? "true" : "false");
+}
