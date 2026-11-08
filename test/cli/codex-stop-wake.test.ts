@@ -40,6 +40,7 @@ async function runStop(wakes: string[]): Promise<void> {
       write: () => undefined,
       env: {},
       launcher: "/l",
+      wakeCodex: () => false,
       notify: silentNotifier,
     },
   };

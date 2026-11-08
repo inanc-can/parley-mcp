@@ -151,7 +151,14 @@ export async function serve(options: ServeOptions = {}): Promise<ServeHandle> {
     // Register the caller and stamp a heartbeat.
     registerCaller(db, agentId, repoRoot, sessionId, Date.now());
 
-    const ctx: ToolContext = { db, agentId, repoRoot, nativeSession: sessionId, rulesTextSent: false };
+    const ctx: ToolContext = {
+      db,
+      agentId,
+      repoRoot,
+      nativeSession: sessionId,
+      rulesTextSent: false,
+      cwd: options.cwd ?? process.cwd(),
+    };
     if (options.wakeRecipient !== undefined) {
       ctx.wakeRecipient = options.wakeRecipient;
     }
@@ -218,5 +225,6 @@ export async function adoptRootFolder(
   }
   ctx.agentId = agentId;
   ctx.repoRoot = repoRoot;
+  ctx.cwd = folder;
   registerCaller(ctx.db, agentId, repoRoot, ctx.nativeSession, Date.now());
 }

@@ -8,5 +8,11 @@
   "model": "gpt-5-codex",
   "turn_id": "turn-0002",
   "tool_name": "apply_patch",
-  "tool_input": { "file_path": "/home/synthetic/repo/api/src/server.ts" }
+  "tool_input": {
+    "command": "*** Begin Patch\n*** Update File: src/server.ts\n@@\n-old\n+new\n*** Add File: src/routes/health.ts\n+export {};\n*** End Patch\n"
+  },
+  "tool_use_id": "call-0007",
+  "tool_response": {
+    "output": "Success. Updated the following files:\nM src/server.ts\nA src/routes/health.ts\n"
+  }
 }

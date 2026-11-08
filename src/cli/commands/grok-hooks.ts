@@ -48,6 +48,7 @@ export interface GrokHookDeps {
   launcher: string;
   now?: number;
   notify?: Notifier;
+  wakeRecipient?: (agentId: string, harness: string) => boolean;
 }
 
 /** Grok's edit tools, plus the Claude names Grok maps onto them (docs). */
@@ -91,6 +92,7 @@ export function runGrokHook(
     editTools: GROK_EDIT_TOOLS,
     ...(deps.now === undefined ? {} : { now: deps.now }),
     ...(deps.notify === undefined ? {} : { notify: deps.notify }),
+    ...(deps.wakeRecipient === undefined ? {} : { wakeRecipient: deps.wakeRecipient }),
   };
   const base = { session_id: where.session, cwd: where.folder };
   switch (event) {
@@ -104,7 +106,7 @@ export function runGrokHook(
       runHookPostTool(shared, {
         ...base,
         ...(payload.toolName === undefined ? {} : { tool_name: payload.toolName }),
-        ...(payload.toolInput === undefined ? {} : { tool_input: withFilePath(payload.toolInput) }),
+        ...(payload.toolInput === undefined ? {} : { tool_input: payload.toolInput }),
       });
       return null;
     case "stop":
@@ -113,12 +115,6 @@ export function runGrokHook(
       runHookSessionEnd(shared, base);
       return null;
   }
-}
-
-/** Grok tools may name the path `path`; the shared edit logic reads `file_path`. */
-function withFilePath(input: Record<string, unknown>): Record<string, unknown> {
-  const path = input["file_path"] ?? input["path"];
-  return typeof path === "string" ? { ...input, file_path: path } : input;
 }
 
 /**

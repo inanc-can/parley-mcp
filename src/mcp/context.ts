@@ -11,6 +11,8 @@ export interface ToolContext {
   repoRoot: string;
   /** This server's session; adapters replace it with the harness's real id (M4+). */
   nativeSession: string | null;
+  /** The agent's working folder (claim globs are relative to it); absent in tests. */
+  cwd?: string;
   /** The rules file text goes out once per session: flipped on first inbox. */
   rulesTextSent: boolean;
   /**

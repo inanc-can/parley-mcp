@@ -277,6 +277,7 @@ function registerAdapterCommands(program: Command, deps: CliDeps): void {
       env: deps.env,
       launcher: launcherPath(adapterEnv(deps).home),
       notify: osNotifier({ env: deps.env }),
+      wakeCodex: spawnCodexWake(adapterEnv(deps).home),
     },
   });
 }

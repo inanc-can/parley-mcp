@@ -47,6 +47,7 @@ export interface CursorHookDeps {
   launcher: string;
   now?: number;
   notify?: Notifier;
+  wakeRecipient?: (agentId: string, harness: string) => boolean;
 }
 
 /** `cursor@<folder>`, the same `<harness>@<folder>` rule as every adapter (PLAN 4.1). */
@@ -103,9 +104,10 @@ export function runCursorHook(
     case "after-edit": {
       if (payload.file_path !== undefined) {
         const agentId = agentsRepo.findAgentBySession(deps.db, where.session)?.id ?? cursorAgentId(where.root);
-        const editDeps: HookEditDeps = { db: deps.db, repoRoot: deps.repoRoot, status: deps.status };
+        const editDeps: HookEditDeps = { db: deps.db, repoRoot: deps.repoRoot, status: deps.status, cwd: where.root };
         if (deps.now !== undefined) editDeps.now = deps.now;
         if (deps.notify !== undefined) editDeps.notify = deps.notify;
+        if (deps.wakeRecipient !== undefined) editDeps.wakeRecipient = deps.wakeRecipient;
         runHookEdit(editDeps, agentId, payload.file_path);
       }
       return {};

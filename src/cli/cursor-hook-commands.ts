@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import type { WakeSpawner } from "../adapters/codex/spawn-wake.js";
 import type { Notifier } from "../notify/os-notify.js";
 import type { Db } from "../store/index.js";
 import {
@@ -20,6 +21,8 @@ export interface PayloadHookHost {
   env: NodeJS.ProcessEnv;
   launcher: string;
   notify: Notifier;
+  /** Start a detached Codex wake (warned Codex agents see overlap warnings at once). */
+  wakeCodex: WakeSpawner;
 }
 
 const EVENTS: readonly { name: string; event: CursorEvent; description: string }[] = [
@@ -57,7 +60,7 @@ export function registerCursorHookCommands(hook: Command, host: PayloadHookHost)
             status(`${def.name}: cloud background agent; ignored`);
           } else {
             reply = host.withDbAt(where.root, (db, repoRoot) =>
-              runCursorHook({ db, repoRoot, status, launcher: host.launcher, notify: host.notify }, def.event, payload, where),
+              runCursorHook({ db, repoRoot, status, launcher: host.launcher, notify: host.notify, wakeRecipient: (id, harness) => harness === "codex" && host.wakeCodex(id, 60) }, def.event, payload, where),
             );
           }
         } catch (error) {

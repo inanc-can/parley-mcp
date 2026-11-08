@@ -39,6 +39,7 @@ function host(payload: unknown, out: string[], env: NodeJS.ProcessEnv = {}): Pay
     write: (line) => out.push(line),
     env,
     launcher: LAUNCHER,
+    wakeCodex: () => false,
     notify: () => undefined,
   };
 }
@@ -84,7 +85,8 @@ describe("grok session hooks", () => {
     registerCaller(db, "claude@api", REPO, null, Date.now());
     claimsRepo.insertClaim(db, { id: "c1", repoRoot: REPO, agentId: "claude@api", pathGlob: "/repo/web/src/auth/**", expiresAt: Date.now() + 60_000 });
     await grok("grok-post-tool", fixture("post-tool-edit.json"));
-    expect(editsRepo.listRecentEditsForPath(db, REPO, "/repo/web/src/auth/login.ts", 0).map((e) => e.agent_id)).toEqual(["grok@web"]);
+    // Stored repo-relative, so every harness's form of the path meets.
+    expect(editsRepo.listRecentEditsForPath(db, REPO, "web/src/auth/login.ts", 0).map((e) => e.agent_id)).toEqual(["grok@web"]);
   });
 
   it("requeues unread deliveries when the session ends", async () => {

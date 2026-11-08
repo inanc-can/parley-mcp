@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { z } from "zod";
 import {
   agentsRepo,
+  editsRepo,
   messagesRepo,
   openMemoryDb,
   threadsRepo,
@@ -146,6 +147,11 @@ describe("replay codex post-tool edit fixture", () => {
     const out = collector();
     runHookPostTool({ db, repoRoot: REPO, status: out.status, now: 7_000, ...CODEX }, payload);
     expect(out.lines.join("\n")).toContain("post-tool");
+    // apply_patch carries its files inside the patch, relative to the payload's cwd (verified in
+    // openai/codex); both land repo-relative under api/.
+    for (const path of ["api/src/server.ts", "api/src/routes/health.ts"]) {
+      expect(editsRepo.listRecentEditsForPath(db, REPO, path, 0).map((e) => e.agent_id)).toEqual([AGENT]);
+    }
     db.close();
   });
 });

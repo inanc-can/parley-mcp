@@ -64,7 +64,7 @@ export function registerHookCommands(program: Command, host: HookCommandHost): v
     .action((options: { agent: string; path: string }) => {
       const status = host.status();
       host.withDb((db, repoRoot) => {
-        runHookEdit({ db, repoRoot, status, notify: host.notify }, options.agent, options.path);
+        runHookEdit({ db, repoRoot, status, notify: host.notify, wakeRecipient: codexWaker(host) }, options.agent, options.path);
       });
     });
 
@@ -138,7 +138,7 @@ function registerClaudeHookCommands(hook: Command, host: HookCommandHost): void 
       }
       const payload = postToolPayloadSchema.parse(await host.readStdinJson());
       host.withDb((db, repoRoot) => {
-        runHookPostTool({ db, repoRoot, status, notify: host.notify }, payload);
+        runHookPostTool({ db, repoRoot, status, notify: host.notify, wakeRecipient: codexWaker(host) }, payload);
       });
     });
 
@@ -227,7 +227,7 @@ function registerCodexHookCommands(hook: Command, host: HookCommandHost): void {
       }
       const payload = postToolPayloadSchema.parse(await host.readStdinJson());
       host.withDb((db, repoRoot) => {
-        runHookPostTool({ db, repoRoot, status, notify: host.notify, ...CODEX_HOOK_DEPS }, payload);
+        runHookPostTool({ db, repoRoot, status, notify: host.notify, wakeRecipient: codexWaker(host), ...CODEX_HOOK_DEPS }, payload);
       });
     });
 
@@ -245,4 +245,9 @@ function registerCodexHookCommands(hook: Command, host: HookCommandHost): void {
         runHookSessionEnd({ db, repoRoot, status, ...CODEX_HOOK_DEPS }, payload);
       });
     });
+}
+
+/** Warned Codex agents are woken through the app-server so they see an overlap warning now. */
+function codexWaker(host: HookCommandHost): (agentId: string, harness: string) => boolean {
+  return (agentId, harness) => harness === "codex" && host.wakeCodex(agentId, 60);
 }

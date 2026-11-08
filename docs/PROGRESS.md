@@ -6,6 +6,28 @@
 > agent the same thing. Your laptop test decides whether the reminder works; if not, is relying on
 > the skill + instructions acceptable for M9's check?
 
+## M10: claims and overlap from real edits (Claude, cloud session, 2026-11-08)
+
+**Found and fixed:** paths never lined up across harnesses (absolute vs relative edits, relative
+claim globs), so claims never matched edits; Codex `apply_patch` carries its files inside the
+patch (verified in Codex's source), so Codex edits were never recorded; and every edit of a shared
+file re-sent the warning and notification.
+
+**Built:** `src/core/edit-paths.ts` (patch file names, tool-input paths, repo-relative paths, claim
+glob normalization); `hook edit` stores repo-relative paths, matches normalized claims, throttles
+repeat warnings for 10 minutes and wakes warned Codex agents; the shared post-tool handler records
+every file in a patch; `agree` stores claim globs repo-relative (relative to the agent's folder).
+
+**Checks:** `pnpm check` passes (302 tests). The M10 check is `test/cli/m10-overlap.test.ts`:
+Claude ↔ Codex and Cursor ↔ Grok editing one file in their own path forms → both warned in
+`conflict: <path>` in the same hook call, one notification, no repeat within 10 minutes; a claim by
+one harness catches another's edit; edits outside the repo are ignored.
+
+### (H) Laptop check
+Two agents in the test repo edit the same file (e.g. ask Claude in `web` and Codex in `api` to
+each change `shared/config.ts`): both should get a `conflict: shared/config.ts` message within 5 s
+and a macOS notification should appear once.
+
 ## M9: Grok Build adapter (Claude, cloud session, 2026-11-08)
 
 **Built (facts and deviations in docs/harness-notes.md M9):**

@@ -40,6 +40,7 @@ async function hook(command: string, payload: unknown): Promise<Record<string, u
     write: (line) => out.push(line),
     env: {},
     launcher: LAUNCHER,
+    wakeCodex: () => false,
     notify: (n) => notices.push(n),
   };
   const program = new Command();

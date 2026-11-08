@@ -4,6 +4,7 @@ import { globMatch } from "../../core/glob.js";
 import { activeClaims, claimExpiresAt } from "../../core/claims.js";
 import { nextAgreementStatus } from "../../core/agreements.js";
 import type { ToolContext } from "../context.js";
+import { normalizeClaimGlob } from "../../core/edit-paths.js";
 import { agreementNotice } from "../../notify/os-notify.js";
 import { heartbeatCaller } from "../identity.js";
 import { refused, success, type ToolOutcome } from "../response.js";
@@ -203,11 +204,14 @@ function changeClaim(
   if (args.path_glob === undefined) {
     return refused("claim_needs_glob", `${title(args.action)} needs path_glob.`);
   }
+  // Stored repo-relative, like recorded edits, so claims and edits compare (PLAN 4.5).
+  const glob = normalizeClaimGlob(ctx.repoRoot, args.path_glob, ctx.cwd);
   if (args.action === "claim") {
-    return makeClaim(ctx, args, now);
+    return makeClaim(ctx, glob, now);
   }
   const mine = activeClaims(claimsRepo.listActiveClaims(ctx.db, ctx.repoRoot, now), now).find(
-    (claim: ClaimRow) => claim.agent_id === ctx.agentId && claim.path_glob === args.path_glob,
+    (claim: ClaimRow) =>
+      claim.agent_id === ctx.agentId && normalizeClaimGlob(ctx.repoRoot, claim.path_glob) === glob,
   );
   if (mine === undefined) {
     return refused(
@@ -229,8 +233,7 @@ function changeClaim(
   );
 }
 
-function makeClaim(ctx: ToolContext, args: AgreeArgs, now: number): ToolOutcome {
-  const requested = args.path_glob ?? "";
+function makeClaim(ctx: ToolContext, requested: string, now: number): ToolOutcome {
   const conflicts = activeClaims(
     claimsRepo.listActiveClaims(ctx.db, ctx.repoRoot, now),
     now,
@@ -238,7 +241,7 @@ function makeClaim(ctx: ToolContext, args: AgreeArgs, now: number): ToolOutcome 
     // Claim conflicts are reported for other agents only (PLAN 4.5); an
     // agent's own claims never conflict with themselves.
     .filter((claim) => claim.agent_id !== ctx.agentId)
-    .map((claim) => ({ claim, overlap: globMatch(claim.path_glob, requested) }))
+    .map((claim) => ({ claim, overlap: globMatch(normalizeClaimGlob(ctx.repoRoot, claim.path_glob), requested) }))
     .filter((entry) => entry.overlap)
     .map((entry) => ({
       kind: "claim" as const,

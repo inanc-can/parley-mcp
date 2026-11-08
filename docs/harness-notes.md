@@ -414,3 +414,21 @@ npm `@xai-official/grok` (publisher `xai-security`, 1.0.77); its README points t
   reach the model.
 - Running the Grok binary in the cloud was refused (downloaded code), and turns need an xAI login,
   so fixtures are synthetic (`_synthetic: true`), built from the documented fields.
+
+## M10 (2026-11-08, Claude, cloud session): edits from all four harnesses
+
+- **Codex apply_patch payload (VERIFIED in source, openai/codex @ 9ba7a3d, 2026-11-08):** PostToolUse
+  for `apply_patch` sends `tool_input: { "command": "<patch text>" }` (core/src/tools/handlers/
+  apply_patch.rs `post_tool_use_payload`), not `file_path`; `cwd` is the tool's execution cwd. File
+  names follow `*** Add File: `, `*** Delete File: `, `*** Update File: `, `*** Move to: `
+  (apply-patch/src/parser.rs), relative to that cwd. The M5 synthetic fixture assumed `file_path`,
+  so Codex edits were never recorded; fixed (fixture rewritten to the verified shape).
+- **How each harness names an edited file:** Claude Code `tool_input.file_path` (absolute); Codex
+  Edit/Write `tool_input.file_path`, apply_patch inside the patch (relative); Cursor afterFileEdit
+  `file_path` (absolute, docs); Grok `toolInput.file_path` or `toolInput.path` (form not documented).
+- **Normalization (src/core/edit-paths.ts):** every edited path is stored repo-relative (POSIX),
+  resolved against the agent's cwd when relative; paths outside the repo are ignored. Claim globs
+  are stored repo-relative too, a relative glob resolved against the claiming agent's folder (for
+  `claude@web`, `src/**` → `web/src/**`). Windows paths are not handled in v1.
+- **Warnings:** a repeated conflict with the same agents on the same file is not re-sent (messages
+  or notification) for 10 minutes. Warned Codex agents get an app-server wake.

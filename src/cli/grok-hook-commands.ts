@@ -30,7 +30,7 @@ export function registerGrokHookCommands(hook: Command, host: PayloadHookHost): 
             return;
           }
           const reply = host.withDbAt(where.folder, (db, repoRoot) =>
-            runGrokHook({ db, repoRoot, status, launcher: host.launcher, notify: host.notify }, def.event, payload, where),
+            runGrokHook({ db, repoRoot, status, launcher: host.launcher, notify: host.notify, wakeRecipient: (id, harness) => harness === "codex" && host.wakeCodex(id, 60) }, def.event, payload, where),
           );
           if (reply !== null) {
             host.write(JSON.stringify(reply));

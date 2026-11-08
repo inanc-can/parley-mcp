@@ -6,6 +6,7 @@ import {
   messagesRepo,
   type Db,
 } from "../../store/index.js";
+import { editedPathsFromToolInput } from "../../core/edit-paths.js";
 import { runHookEdit, type HookEditDeps } from "./hook.js";
 import type { Notifier } from "../../notify/os-notify.js";
 import {
@@ -44,6 +45,8 @@ export interface HookEventDeps {
   editTools?: ReadonlySet<string>;
   /** Tell the human about an edit conflict (PLAN section 9). */
   notify?: Notifier;
+  /** Wake a warned agent that needs an out-of-band wake (Codex). */
+  wakeRecipient?: (agentId: string, harness: string) => boolean;
 }
 
 const EDIT_TOOLS = new Set(["Edit", "Write", "MultiEdit"]);
@@ -160,11 +163,14 @@ export function runHookPostTool(deps: HookEventDeps, payload: PostToolPayload): 
   const agentId = agentFor(deps, payload);
   touchHeartbeat(deps.db, agentId, deps.repoRoot, payload.session_id, now);
   if (payload.tool_name !== undefined && editToolsFor(deps).has(payload.tool_name)) {
-    const path = editedPath(payload.tool_input);
-    if (path !== null) {
-      const editDeps: HookEditDeps = { db: deps.db, repoRoot: deps.repoRoot, status: deps.status, now };
+    // One tool call can edit several files (a Codex apply_patch names them in the patch).
+    for (const path of editedPathsFromToolInput(payload.tool_input)) {
+      const editDeps: HookEditDeps = { db: deps.db, repoRoot: deps.repoRoot, status: deps.status, now, cwd: payload.cwd };
       if (deps.notify !== undefined) {
         editDeps.notify = deps.notify;
+      }
+      if (deps.wakeRecipient !== undefined) {
+        editDeps.wakeRecipient = deps.wakeRecipient;
       }
       runHookEdit(editDeps, agentId, path);
     }
@@ -288,10 +294,3 @@ function markReadByEvidence(db: Db, agentId: string, text: string, now: number):
   return count;
 }
 
-function editedPath(toolInput: Record<string, unknown> | undefined): string | null {
-  if (toolInput === undefined) {
-    return null;
-  }
-  const value = toolInput["file_path"];
-  return typeof value === "string" && value.length > 0 ? value : null;
-}
