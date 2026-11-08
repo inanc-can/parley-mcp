@@ -2,13 +2,62 @@ import { dirname } from "node:path";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
-import { removeDirIfEmpty, removeFileIfPresent } from "../fs-ops.js";
-import type { FileChange } from "../types.js";
-import { BLOCK_BEGIN, BLOCK_END, MCP_SERVER_KEY, managedConfigBlock } from "./config-files.js";
+import { removeDirIfEmpty, removeFileIfPresent } from "./fs-ops.js";
+import type { FileChange } from "./types.js";
+
+/**
+ * The key Parley manages inside config.toml's `mcp_servers` table and the
+ * hooks.json ownership marker. Same name as the Claude adapter: `mcp-parley`,
+ * never `parley` (another tool registers `parley`; the M4 live test showed
+ * setup overwriting it). Setup never overwrites, and uninstall never removes,
+ * a `[mcp_servers.mcp-parley]` entry that mcp-parley did not create (its
+ * command must be an mcp-parley launcher — see install.ts `isOurEntry`).
+ */
+export const MCP_SERVER_KEY = "mcp-parley";
+
+/** The TOML table header for our MCP server. */
+export const MCP_TABLE_HEADER = `[mcp_servers.${MCP_SERVER_KEY}]`;
+
+/**
+ * Our `[mcp_servers.mcp-parley]` block as exact TOML text. We render it by hand
+ * (not via smol-toml's stringify, which drops comments on the whole file) so a
+ * surgical append/remove round-trips the rest of config.toml byte for byte.
+ *
+ * `command` is the absolute launcher path (never `npx`). The nested
+ * `[mcp_servers.mcp-parley.env]` sets PARLEY_HARNESS to the harness (codex,
+ * grok) so the per-session MCP server resolves the SAME `<harness>@<folder>` id its hooks use —
+ * the identity-split fix proved necessary in M4.
+ */
+export function mcpTableBlock(launcherPath: string, harness: string): string {
+  return [
+    MCP_TABLE_HEADER,
+    `command = ${tomlString(launcherPath)}`,
+    `args = ["serve"]`,
+    "",
+    `[mcp_servers.${MCP_SERVER_KEY}.env]`,
+    `PARLEY_HARNESS = ${tomlString(harness)}`,
+    "",
+  ].join("\n");
+}
+
+/** A begin/end marker comment pair so uninstall can excise exactly our block. */
+export const BLOCK_BEGIN = "# >>> mcp-parley (managed by mcp-parley setup; do not edit) >>>";
+export const BLOCK_END = "# <<< mcp-parley <<<";
+
+/** Our full managed block, fenced by markers, ready to append to config.toml. */
+export function managedConfigBlock(launcherPath: string, harness: string): string {
+  return [BLOCK_BEGIN, mcpTableBlock(launcherPath, harness), BLOCK_END, ""].join("\n");
+}
+
+/** Minimal TOML basic-string escaping for a path value. */
+function tomlString(value: string): string {
+  const escaped = value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return `"${escaped}"`;
+}
 
 /**
  * Surgical, comment-preserving merge of our `[mcp_servers.mcp-parley]` table
- * into ~/.codex/config.toml. We append a fenced managed block (never
+ * into a harness's config.toml (~/.codex, ~/.grok). We append a fenced managed block (never
  * reserialize the whole file with smol-toml's stringify, which would drop
  * comments), and `smol-toml`'s `parse` is used only to INSPECT the file
  * (detect our/foreign entries). install→uninstall restores the prior bytes.
@@ -95,14 +144,14 @@ export function planConfigChange(path: string, launcher: string): FileChange | n
  * text is empty, the file is our block alone. `stripOurBlock` reverses exactly
  * this, so install→uninstall restores the prior bytes.
  */
-export function writeConfigBlock(path: string, launcher: string): void {
+export function writeConfigBlock(path: string, launcher: string, harness: string): void {
   mkdirSync(dirname(path), { recursive: true });
   const existing = existsSync(path) ? readFileSync(path, "utf8") : "";
   const priorText = stripOurBlock(existing);
   const next =
     priorText.length === 0
-      ? managedConfigBlock(launcher)
-      : `${ensureTrailingNewline(priorText)}\n${managedConfigBlock(launcher)}`;
+      ? managedConfigBlock(launcher, harness)
+      : `${ensureTrailingNewline(priorText)}\n${managedConfigBlock(launcher, harness)}`;
   writeFileSync(path, next, "utf8");
 }
 

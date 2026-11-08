@@ -183,10 +183,12 @@ describe("claude-code install", () => {
     expect(drainLine ?? "").not.toContain("exit");
     expect(drainLine ?? "").not.toContain("||");
     expect(monitor).not.toContain("set -e");
-    // Exactly one `exit` (the parent-pid guard), and it is gated on kill -0.
+    // Two exits: the Grok guard (Grok Build loads Claude plugins too) and the
+    // parent-pid guard. Nothing else ends the loop.
     const exitLines = lines.filter((l) => l.includes("exit"));
-    expect(exitLines.length).toBe(1);
-    expect(exitLines[0] ?? "").toContain("kill -0");
+    expect(exitLines.length).toBe(2);
+    expect(exitLines[0] ?? "").toContain("GROK_SESSION_ID");
+    expect(exitLines[1] ?? "").toContain("kill -0");
   });
 
   it("the MCP identity env resolves to the same agent id as the hooks", () => {

@@ -32,7 +32,8 @@ async function runStop(wakes: string[]): Promise<void> {
       return true;
     },
     notify: silentNotifier,
-    cursor: {
+    env: {},
+    payloadHost: {
       withDbAt: (_dir, run) => run(db, REPO),
       status: () => () => undefined,
       readStdinJson: () => Promise.resolve({}),

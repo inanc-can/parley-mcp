@@ -7,7 +7,7 @@ import { Client } from "@modelcontextprotocol/sdk/client";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory";
 import { ListRootsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { runInboxWatchOnce } from "../../src/cli/commands/inbox.js";
-import { registerCursorHookCommands, type CursorHookHost } from "../../src/cli/cursor-hook-commands.js";
+import { registerCursorHookCommands, type PayloadHookHost } from "../../src/cli/cursor-hook-commands.js";
 import { registerCaller } from "../../src/mcp/identity.js";
 import { adoptRootFolder, createServer } from "../../src/mcp/server.js";
 import type { ToolContext } from "../../src/mcp/context.js";
@@ -30,7 +30,7 @@ let notices: Notice[];
 
 async function hook(command: string, payload: unknown): Promise<Record<string, unknown>> {
   const out: string[] = [];
-  const host: CursorHookHost = {
+  const host: PayloadHookHost = {
     withDbAt: (dir, run) => {
       expect(dir).toBe("/repo/web"); // the folder comes from workspace_roots, not the hook's cwd
       return run(db, REPO);

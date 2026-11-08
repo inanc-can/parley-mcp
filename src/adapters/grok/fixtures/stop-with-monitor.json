@@ -1,0 +1,1 @@
+{ "_synthetic": true, "hookEventName": "Stop", "sessionId": "6b1f0c2e-aaaa-bbbb-cccc-000011112222", "cwd": "/repo/web", "workspaceRoot": "/repo", "reason": "end_turn", "stopHookActive": false, "backgroundTasks": [{ "type": "monitor", "description": "mcp-parley", "command": "\"/home/u/.mcp-parley/bin/mcp-parley\" inbox watch --agent grok@web --provider grok" }] }

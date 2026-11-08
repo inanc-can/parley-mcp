@@ -355,3 +355,62 @@ Sources: cursor.com/docs/hooks.md, cursor.com/docs/mcp.md, cursor.com/docs/cli/c
 - Two chats in one folder share `cursor@<folder>` (same known limit as the other adapters).
 - `cursor-agent` could not be run in the cloud (running a downloaded binary was refused, and it
   needs a Cursor login). Fixtures are synthetic (`_synthetic: true`), built from the documented fields.
+
+## M9 (2026-11-08, Claude, cloud session): Grok Build adapter
+
+### Verified against xAI's official docs (docs.x.ai/build, fetched 2026-11-08)
+
+Pages: features/hooks, features/skills-plugins-marketplaces, features/mcp-servers,
+features/background-tasks, features/project-rules, settings/reference, cli/reference. The CLI is
+npm `@xai-official/grok` (publisher `xai-security`, 1.0.77); its README points to these docs.
+
+- **MCP:** `~/.grok/config.toml` `[mcp_servers.<name>]` with `command`, `args`, `env`
+  (`${VAR}` expanded). Grok ALSO loads `~/.claude.json`, `.cursor/mcp.json` and `.mcp.json`,
+  "merged below config.toml in priority", so our config.toml entry (PARLEY_HARNESS=grok) is the one
+  a Grok session uses.
+- **Hooks:** JSON files in `~/.grok/hooks/*.json` (personal, no trust needed) or project
+  `.grok/hooks/` (needs `/hooks-trust`), Claude-style `{ "hooks": { "<Event>": [ { "matcher"?,
+  "hooks": [ { "type": "command", "command", "timeout" } ] } ] } }`, default timeout 5 s. Events:
+  SessionStart, SessionEnd, UserPromptSubmit, PreToolUse, PostToolUse(Failure), PermissionDenied,
+  Stop, StopFailure, Notification, SubagentStart/Stop, Pre/PostCompact.
+- **Payload:** JSON on stdin with camelCase `hookEventName`, `sessionId`, `cwd`, `workspaceRoot`,
+  and `toolName`/`toolInput` for tool events. Env: `GROK_HOOK_EVENT`, `GROK_HOOK_NAME`,
+  `GROK_SESSION_ID`, `GROK_WORKSPACE_ROOT` (plugins add `GROK_PLUGIN_ROOT`/`GROK_PLUGIN_DATA`).
+- **Output:** only PreToolUse decides (`{ "decision": "deny", "reason" }`, exit 2 denies);
+  everything else is fail-open; "For passive events, stdout is ignored."
+- **Grok reads other harnesses' files by default:** Claude Code marketplaces, plugins, skills,
+  MCPs, agents, hooks and CLAUDE.md; Cursor hooks (camelCase events), mcp.json and rules. Switches:
+  `[compat.claude]`/`[compat.cursor]` keys and `GROK_*_ENABLED` env vars.
+- **Monitors:** "the agent can attach a monitor to a script: each line the script prints becomes a
+  notification in the conversation." The agent starts it; nothing starts one automatically.
+- **Skills:** `~/.grok/skills/<name>/SKILL.md` with YAML frontmatter (`name`, `description`, …).
+- **Global rules:** `~/.grok/` is read as global rules (we do not write there).
+- Plugins load from `~/.grok/plugins/`, but the plugin manifest format is not documented.
+
+### Design (deviations from PLAN's sketch, all within its intent)
+
+- **No plugin:** hooks go in our own `~/.grok/hooks/mcp-parley.json` and the instructions in a skill
+  at `~/.grok/skills/mcp-parley/SKILL.md`, both documented user-level paths. A plugin's manifest is
+  undocumented.
+- **Agent id** `grok@<basename(cwd)>` (cwd, like the MCP server; workspaceRoot only as fallback,
+  since it may be the repo root).
+- **Telling the agent to start its monitor**, three ways: the skill; the MCP server's
+  `instructions` (exact command with the agent id, sent only when PARLEY_HARNESS=grok); and PLAN's
+  Stop reminder `{ "decision": "block", "reason" }`, once per session, only when no monitor is
+  listed in `backgroundTasks` and our watch heartbeat (setting `watch:<agent>`) is older than 15 s.
+- **Cross-harness guard:** every Claude, Codex and Cursor `hook` command does nothing when
+  `GROK_HOOK_EVENT` is set (Cursor commands still print their empty reply), and the Claude plugin's
+  monitor script exits when `GROK_SESSION_ID`/`GROK_HOOK_EVENT` is set. Without this a Grok session
+  would also register as `claude@…`/`cursor@…`.
+
+### Assumed / needs the human's live test
+
+- **The Stop reminder may be ignored:** the docs say stdout of passive events (Stop included) is
+  ignored. Concord documents the Stop `decision: "block"` behaviour and the Stop fields `reason`,
+  `stopHookActive`, `subagentType`, `backgroundTasks`; none are in xAI's docs. If Grok ignores it,
+  the skill and the MCP instructions remain the ways the agent learns to start its monitor.
+- UserPromptSubmit's prompt field name (`prompt` assumed), Grok's edit tool names (a broad set plus
+  `path` → `file_path` mapping), whether monitors receive GROK_* env, whether MCP `instructions`
+  reach the model.
+- Running the Grok binary in the cloud was refused (downloaded code), and turns need an xAI login,
+  so fixtures are synthetic (`_synthetic: true`), built from the documented fields.

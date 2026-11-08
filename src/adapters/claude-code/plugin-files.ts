@@ -159,6 +159,8 @@ const HOOKS_JSON = {
 function monitorScript(launcherPath: string): string {
   return script(
     [
+      "# Grok Build loads Claude Code plugins too; a Grok session is not a Claude one.",
+      'if [ -n "$GROK_SESSION_ID" ] || [ -n "$GROK_HOOK_EVENT" ]; then exit 0; fi',
       'AGENT="claude@$(basename "$PWD")"',
       'SESSION="monitor-$$"',
       "# Make sure this folder's agent exists even if the monitor wins the race",

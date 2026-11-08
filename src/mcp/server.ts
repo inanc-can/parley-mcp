@@ -50,6 +50,11 @@ export interface ServeOptions {
   useRoots?: boolean | undefined;
   /** Maps a folder to its repo root (git top level); used with `useRoots`. */
   repoRootFor?: ((dir: string) => string) | undefined;
+  /**
+   * Server instructions for the client's system context, built from the
+   * resolved agent id (Grok: the exact monitor command to start).
+   */
+  instructionsFor?: ((agentId: string) => string | undefined) | undefined;
 }
 
 /**
@@ -58,11 +63,11 @@ export interface ServeOptions {
  * agent's id. This is the only place the SDK is imported, so the rest of the
  * MCP layer stays free of SDK details and easy to unit test.
  */
-export function createServer(ctx: ToolContext): McpServer {
-  const server = new McpServer({
-    name: "mcp-parley",
-    version: "0.0.0",
-  });
+export function createServer(ctx: ToolContext, instructions?: string): McpServer {
+  const server = new McpServer(
+    { name: "mcp-parley", version: "0.0.0" },
+    instructions === undefined ? {} : { instructions },
+  );
 
   server.registerTool("talk", {
     description:
@@ -153,7 +158,7 @@ export async function serve(options: ServeOptions = {}): Promise<ServeHandle> {
     if (options.notify !== undefined) {
       ctx.notify = options.notify;
     }
-    const server = createServer(ctx);
+    const server = createServer(ctx, options.instructionsFor?.(agentId));
     const stdin = options.stdin ?? process.stdin;
     const transport = new StdioServerTransport(stdin, options.stdout ?? process.stdout);
 

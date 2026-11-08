@@ -26,55 +26,9 @@ export const CONFIG_TOML_REL = join(CODEX_DIR_REL, "config.toml");
 /** The hooks.json path, relative to HOME. */
 export const HOOKS_JSON_REL = join(CODEX_DIR_REL, "hooks.json");
 
-/**
- * The key Parley manages inside config.toml's `mcp_servers` table and the
- * hooks.json ownership marker. Same name as the Claude adapter: `mcp-parley`,
- * never `parley` (another tool registers `parley`; the M4 live test showed
- * setup overwriting it). Setup never overwrites, and uninstall never removes,
- * a `[mcp_servers.mcp-parley]` entry that mcp-parley did not create (its
- * command must be an mcp-parley launcher — see install.ts `isOurEntry`).
- */
-export const MCP_SERVER_KEY = "mcp-parley";
-
-/** The TOML table header for our MCP server. */
-export const MCP_TABLE_HEADER = `[mcp_servers.${MCP_SERVER_KEY}]`;
-
-/**
- * Our `[mcp_servers.mcp-parley]` block as exact TOML text. We render it by hand
- * (not via smol-toml's stringify, which drops comments on the whole file) so a
- * surgical append/remove round-trips the rest of config.toml byte for byte.
- *
- * `command` is the absolute launcher path (never `npx`). The nested
- * `[mcp_servers.mcp-parley.env]` sets PARLEY_HARNESS=codex so the per-session
- * MCP server resolves the SAME `codex@<folder>` id the hooks/app-server use —
- * the identity-split fix proved necessary in M4.
- */
-export function mcpTableBlock(launcherPath: string): string {
-  return [
-    MCP_TABLE_HEADER,
-    `command = ${tomlString(launcherPath)}`,
-    `args = ["serve"]`,
-    "",
-    `[mcp_servers.${MCP_SERVER_KEY}.env]`,
-    `PARLEY_HARNESS = "codex"`,
-    "",
-  ].join("\n");
-}
-
-/** A begin/end marker comment pair so uninstall can excise exactly our block. */
-export const BLOCK_BEGIN = "# >>> mcp-parley (managed by mcp-parley setup; do not edit) >>>";
-export const BLOCK_END = "# <<< mcp-parley <<<";
-
-/** Our full managed block, fenced by markers, ready to append to config.toml. */
-export function managedConfigBlock(launcherPath: string): string {
-  return [BLOCK_BEGIN, mcpTableBlock(launcherPath), BLOCK_END, ""].join("\n");
-}
-
-/** Minimal TOML basic-string escaping for a path value. */
-function tomlString(value: string): string {
-  const escaped = value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  return `"${escaped}"`;
-}
+// The managed TOML block (key, table, fence markers) is shared with the Grok
+// adapter; it lives in ../toml-merge.ts and is re-exported here.
+export { BLOCK_BEGIN, BLOCK_END, MCP_SERVER_KEY, MCP_TABLE_HEADER, managedConfigBlock, mcpTableBlock } from "../toml-merge.js";
 
 /**
  * The Codex hook event -> CLI subcommand mapping. The handler is a command hook

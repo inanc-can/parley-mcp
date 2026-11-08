@@ -14,7 +14,7 @@ import {
   planConfigChange,
   removeConfigBlock,
   writeConfigBlock,
-} from "./toml-merge.js";
+} from "../toml-merge.js";
 
 interface Paths {
   configToml: string;
@@ -70,7 +70,7 @@ export function installCodex(env: AdapterEnv, dryRun: boolean): InstallReport {
     if (configChange !== null) {
       changes.push(configChange);
       if (!dryRun) {
-        writeConfigBlock(p.configToml, launcher);
+        writeConfigBlock(p.configToml, launcher, "codex");
       }
     }
   }

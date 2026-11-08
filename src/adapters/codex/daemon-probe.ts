@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { gateOpenForVersion, versionFromUserAgent } from "./app-server.js";
 import { controlSocketPath, openControlSocket, type RpcConnection } from "./control-socket.js";
-import { OUR_LAUNCHER_SUFFIX } from "./toml-merge.js";
+import { OUR_LAUNCHER_SUFFIX } from "../toml-merge.js";
 
 /**
  * What `doctor` learns from the Codex app-server daemon (verified live,

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "active_task_id": "M8",
-  "summary": "M8 (Cursor adapter) built by Claude in a cloud session from Cursor's official docs: mcp.json + hooks.json merge, cursor-* hooks (sessionStart instruction to keep one background inbox watch, stop followup_message with loop_limit null, prompt read evidence, edits, requeue), MCP roots identity, watch heartbeat. pnpm check 273 tests. Live Cursor test pending on the laptop; M5/M6 laptop checks also open.",
+  "active_task_id": "M9",
+  "summary": "M9 (Grok Build adapter) built by Claude from xAI's official docs: config.toml MCP (shared toml-merge), ~/.grok/hooks/mcp-parley.json, skill asking for a persistent inbox-watch monitor, MCP instructions with the exact command, once-per-session Stop reminder, cross-harness guards (Grok reads Claude/Cursor hooks). pnpm check 290 tests. Open question: docs say Grok ignores Stop stdout. Laptop tests M5/M6/M8/M9 pending.",
   "assumptions": [
     "M1 (recorded 2026-11-07, fix session): The secret-scan regex thresholds are builder-chosen minimum length heuristics (AWS AKIA +16 chars; ghp_/github_pat_/sk- at 20+ chars; Slack xox*- tokens at 10+ chars; .env SECRET=TOKEN=PASSWORD=API_KEY lines with values of 12+ chars). They may need tightening after real-world false negative/positive feedback; none may ever be relaxed to log the secret value.",
     "M1 (recorded 2026-11-07, fix session): everyone fan-out derives per-recipient idempotency keys as <base key>::<toAgent>; the double-colon separator is a builder choice, and changing it changes which retries dedupe.",
@@ -51,15 +51,16 @@
     "[autonomous] 2026-11-07 (Claude, cloud): Codex idle wake needs the app-server daemon, which needs the official-installer Codex; setup does NOT start the daemon (it would change the user's machine beyond config files); setup and doctor tell the human to run `codex app-server daemon start`. Busy threads are waited on (60 s from talk, 120 s from the Stop hook), never steered. Closed sessions (notLoaded) are never resumed. @types/better-sqlite3 added as a dev dependency (on PLAN's allowed list) because a clean checkout failed typecheck.",
     "[autonomous] 2026-11-07 (Claude, cloud): viewer serves app.js/styles.css without the token (no data in them); posts as `you` fan out to every thread participant and ignore the cap and stop-all (they restrain agents, not the human); resume adds room for 20 more from the current count.",
     "[autonomous] 2026-11-07 (Claude, cloud): tool results carry a second text block with the JSON value (MCP spec guidance) so clients that show only text still see inbox messages and rules; conflict notices go to a thread titled 'conflict: <path>', reused while not closed.",
-    "[autonomous] 2026-11-07 (Claude, cloud): created personal cloud environment parley-mcp (user approved) allowing cursor.com/docs.cursor.com/downloads.cursor.com with a pnpm install setup script. Cursor stop hook installed with loop_limit null; Parley's caps bound loops. Cursor hooks always print a JSON reply. cursor-agent not run in the cloud (downloaded binary execution refused)."
+    "[autonomous] 2026-11-07 (Claude, cloud): created personal cloud environment parley-mcp (user approved) allowing cursor.com/docs.cursor.com/downloads.cursor.com with a pnpm install setup script. Cursor stop hook installed with loop_limit null; Parley's caps bound loops. Cursor hooks always print a JSON reply. cursor-agent not run in the cloud (downloaded binary execution refused).",
+    "[autonomous] 2026-11-08 (Claude, cloud): Grok adapter uses documented ~/.grok/hooks and ~/.grok/skills instead of an undocumented plugin; agent id from cwd; Stop reminder built though docs say passive stdout is ignored; Claude/Codex/Cursor hooks no-op when GROK_HOOK_EVENT is set. parley-mcp environment gained docs.x.ai (approved)."
   ],
   "blockers": [
     "GitHub Actions blocked by the account billing lock (human-only fix)."
   ],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "Human: laptop tests for M5 (Codex), M6 (viewer), M8 (Cursor). Then M9 (Grok Build adapter).",
-  "updated_at": "2026-11-07T22:55:00+00:00",
+  "next_action": "Human: laptop tests (M5 Codex, M6 viewer, M8 Cursor, M9 Grok) and answer the M9 Stop-reminder question in PROGRESS. Then M10 (claims and overlap from real edits).",
+  "updated_at": "2026-11-08T19:00:00+00:00",
   "last_mode": "checkpoints",
   "last_mode_notes": "M5 review + wake by Claude in a cloud session; user away, laptop off; no wb tool in the cloud, verified with pnpm check and a live Codex run."
 }

@@ -1,7 +1,8 @@
 import type { Command } from "commander";
 import type { WakeSpawner } from "../adapters/codex/spawn-wake.js";
 import type { Notifier } from "../notify/os-notify.js";
-import { registerCursorHookCommands, type CursorHookHost } from "./cursor-hook-commands.js";
+import { calledByGrok, registerCursorHookCommands, type PayloadHookHost } from "./cursor-hook-commands.js";
+import { registerGrokHookCommands } from "./grok-hook-commands.js";
 import { messagesRepo, type Db } from "../store/index.js";
 import { runHookEdit } from "./commands/hook.js";
 import {
@@ -38,8 +39,9 @@ export interface HookCommandHost {
   wakeCodex: WakeSpawner;
   /** OS notifications for edit conflicts (PLAN section 9). */
   notify: Notifier;
-  /** The Cursor hooks' extra plumbing (repo from the payload, JSON replies on stdout). */
-  cursor: CursorHookHost;
+  /** The Cursor and Grok hooks' extra plumbing (repo from the payload, JSON replies on stdout). */
+  payloadHost: PayloadHookHost;
+  env: NodeJS.ProcessEnv;
 }
 
 /** How long a Stop-started wake waits for the ending turn to go idle. */
@@ -68,7 +70,8 @@ export function registerHookCommands(program: Command, host: HookCommandHost): v
 
   registerClaudeHookCommands(hook, host);
   registerCodexHookCommands(hook, host);
-  registerCursorHookCommands(hook, host.cursor);
+  registerCursorHookCommands(hook, host.payloadHost);
+  registerGrokHookCommands(hook, host.payloadHost);
 }
 
 /**
@@ -84,6 +87,10 @@ function registerClaudeHookCommands(hook: Command, host: HookCommandHost): void 
     .description("Claude Code SessionStart: register the agent.")
     .action(async () => {
       const status = host.status();
+      if (calledByGrok(host.env)) {
+        status("ignored: called by Grok Build, not this harness");
+        return;
+      }
       const payload = sessionStartPayloadSchema.parse(await host.readStdinJson());
       host.withDb((db, repoRoot) => {
         runHookSessionStart({ db, repoRoot, status }, payload);
@@ -95,6 +102,10 @@ function registerClaudeHookCommands(hook: Command, host: HookCommandHost): void 
     .description("Claude Code UserPromptSubmit: read-evidence + heartbeat.")
     .action(async () => {
       const status = host.status();
+      if (calledByGrok(host.env)) {
+        status("ignored: called by Grok Build, not this harness");
+        return;
+      }
       const payload = userPromptPayloadSchema.parse(await host.readStdinJson());
       host.withDb((db, repoRoot) => {
         runHookUserPrompt({ db, repoRoot, status }, payload);
@@ -106,6 +117,10 @@ function registerClaudeHookCommands(hook: Command, host: HookCommandHost): void 
     .description("Claude Code Stop: heartbeat at turn end (delivery via the monitor).")
     .action(async () => {
       const status = host.status();
+      if (calledByGrok(host.env)) {
+        status("ignored: called by Grok Build, not this harness");
+        return;
+      }
       const payload = stopPayloadSchema.parse(await host.readStdinJson());
       host.withDb((db, repoRoot) => {
         runHookStop({ db, repoRoot, status }, payload);
@@ -117,6 +132,10 @@ function registerClaudeHookCommands(hook: Command, host: HookCommandHost): void 
     .description("Claude Code PostToolUse: heartbeat + record edits.")
     .action(async () => {
       const status = host.status();
+      if (calledByGrok(host.env)) {
+        status("ignored: called by Grok Build, not this harness");
+        return;
+      }
       const payload = postToolPayloadSchema.parse(await host.readStdinJson());
       host.withDb((db, repoRoot) => {
         runHookPostTool({ db, repoRoot, status, notify: host.notify }, payload);
@@ -128,6 +147,10 @@ function registerClaudeHookCommands(hook: Command, host: HookCommandHost): void 
     .description("Claude Code SessionEnd: requeue unread delivered messages.")
     .action(async () => {
       const status = host.status();
+      if (calledByGrok(host.env)) {
+        status("ignored: called by Grok Build, not this harness");
+        return;
+      }
       const payload = sessionEndPayloadSchema.parse(await host.readStdinJson());
       host.withDb((db, repoRoot) => {
         runHookSessionEnd({ db, repoRoot, status }, payload);
@@ -148,6 +171,10 @@ function registerCodexHookCommands(hook: Command, host: HookCommandHost): void {
     .description("Codex SessionStart: register the agent.")
     .action(async () => {
       const status = host.status();
+      if (calledByGrok(host.env)) {
+        status("ignored: called by Grok Build, not this harness");
+        return;
+      }
       const payload = sessionStartPayloadSchema.parse(await host.readStdinJson());
       host.withDb((db, repoRoot) => {
         runHookSessionStart({ db, repoRoot, status, ...CODEX_HOOK_DEPS }, payload);
@@ -159,6 +186,10 @@ function registerCodexHookCommands(hook: Command, host: HookCommandHost): void {
     .description("Codex UserPromptSubmit: read-evidence + heartbeat.")
     .action(async () => {
       const status = host.status();
+      if (calledByGrok(host.env)) {
+        status("ignored: called by Grok Build, not this harness");
+        return;
+      }
       const payload = userPromptPayloadSchema.parse(await host.readStdinJson());
       host.withDb((db, repoRoot) => {
         runHookUserPrompt({ db, repoRoot, status, ...CODEX_HOOK_DEPS }, payload);
@@ -170,6 +201,10 @@ function registerCodexHookCommands(hook: Command, host: HookCommandHost): void {
     .description("Codex Stop: heartbeat at turn end (delivery via app-server/queue).")
     .action(async () => {
       const status = host.status();
+      if (calledByGrok(host.env)) {
+        status("ignored: called by Grok Build, not this harness");
+        return;
+      }
       const payload = stopPayloadSchema.parse(await host.readStdinJson());
       host.withDb((db, repoRoot) => {
         const agentId = runHookStop({ db, repoRoot, status, ...CODEX_HOOK_DEPS }, payload);
@@ -186,6 +221,10 @@ function registerCodexHookCommands(hook: Command, host: HookCommandHost): void {
     .description("Codex PostToolUse: heartbeat + record edits (apply_patch/Edit/Write).")
     .action(async () => {
       const status = host.status();
+      if (calledByGrok(host.env)) {
+        status("ignored: called by Grok Build, not this harness");
+        return;
+      }
       const payload = postToolPayloadSchema.parse(await host.readStdinJson());
       host.withDb((db, repoRoot) => {
         runHookPostTool({ db, repoRoot, status, notify: host.notify, ...CODEX_HOOK_DEPS }, payload);
@@ -197,6 +236,10 @@ function registerCodexHookCommands(hook: Command, host: HookCommandHost): void {
     .description("Codex SessionEnd: requeue unread delivered messages.")
     .action(async () => {
       const status = host.status();
+      if (calledByGrok(host.env)) {
+        status("ignored: called by Grok Build, not this harness");
+        return;
+      }
       const payload = sessionEndPayloadSchema.parse(await host.readStdinJson());
       host.withDb((db, repoRoot) => {
         runHookSessionEnd({ db, repoRoot, status, ...CODEX_HOOK_DEPS }, payload);

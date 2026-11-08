@@ -1,0 +1,1 @@
+{ "_synthetic": true, "hookEventName": "PostToolUse", "sessionId": "6b1f0c2e-aaaa-bbbb-cccc-000011112222", "cwd": "/repo/web", "workspaceRoot": "/repo", "toolName": "edit_file", "toolInput": { "path": "/repo/web/src/auth/login.ts" } }

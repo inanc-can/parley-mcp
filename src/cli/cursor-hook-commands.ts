@@ -9,8 +9,8 @@ import {
   type CursorEvent,
 } from "./commands/cursor-hooks.js";
 
-/** What the Cursor hook commands need from the CLI. */
-export interface CursorHookHost {
+/** What the Cursor and Grok hook commands need from the CLI. */
+export interface PayloadHookHost {
   /** Run with the hub db open for the repo containing `dir` (Cursor runs user hooks from ~/.cursor/). */
   withDbAt: <T>(dir: string, run: (db: Db, repoRoot: string) => T) => T;
   status: () => (line: string) => void;
@@ -35,7 +35,7 @@ const EVENTS: readonly { name: string; event: CursorEvent; description: string }
  * so a Parley problem can never block the user's prompt or break the chat
  * (diagnostics go to stderr).
  */
-export function registerCursorHookCommands(hook: Command, host: CursorHookHost): void {
+export function registerCursorHookCommands(hook: Command, host: PayloadHookHost): void {
   for (const def of EVENTS) {
     hook
       .command(def.name)
@@ -43,6 +43,11 @@ export function registerCursorHookCommands(hook: Command, host: CursorHookHost):
       .action(async () => {
         const status = host.status();
         let reply = emptyReply(def.event);
+        if (calledByGrok(host.env)) {
+          // Grok also runs Cursor's hooks; a Grok session is not a Cursor chat.
+          host.write(JSON.stringify(reply));
+          return;
+        }
         try {
           const payload = cursorPayloadSchema.parse(await host.readStdinJson());
           const where = cursorSession(payload, host.env);
@@ -61,4 +66,14 @@ export function registerCursorHookCommands(hook: Command, host: CursorHookHost):
         host.write(JSON.stringify(reply));
       });
   }
+}
+
+/**
+ * Grok Build reads Claude Code's and Cursor's hook files too (docs.x.ai/build,
+ * hooks) and sets GROK_HOOK_EVENT for every hook it runs. Those hooks must do
+ * nothing there, or a Grok session would register as a Claude or Cursor agent.
+ */
+export function calledByGrok(env: NodeJS.ProcessEnv): boolean {
+  const event = env["GROK_HOOK_EVENT"];
+  return event !== undefined && event.length > 0;
 }

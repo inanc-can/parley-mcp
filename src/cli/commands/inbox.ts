@@ -4,11 +4,17 @@ import {
   agentsRepo,
   messageEventsRepo,
   messagesRepo,
+  settingsRepo,
   type Db,
   type MessageRow,
 } from "../../store/index.js";
 
 export type DrainFormat = "monitor" | "json";
+
+/** The setting a running `inbox watch` refreshes on every poll. */
+export function watchHeartbeatKey(agentId: string): string {
+  return `watch:${agentId}`;
+}
 
 export interface InboxDeps {
   db: Db;
@@ -127,8 +133,10 @@ export function runInboxWatchOnce(
 ): WatchResult {
   const now = deps.now ?? Date.now();
   // A running watch is how a Cursor/Grok agent stays reachable while idle, so
-  // each poll counts as a heartbeat (as a monitor's drain does).
+  // each poll counts as a heartbeat (as a monitor's drain does), and records
+  // that a watch is running (the Grok Stop hook reminds only when none is).
   agentsRepo.touchLiveness(deps.db, agentId, now);
+  settingsRepo.setSetting(deps.db, watchHeartbeatKey(agentId), String(now));
   const pending = messagesRepo.listUndeliveredForRecipient(deps.db, agentId, now);
   const first = pending[0];
   if (first === undefined) {

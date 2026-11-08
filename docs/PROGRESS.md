@@ -1,5 +1,42 @@
 # Progress
 
+> **Question for the human (M9):** xAI's docs say Grok ignores the stdout of Stop hooks, so PLAN's
+> "Stop hook keeps the turn open once and gives the agent the command" may never show up. The
+> reminder is built anyway (harmless if ignored), plus a skill and MCP instructions that tell the
+> agent the same thing. Your laptop test decides whether the reminder works; if not, is relying on
+> the skill + instructions acceptable for M9's check?
+
+## M9: Grok Build adapter (Claude, cloud session, 2026-11-08)
+
+**Built (facts and deviations in docs/harness-notes.md M9):**
+- `src/adapters/grok/`: `[mcp_servers.mcp-parley]` in `~/.grok/config.toml` (PARLEY_HARNESS=grok,
+  fenced block shared with Codex via the new `src/adapters/toml-merge.ts`), our hooks file
+  `~/.grok/hooks/mcp-parley.json` (SessionStart, UserPromptSubmit, PostToolUse, Stop, SessionEnd),
+  and a skill `~/.grok/skills/mcp-parley/SKILL.md` asking for one persistent monitor. Uninstall
+  restores config.toml byte for byte; foreign entries and files are left alone.
+- `hook grok-*` (camelCase payload): register `grok@<folder>`, read evidence, edits, requeue, and
+  the once-per-session Stop reminder when no monitor runs (backgroundTasks or watch heartbeat).
+- `inbox watch` records a watch heartbeat and accepts `--provider`; the MCP server sends Grok
+  sessions `instructions` with the exact monitor command.
+- Cross-harness guard: Claude/Codex/Cursor hooks and the Claude monitor do nothing under Grok,
+  which reads those harnesses' files by default.
+- Cloud environment `parley-mcp` now also allows docs.x.ai (approved by the human).
+
+**Checks:** `pnpm check` passes (290 tests): `test/adapters/grok.test.ts` (install/uninstall/
+foreign/doctor), `test/cli/grok-hooks.test.ts` (fixture replay, the reminder fires once per session
+and stays quiet with a monitor, subagent or re-entry; guards; MCP instructions).
+
+### (H) Laptop test: Grok ↔ Claude Code with Grok idle
+1. `git pull && pnpm build && node dist/cli/bin.js setup`; `doctor` → grok: can wake idle.
+2. `grok inspect` in the test repo should list the mcp-parley server (config.toml), the hooks
+   file and the skill.
+3. Start Grok in `web`. Ask "what is your parley agent id?" and check it starts one persistent
+   monitor running `… inbox watch --agent grok@web --provider grok` (Ctrl+G lists tasks).
+4. Without a monitor, end a turn: note whether the Stop reminder appears (once).
+5. Claude Code in `api`: `say hi to grok@web`, leave Grok idle; Grok should get the line as a
+   notification, wake and answer with the talk tool.
+6. Optional: capture real hook payloads into `src/adapters/grok/fixtures/`.
+
 ## M8: Cursor adapter (Claude, cloud session, 2026-11-07)
 
 **Built (PLAN section 6 Cursor; facts in docs/harness-notes.md M8):**

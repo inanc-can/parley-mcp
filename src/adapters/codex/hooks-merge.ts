@@ -4,7 +4,7 @@ import { z } from "zod";
 import { removeDirIfEmpty, removeFileIfPresent } from "../fs-ops.js";
 import type { FileChange } from "../types.js";
 import { hooksJsonText } from "./config-files.js";
-import { OUR_LAUNCHER_SUFFIX } from "./toml-merge.js";
+import { OUR_LAUNCHER_SUFFIX } from "../toml-merge.js";
 
 /**
  * Merge our lifecycle hooks into ~/.codex/hooks.json, preserving any hooks the

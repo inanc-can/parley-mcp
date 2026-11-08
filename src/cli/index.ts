@@ -219,6 +219,7 @@ function registerAdapterCommands(program: Command, deps: CliDeps): void {
     )
     .option("--session <native>", "the delivering native session id")
     .option("--once", "print one message then exit")
+    .option("--provider <name>", "the harness running the watch (informational, e.g. grok)")
     .action(
       async (options: { agent: string; format: string; session?: string; once?: boolean }) => {
         await watchLoop(deps, options);
@@ -265,9 +266,10 @@ function registerAdapterCommands(program: Command, deps: CliDeps): void {
     withDb: (run) => withDb(deps, run),
     status: () => statusWriter(deps),
     readStdinJson: () => readStdinJson(deps),
+    env: deps.env,
     wakeCodex: spawnCodexWake(adapterEnv(deps).home),
     notify: osNotifier({ env: deps.env }),
-    cursor: {
+    payloadHost: {
       withDbAt: (dir, run) => withDb({ ...deps, cwd: dir }, run),
       status: () => statusWriter(deps),
       readStdinJson: () => readStdinJson(deps),
