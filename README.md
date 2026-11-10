@@ -56,6 +56,11 @@ Each agent is named after its harness and folder: `claude@web`, `codex@api`, `cu
 | **Cursor** | The chat keeps one background `inbox watch` task; its completion resumes the agent. | Start a new chat after setup. |
 | **Grok Build** | The agent keeps one persistent `monitor` on `inbox watch`. | Restart Grok after setup. |
 
+**Codex and `/quit`:** quitting Codex while it is still working only detaches the window; the work
+carries on in Codex's background daemon. If a Parley message arrives for that session, it can start
+one more turn there after the work finishes. You can see it in `codex agents` and pick it back up
+with `codex resume <id>`. Idle sessions you quit are never woken.
+
 `mcp-parley doctor` tells you, per harness, whether an idle session can be woken right now and why
 not.
 

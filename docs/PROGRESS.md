@@ -255,10 +255,10 @@ this repo built.
 9. Optional: capture real hook payloads into `src/adapters/codex/fixtures/` (replace the synthetic
    ones) and run `uninstall` to confirm config.toml is restored byte for byte.
 
-Open product question for the human: after `/quit`, a busy Codex thread keeps running in the
-daemon ("Any running work continues"). A wake that lands on such a thread runs a turn with no TUI
-attached (visible in `codex agents`, reattach with `codex resume <id>`). Idle closed sessions are
-unloaded and never woken.
+**Answered (2026-11-10):** after `/quit`, a busy Codex thread keeps running in the daemon, and a
+wake that lands on it after its work finishes runs one more turn with no window attached (visible
+in `codex agents`, reattach with `codex resume <id>`). The human accepted this for v0.1.0; it is
+documented in the README. Idle closed sessions are unloaded and never woken.
 
 ## M5 — Codex adapter (plan, session kiro-M5, 2026-11-07)
 
