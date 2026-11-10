@@ -432,3 +432,13 @@ npm `@xai-official/grok` (publisher `xai-security`, 1.0.77); its README points t
   `claude@web`, `src/**` → `web/src/**`). Windows paths are not handled in v1.
 - **Warnings:** a repeated conflict with the same agents on the same file is not re-sent (messages
   or notification) for 10 minutes. Warned Codex agents get an app-server wake.
+
+### Codex: detached sessions (verified 2026-11-10, codex 0.154.0)
+
+- `/quit` while a turn runs: the TUI exits, the thread stays loaded in the daemon with status
+  `active` until the turn ends.
+- After the turn ends the thread stays loaded and `idle` for 30-60 s, then `notLoaded` (an idle
+  thread quit while idle is unloaded at once, M5).
+- `turn/start` in that window runs a turn with no TUI attached. The v2 protocol exposes no
+  subscriber/attachment state (`thread/unsubscribe` exists per connection only), so a client cannot
+  detect it.

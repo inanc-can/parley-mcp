@@ -1,5 +1,25 @@
 # Progress
 
+## Evidence for the answered questions (2026-11-10, Claude, cloud session)
+
+**Codex sessions quit mid-task (real Codex 0.154.0 daemon + TUI, throwaway CODEX_HOME):**
+`/quit` during a running turn → the TUI exits ("Disconnected from this task. Any running work
+continues."), the thread stays loaded and `active`. When that turn ends (`turn/interrupt`), the
+thread stays loaded and `idle` for 30-60 s, then becomes `notLoaded`. A `turn/start` inside that
+window ran a real turn with no TUI process. The app-server protocol exposes no subscriber or
+attachment info (only per-connection subscribe/unsubscribe), so Parley cannot tell a detached
+thread from an attached idle one. The decision (allow, document) stands; the README now says
+"within about a minute".
+
+**npx (real `npx --package=<0.1.0 tarball> mcp-parley setup`, isolated npm cache):** setup
+refused with the message and wrote nothing. npm does not clear the npx cache by itself
+(`npm cache clean --force` left `_npx/` in place), but clearing it is routine: npm 11's
+`npm cache npx rm` removed it, and a launcher pointing there then failed with MODULE_NOT_FOUND.
+The decision (global install) stands; the refusal text no longer says npm deletes it "at any time".
+
+**Grok's Stop reminder:** not testable here (running the Grok binary is refused, and a real turn
+needs an xAI login).
+
 ## CI (2026-11-10, Claude, cloud session)
 
 GitHub Actions runs again (the human's student account lifted the billing lock). The first full

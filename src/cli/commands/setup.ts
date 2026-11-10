@@ -13,17 +13,20 @@ export interface SetupDeps {
 }
 
 /**
- * True when this CLI runs from npx's temporary cache. npm may delete that
- * cache at any time, and every config setup writes points at the launcher,
- * which points at this entry; from there the configs would break later.
+ * True when this CLI runs from npx's cache. npm keeps that cache until it is
+ * cleared, but clearing it is routine (`npm cache npx rm` in npm 11, or
+ * deleting ~/.npm/_npx), and every config setup writes points at the
+ * launcher, which points at this entry: verified on 2026-11-10, clearing it
+ * made such a launcher fail with MODULE_NOT_FOUND.
  */
 export function runningFromNpxCache(entryPath: string): boolean {
   return /[\\/]_npx[\\/]/.test(entryPath);
 }
 
 export const NPX_REFUSAL = [
-  "mcp-parley is running from npx's temporary cache, which npm can delete at any time;",
-  "every config setup writes would then point at a missing file. Install it once instead:",
+  "mcp-parley is running from npx's cache, which is meant to be thrown away (`npm cache npx rm`,",
+  "or deleting ~/.npm/_npx, clears it); every config setup writes would then point at a missing",
+  "file. Install it once instead:",
   "",
   "  npm install -g mcp-parley && mcp-parley setup",
 ];

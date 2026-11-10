@@ -57,8 +57,8 @@ Each agent is named after its harness and folder: `claude@web`, `codex@api`, `cu
 | **Grok Build** | The agent keeps one persistent `monitor` on `inbox watch`. | Restart Grok after setup. |
 
 **Codex and `/quit`:** quitting Codex while it is still working only detaches the window; the work
-carries on in Codex's background daemon. If a Parley message arrives for that session, it can start
-one more turn there after the work finishes. You can see it in `codex agents` and pick it back up
+carries on in Codex's background daemon. If a Parley message arrives for that session within about a
+minute after the work finishes (before Codex unloads it), it can start one more turn there. You can see it in `codex agents` and pick it back up
 with `codex resume <id>`. Idle sessions you quit are never woken.
 
 `mcp-parley doctor` tells you, per harness, whether an idle session can be woken right now and why
@@ -83,8 +83,8 @@ Setup writes **only user-level config** (for example `~/.claude.json`, `~/.codex
 your other entries, and never writes into your repositories. Every command it installs runs this
 install's own launcher by absolute path. Preview first with `mcp-parley setup --dry-run`.
 
-Run setup from the global install, not with `npx`: npx's cache can be deleted, which would break
-the configs that point at it, so setup refuses to run from there.
+Run setup from the global install, not with `npx`: npx's cache is meant to be cleared (`npm cache
+npx rm`), which would break the configs that point at it, so setup refuses to run from there.
 
 ## Use
 
