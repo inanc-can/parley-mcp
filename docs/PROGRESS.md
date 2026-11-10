@@ -1,5 +1,15 @@
 # Progress
 
+## CI (2026-11-10, Claude, cloud session)
+
+GitHub Actions runs again (the human's student account lifted the billing lock). The first full
+run failed on two things: every Node 20 job (pnpm 11 cannot start on Node 20) and 25 tests on
+Windows (Parley has no Windows support: POSIX launcher, POSIX paths, Unix socket). **The human
+decided:** require Node 22+ and support macOS + Linux only in v0.1.0. Done: `engines.node >=22`,
+`os: [darwin, linux]` in package.json, CI matrix Ubuntu + macOS × Node 22 + 24, actions bumped to
+checkout@v5 / setup-node@v5, README, CHANGELOG and PLAN updated, Windows support is good first
+issue 6.
+
 > **Question for the human (M12):** PLAN's "done when" says `npx mcp-parley setup`. That is unsafe:
 > setup writes a launcher pointing at the copy of Parley it runs from, and npx runs it from a cache
 > npm may delete, so every config would later point at a missing file. Setup now refuses to run

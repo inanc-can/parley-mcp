@@ -33,8 +33,12 @@
     "CHANGELOG.md"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
+  "os": [
+    "darwin",
+    "linux"
+  ],
   "packageManager": "pnpm@11.22.0",
   "scripts": {
     "check": "pnpm run lint && pnpm run typecheck && pnpm run test",

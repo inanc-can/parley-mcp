@@ -35,5 +35,7 @@ writing, and get warned about overlapping edits, with the human watching.
 
 ### Not included
 
+- Windows: v0.1.0 supports macOS and Linux only, on Node.js 22 or newer.
+
 - Telemetry: deliberately not built (see `docs/telemetry.md`).
 - Cross-machine messaging and Grok Bot on grok.com.

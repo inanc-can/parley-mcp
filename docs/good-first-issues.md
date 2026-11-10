@@ -40,11 +40,13 @@ The fixtures in `src/adapters/*/fixtures/` are synthetic (`"_synthetic": true`),
 docs. Capture real hook payloads from one harness (add a temporary hook that writes stdin to a
 file), anonymise paths, ids and emails, replace the synthetic files and keep the replay tests green.
 
-## 6. Windows paths in overlap detection
+## 6. Windows support
 
-`src/core/edit-paths.ts` handles POSIX paths only, so edits on Windows are not compared. Make
-`repoRelativePath` and `normalizeClaimGlob` handle `C:\…` paths and backslashes (pure functions,
-unit tests only). Bonus: make `isOurEntry` in the adapters recognise Windows launcher paths.
+v0.1.0 is macOS and Linux only. Windows needs: a `.cmd` launcher next to the POSIX one
+(`src/adapters/cli-path.ts`), Windows paths in `src/core/edit-paths.ts` and in each adapter's
+"is this entry ours" check, the Codex control socket as a named pipe, and `windows-latest` back in
+the CI matrix (`.github/workflows/ci.yml`). Split into smaller PRs if you like; start with the
+pure path functions and their unit tests.
 
 ## 7. `mcp-parley who --json`
 

@@ -54,15 +54,14 @@
     "[autonomous] 2026-11-07 (Claude, cloud): created personal cloud environment parley-mcp (user approved) allowing cursor.com/docs.cursor.com/downloads.cursor.com with a pnpm install setup script. Cursor stop hook installed with loop_limit null; Parley's caps bound loops. Cursor hooks always print a JSON reply. cursor-agent not run in the cloud (downloaded binary execution refused).",
     "[autonomous] 2026-11-08 (Claude, cloud): Grok adapter uses documented ~/.grok/hooks and ~/.grok/skills instead of an undocumented plugin; agent id from cwd; Stop reminder built though docs say passive stdout is ignored; Claude/Codex/Cursor hooks no-op when GROK_HOOK_EVENT is set. parley-mcp environment gained docs.x.ai (approved).",
     "[autonomous] 2026-11-08 (Claude, cloud): edits and claims are stored repo-relative; relative claim globs resolve against the claiming agent's folder; repeat conflict warnings throttled for 10 minutes; Windows paths unsupported in v1.",
-    "[autonomous] 2026-11-10 (Claude, cloud): setup refuses to run from the npx cache (configs would point at a deletable path); README installs globally. \"private\": true removed from package.json so the human can publish; nothing was published."
+    "[autonomous] 2026-11-10 (Claude, cloud): setup refuses to run from the npx cache (configs would point at a deletable path); README installs globally. \"private\": true removed from package.json so the human can publish; nothing was published.",
+    "Human decision 2026-11-10: Node 22+ only, v0.1.0 macOS + Linux only; CI matrix Ubuntu + macOS x Node 22/24."
   ],
-  "blockers": [
-    "GitHub Actions blocked by the account billing lock (human-only fix)."
-  ],
+  "blockers": [],
   "open_risks": [],
   "failed_attempts": [],
   "next_action": "Human: laptop tests; answer M9 and M12 questions; record the demo GIF; publish mcp-parley 0.1.0; open the good first issues.",
-  "updated_at": "2026-11-10T12:00:00+00:00",
+  "updated_at": "2026-11-10T15:00:00+00:00",
   "last_mode": "checkpoints",
   "last_mode_notes": "M5 review + wake by Claude in a cloud session; user away, laptop off; no wb tool in the cloud, verified with pnpm check and a live Codex run."
 }

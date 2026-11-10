@@ -65,7 +65,7 @@ not.
 
 ## Install
 
-Requires Node.js 20 or newer, on macOS or Linux (Windows is untested).
+Requires Node.js 22 or newer, on macOS or Linux. Windows is not supported yet.
 
 ```sh
 npm install -g mcp-parley

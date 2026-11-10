@@ -88,7 +88,7 @@ Grouped as on the design page. Treat this table as the spec.
 ### Open source and growth
 | Topic | Decision |
 |---|---|
-| Language | TypeScript on Node ≥ 20 |
+| Language | TypeScript on Node ≥ 22 (changed from ≥ 20 by the human, 2026-11-10: Node 20 is end-of-life and pnpm 11 cannot run on it) |
 | Storage | One SQLite file per machine: `~/.mcp-parley/hub.db` |
 | Adapters | One folder per harness with a manifest; outsiders add new harnesses in one PR |
 | Adapter tests | Against recorded harness sessions (fixtures of real hook payloads and outputs) |
@@ -436,4 +436,4 @@ CHANGELOG; version 0.1.0.
 - Two agents reach an accepted agreement, and the human sees it and can veto it in the viewer.
 - Two agents editing the same file are both warned.
 - Nothing is written into the repository during setup; `uninstall` leaves no trace.
-- `pnpm check` passes on CI for macOS, Linux and Windows.
+- `pnpm check` passes on CI for macOS and Linux. (Changed by the human, 2026-11-10: v0.1.0 is macOS and Linux only; Windows support is a later issue.)
