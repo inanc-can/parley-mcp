@@ -1,4 +1,5 @@
 import { ADAPTERS, type Adapter, type AdapterEnv } from "../../adapters/index.js";
+import { cliEntryPath } from "../../adapters/cli-path.js";
 
 export interface SetupDeps {
   env: AdapterEnv;
@@ -7,7 +8,25 @@ export interface SetupDeps {
   dryRun?: boolean | undefined;
   /** The adapters to iterate (defaults to the production list; tests inject). */
   adapters?: readonly Adapter[] | undefined;
+  /** The CLI entry the launcher will point at (defaults to this install's). */
+  entryPath?: string | undefined;
 }
+
+/**
+ * True when this CLI runs from npx's temporary cache. npm may delete that
+ * cache at any time, and every config setup writes points at the launcher,
+ * which points at this entry; from there the configs would break later.
+ */
+export function runningFromNpxCache(entryPath: string): boolean {
+  return /[\\/]_npx[\\/]/.test(entryPath);
+}
+
+export const NPX_REFUSAL = [
+  "mcp-parley is running from npx's temporary cache, which npm can delete at any time;",
+  "every config setup writes would then point at a missing file. Install it once instead:",
+  "",
+  "  npm install -g mcp-parley && mcp-parley setup",
+];
 
 /**
  * `mcp-parley setup [--harness <name>] [--dry-run]`: detect harnesses, install
@@ -17,6 +36,12 @@ export interface SetupDeps {
  */
 export async function runSetup(deps: SetupDeps): Promise<void> {
   const dryRun = deps.dryRun ?? false;
+  if (!dryRun && runningFromNpxCache(deps.entryPath ?? cliEntryPath())) {
+    for (const line of NPX_REFUSAL) {
+      deps.write(line);
+    }
+    return;
+  }
   const all = deps.adapters ?? ADAPTERS;
   const adapters = selectAdapters(all, deps.harness);
   if (adapters.length === 0) {

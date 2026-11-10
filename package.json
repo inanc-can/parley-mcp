@@ -1,10 +1,37 @@
 {
   "name": "mcp-parley",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "description": "Let coding agents find each other, message each other, and settle agreements on one machine.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude-code",
+    "codex",
+    "cursor",
+    "grok",
+    "coding-agents",
+    "multi-agent",
+    "agent-communication"
+  ],
+  "homepage": "https://github.com/inanc-can/parley-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/inanc-can/parley-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/inanc-can/parley-mcp/issues"
+  },
   "license": "MIT",
   "type": "module",
+  "bin": {
+    "mcp-parley": "dist/cli/bin.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "engines": {
     "node": ">=20"
   },
@@ -17,7 +44,8 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit && tsc --noEmit -p src/viewer/static",
     "test": "vitest run",
-    "build": "tsc -p tsconfig.build.json && node scripts/build-viewer.mjs"
+    "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.build.json && node scripts/build-viewer.mjs",
+    "prepublishOnly": "pnpm check && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

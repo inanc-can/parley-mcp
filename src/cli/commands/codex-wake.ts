@@ -1,3 +1,4 @@
+import { PARLEY_VERSION } from "../../version.js";
 import { basename } from "node:path";
 import { z } from "zod";
 import {
@@ -49,7 +50,7 @@ export type CodexWakeOutcome =
   | { kind: "not_codex" }
   | { kind: "fallback"; reason: string };
 
-const CLIENT_INFO = { name: "mcp-parley", title: "mcp-parley", version: "0.0.0" };
+const CLIENT_INFO = { name: "mcp-parley", title: "mcp-parley", version: PARLEY_VERSION };
 const DEFAULT_POLL_MS = 500;
 
 const initializeResultSchema = z.looseObject({ userAgent: z.string() });

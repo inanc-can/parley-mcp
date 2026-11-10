@@ -1,1 +1,1 @@
-export const parleyVersion = "0.0.0";
+export { PARLEY_VERSION as parleyVersion } from "./version.js";

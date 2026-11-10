@@ -128,3 +128,19 @@ describe("doctor", () => {
     expect(after.lines.join("\n")).toContain("can wake idle");
   });
 });
+
+describe("setup from npx's cache", () => {
+  it("refuses, because npm may delete the cache the configs would point at", async () => {
+    const { runningFromNpxCache, NPX_REFUSAL } = await import("../../src/cli/commands/setup.js");
+    expect(runningFromNpxCache("/Users/a/.npm/_npx/1a2b3c/node_modules/mcp-parley/dist/cli/bin.js")).toBe(true);
+    expect(runningFromNpxCache("C:\\Users\\a\\AppData\\npm-cache\\_npx\\1a2b\\node_modules\\mcp-parley\\dist\\cli\\bin.js")).toBe(true);
+    expect(runningFromNpxCache("/usr/local/lib/node_modules/mcp-parley/dist/cli/bin.js")).toBe(false);
+    const out = collector();
+    await runSetup({ env: env(), write: out.write, adapters: FAKES, entryPath: "/h/.npm/_npx/9/node_modules/mcp-parley/dist/cli/bin.js" });
+    expect(out.lines).toEqual(NPX_REFUSAL);
+    // A dry run is harmless, so it still runs.
+    const dry = collector();
+    await runSetup({ env: env(), write: dry.write, adapters: FAKES, dryRun: true, entryPath: "/h/.npm/_npx/9/x.js" });
+    expect(dry.lines[0]).toContain("Dry run");
+  });
+});

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "active_task_id": "M11",
-  "summary": "M11 done by Claude: telemetry_opt_in flag (default false, unused), docs/telemetry.md, and a no-network guard test enforcing AGENTS.md's network limit. No sending code (PLAN: stop and ask). pnpm check 305 tests. Laptop tests M5/M6/M8/M9/M10 pending; M9 and M11 questions open.",
+  "active_task_id": "M12",
+  "summary": "M12 prepared by Claude: README, adding-a-harness guide, 10 good-first-issue drafts, CHANGELOG, v0.1.0, publish-ready package (verified by installing the packed tarball and running setup/doctor/talk), npx-cache guard. pnpm check 307 tests. Human: demo GIF, npm publish, issues, CI billing; questions open for M9 (Grok Stop reminder), M12 (npx); laptop tests for M5/M6/M8/M9/M10.",
   "assumptions": [
     "M1 (recorded 2026-11-07, fix session): The secret-scan regex thresholds are builder-chosen minimum length heuristics (AWS AKIA +16 chars; ghp_/github_pat_/sk- at 20+ chars; Slack xox*- tokens at 10+ chars; .env SECRET=TOKEN=PASSWORD=API_KEY lines with values of 12+ chars). They may need tightening after real-world false negative/positive feedback; none may ever be relaxed to log the secret value.",
     "M1 (recorded 2026-11-07, fix session): everyone fan-out derives per-recipient idempotency keys as <base key>::<toAgent>; the double-colon separator is a builder choice, and changing it changes which retries dedupe.",
@@ -53,15 +53,16 @@
     "[autonomous] 2026-11-07 (Claude, cloud): tool results carry a second text block with the JSON value (MCP spec guidance) so clients that show only text still see inbox messages and rules; conflict notices go to a thread titled 'conflict: <path>', reused while not closed.",
     "[autonomous] 2026-11-07 (Claude, cloud): created personal cloud environment parley-mcp (user approved) allowing cursor.com/docs.cursor.com/downloads.cursor.com with a pnpm install setup script. Cursor stop hook installed with loop_limit null; Parley's caps bound loops. Cursor hooks always print a JSON reply. cursor-agent not run in the cloud (downloaded binary execution refused).",
     "[autonomous] 2026-11-08 (Claude, cloud): Grok adapter uses documented ~/.grok/hooks and ~/.grok/skills instead of an undocumented plugin; agent id from cwd; Stop reminder built though docs say passive stdout is ignored; Claude/Codex/Cursor hooks no-op when GROK_HOOK_EVENT is set. parley-mcp environment gained docs.x.ai (approved).",
-    "[autonomous] 2026-11-08 (Claude, cloud): edits and claims are stored repo-relative; relative claim globs resolve against the claiming agent's folder; repeat conflict warnings throttled for 10 minutes; Windows paths unsupported in v1."
+    "[autonomous] 2026-11-08 (Claude, cloud): edits and claims are stored repo-relative; relative claim globs resolve against the claiming agent's folder; repeat conflict warnings throttled for 10 minutes; Windows paths unsupported in v1.",
+    "[autonomous] 2026-11-10 (Claude, cloud): setup refuses to run from the npx cache (configs would point at a deletable path); README installs globally. \"private\": true removed from package.json so the human can publish; nothing was published."
   ],
   "blockers": [
     "GitHub Actions blocked by the account billing lock (human-only fix)."
   ],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "Human: answer M11 (leave telemetry unbuilt?) and M9 questions; laptop tests. Then M12 launch polish (README, demo GIF by the human, npm publish by the human).",
-  "updated_at": "2026-11-08T20:00:00+00:00",
+  "next_action": "Human: laptop tests; answer M9 and M12 questions; record the demo GIF; publish mcp-parley 0.1.0; open the good first issues.",
+  "updated_at": "2026-11-10T12:00:00+00:00",
   "last_mode": "checkpoints",
   "last_mode_notes": "M5 review + wake by Claude in a cloud session; user away, laptop off; no wb tool in the cloud, verified with pnpm check and a live Codex run."
 }

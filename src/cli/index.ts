@@ -1,3 +1,4 @@
+import { PARLEY_VERSION } from "../version.js";
 import { homedir } from "node:os";
 import { Command, Option } from "commander";
 import type { AdapterEnv } from "../adapters/index.js";
@@ -24,7 +25,7 @@ import { spawnCodexWake } from "../adapters/codex/spawn-wake.js";
 import { osNotifier } from "../notify/os-notify.js";
 import { launcherPath } from "../adapters/cli-path.js";
 
-export const CLI_VERSION = "0.0.0";
+export const CLI_VERSION = PARLEY_VERSION;
 
 const WATCH_POLL_MS = 2000;
 

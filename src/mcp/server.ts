@@ -1,3 +1,4 @@
+import { PARLEY_VERSION } from "../version.js";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -65,7 +66,7 @@ export interface ServeOptions {
  */
 export function createServer(ctx: ToolContext, instructions?: string): McpServer {
   const server = new McpServer(
-    { name: "mcp-parley", version: "0.0.0" },
+    { name: "mcp-parley", version: PARLEY_VERSION },
     instructions === undefined ? {} : { instructions },
   );
 

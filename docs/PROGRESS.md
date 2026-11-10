@@ -1,5 +1,35 @@
 # Progress
 
+> **Question for the human (M12):** PLAN's "done when" says `npx mcp-parley setup`. That is unsafe:
+> setup writes a launcher pointing at the copy of Parley it runs from, and npx runs it from a cache
+> npm may delete, so every config would later point at a missing file. Setup now refuses to run
+> from the npx cache and the README says `npm install -g mcp-parley && mcp-parley setup`.
+> Keep that (recommended), or should setup copy itself into `~/.mcp-parley/` so `npx` works?
+
+## M12: launch polish (Claude, cloud session, 2026-11-10)
+
+**Built:** README (tagline naming the four harnesses, one-command install, per-harness notes,
+privacy, honest status, a commented slot for the demo GIF), `docs/adding-a-harness.md`,
+`docs/good-first-issues.md` (10 drafts, not opened on GitHub), `CHANGELOG.md`, version 0.1.0 in
+one place (`src/version.ts`, tested against package.json), package metadata (`bin`, `files`,
+`repository`, keywords, `prepublishOnly: pnpm check && pnpm build`; `"private": true` removed),
+a clean build, and the npx-cache guard in setup.
+
+**Checks:** `pnpm check` passes (307 tests). `npm pack` gives 95 files / 95 kB (dist, README,
+LICENSE, CHANGELOG; no tests or fixtures). The packed tarball, installed into a scratch folder,
+ran `--version` (0.1.0), `setup --harness cursor` (launcher runs the compiled CLI with plain node),
+`doctor`, and a real MCP `talk` from one agent read by another's `inbox drain`.
+
+### (H) Steps for the human
+1. Record the 30-second demo GIF, save it as `docs/demo.gif`, and uncomment the `<img>` line at
+   the top of README.md.
+2. Re-check the name: `npm view mcp-parley` should still say 404 (it did on 2026-11-10).
+3. Publish from a clean checkout: `pnpm install && npm publish` (prepublishOnly runs the checks
+   and the build). Then set the CHANGELOG date and tag `v0.1.0`.
+4. Open the good first issues from `docs/good-first-issues.md` on GitHub.
+5. PLAN's "done when" also lists CI on macOS, Linux and Windows; GitHub Actions is blocked by the
+   account's billing lock, which only you can fix.
+
 > **Question for the human (M9):** xAI's docs say Grok ignores the stdout of Stop hooks, so PLAN's
 > "Stop hook keeps the turn open once and gives the agent the command" may never show up. The
 > reminder is built anyway (harmless if ignored), plus a skill and MCP instructions that tell the

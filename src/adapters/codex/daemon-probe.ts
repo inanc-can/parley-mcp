@@ -1,3 +1,4 @@
+import { PARLEY_VERSION } from "../../version.js";
 import { z } from "zod";
 import { gateOpenForVersion, versionFromUserAgent } from "./app-server.js";
 import { controlSocketPath, openControlSocket, type RpcConnection } from "./control-socket.js";
@@ -43,7 +44,7 @@ export async function probeCodexDaemon(
   }
   try {
     const init = initializeSchema.parse(
-      await conn.request("initialize", { clientInfo: { name: "mcp-parley-doctor", title: "mcp-parley", version: "0.0.0" } }),
+      await conn.request("initialize", { clientInfo: { name: "mcp-parley-doctor", title: "mcp-parley", version: PARLEY_VERSION } }),
     );
     conn.notify("initialized");
     const gateOpen = gateOpenForVersion(versionFromUserAgent(init.userAgent));
