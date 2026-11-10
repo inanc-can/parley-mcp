@@ -55,13 +55,14 @@
     "[autonomous] 2026-11-08 (Claude, cloud): Grok adapter uses documented ~/.grok/hooks and ~/.grok/skills instead of an undocumented plugin; agent id from cwd; Stop reminder built though docs say passive stdout is ignored; Claude/Codex/Cursor hooks no-op when GROK_HOOK_EVENT is set. parley-mcp environment gained docs.x.ai (approved).",
     "[autonomous] 2026-11-08 (Claude, cloud): edits and claims are stored repo-relative; relative claim globs resolve against the claiming agent's folder; repeat conflict warnings throttled for 10 minutes; Windows paths unsupported in v1.",
     "[autonomous] 2026-11-10 (Claude, cloud): setup refuses to run from the npx cache (configs would point at a deletable path); README installs globally. \"private\": true removed from package.json so the human can publish; nothing was published.",
-    "Human decision 2026-11-10: Node 22+ only, v0.1.0 macOS + Linux only; CI matrix Ubuntu + macOS x Node 22/24."
+    "Human decision 2026-11-10: Node 22+ only, v0.1.0 macOS + Linux only; CI matrix Ubuntu + macOS x Node 22/24.",
+    "Human decisions 2026-11-10: global install (no npx); Grok's monitor instruction via skill + MCP instructions is enough for M9; telemetry stays unbuilt for v1."
   ],
   "blockers": [],
   "open_risks": [],
   "failed_attempts": [],
-  "next_action": "Human: laptop tests; answer M9 and M12 questions; record the demo GIF; publish mcp-parley 0.1.0; open the good first issues.",
-  "updated_at": "2026-11-10T15:00:00+00:00",
+  "next_action": "Human: laptop tests (M5 Codex, M6 viewer, M8 Cursor, M9 Grok, M10 edits); record the demo GIF; publish mcp-parley 0.1.0; open the good first issues. No open questions.",
+  "updated_at": "2026-11-10T16:00:00+00:00",
   "last_mode": "checkpoints",
   "last_mode_notes": "M5 review + wake by Claude in a cloud session; user away, laptop off; no wb tool in the cloud, verified with pnpm check and a live Codex run."
 }

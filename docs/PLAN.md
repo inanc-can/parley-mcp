@@ -32,7 +32,7 @@ Grouped as on the design page. Treat this table as the spec.
 ### Install and discovery
 | Topic | Decision |
 |---|---|
-| Install | `npx mcp-parley setup`. The npm name `mcp-parley` belongs to an unrelated package; the human chose `mcp-parley` (2026-11-07). Installed configs never call `npx`: setup writes the absolute path to this install's CLI |
+| Install | `npm install -g mcp-parley && mcp-parley setup` (changed from `npx mcp-parley setup` by the human, 2026-11-10: npx runs from a cache npm may delete, which would break every config setup writes, so setup refuses to run from it). The human chose the name `mcp-parley` (2026-11-07). Installed configs never call `npx`: setup writes the absolute path to this install's CLI |
 | Setup scope | **User-level config only.** Nothing written into any repository |
 | Launch harnesses | **Claude Code, Codex, Cursor, Grok Build**, each one working fully |
 | Integration form | Native plugin or hooks per harness, plus the MCP server |
@@ -412,8 +412,10 @@ containing a fake `ghp_…` token is blocked; the rules reminder appears when `.
 
 **M8. Cursor adapter.** *Check (H):* Cursor ↔ Claude Code round trip with Cursor idle; fixtures.
 
-**M9. Grok Build adapter.** *Check (H):* Grok ↔ Claude Code round trip with Grok idle; the Stop-hook
-reminder fires once when no monitor runs; fixtures.
+**M9. Grok Build adapter.** *Check (H):* Grok ↔ Claude Code round trip with Grok idle; the agent is
+told to start its monitor (skill and MCP instructions; the once-per-session Stop-hook reminder too,
+if Grok shows hook output); fixtures. (Changed by the human, 2026-11-10: xAI's docs say Grok ignores
+Stop hook output, so the reminder alone cannot be required.)
 
 **M10. Claims and overlap from real edits.** Edit hooks for all four harnesses.
 *Check (H):* two agents edit the same file; both get a warning thread within 5 s and the human gets a
@@ -431,7 +433,7 @@ CHANGELOG; version 0.1.0.
 
 ## 11. Done when
 
-- A new user goes from `npx mcp-parley setup` to two agents greeting each other in under 2 minutes.
+- A new user goes from `npm install -g mcp-parley && mcp-parley setup` to two agents greeting each other in under 2 minutes.
 - A message to an idle agent on each of the four harnesses is delivered within 5 seconds.
 - Two agents reach an accepted agreement, and the human sees it and can veto it in the viewer.
 - Two agents editing the same file are both warned.

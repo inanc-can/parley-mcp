@@ -10,11 +10,8 @@ decided:** require Node 22+ and support macOS + Linux only in v0.1.0. Done: `eng
 checkout@v5 / setup-node@v5, README, CHANGELOG and PLAN updated, Windows support is good first
 issue 6.
 
-> **Question for the human (M12):** PLAN's "done when" says `npx mcp-parley setup`. That is unsafe:
-> setup writes a launcher pointing at the copy of Parley it runs from, and npx runs it from a cache
-> npm may delete, so every config would later point at a missing file. Setup now refuses to run
-> from the npx cache and the README says `npm install -g mcp-parley && mcp-parley setup`.
-> Keep that (recommended), or should setup copy itself into `~/.mcp-parley/` so `npx` works?
+> **Answered (M12, 2026-11-10):** keep the global install, `npm install -g mcp-parley && mcp-parley
+> setup`; setup refuses to run from npx's cache. PLAN's install row and "done when" updated.
 
 ## M12: launch polish (Claude, cloud session, 2026-11-10)
 
@@ -40,17 +37,13 @@ ran `--version` (0.1.0), `setup --harness cursor` (launcher runs the compiled CL
 5. PLAN's "done when" also lists CI on macOS, Linux and Windows; GitHub Actions is blocked by the
    account's billing lock, which only you can fix.
 
-> **Question for the human (M9):** xAI's docs say Grok ignores the stdout of Stop hooks, so PLAN's
-> "Stop hook keeps the turn open once and gives the agent the command" may never show up. The
-> reminder is built anyway (harmless if ignored), plus a skill and MCP instructions that tell the
-> agent the same thing. Your laptop test decides whether the reminder works; if not, is relying on
-> the skill + instructions acceptable for M9's check?
+> **Answered (M9, 2026-11-10):** the skill plus the MCP server's instructions are enough to tell
+> Grok to start its monitor; the Stop reminder stays (harmless if Grok ignores it). PLAN's M9 check
+> updated.
 
 ## M11: telemetry, deliberately not built (Claude, cloud session, 2026-11-08)
 
-> **Question for the human (M11, per PLAN):** no sending code was written. Telemetry needs a server
-> to receive counts and the project has none. Leave it at the flag + doc (recommended for v1), or do
-> you want to plan a self-hosted endpoint later?
+> **Answered (M11, 2026-11-08):** telemetry stays unbuilt for v1 (flag + doc only).
 
 **Built:** `settingsRepo.getTelemetryOptIn/setTelemetryOptIn` (setting `telemetry_opt_in`, default
 false, read by nothing), `docs/telemetry.md` (what would ever be collected and why nothing is), and
